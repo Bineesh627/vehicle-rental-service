@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { rentalShops, vehicles } from "@/data/mockData";
 import { cn } from "@/lib/utils";
 import { UserStackParamList } from "@/navigation/types";
@@ -6,15 +5,15 @@ import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   ArrowLeft,
-  Bike,
   Calendar,
-  Car,
   Check,
   Clock,
   Fuel,
   Heart,
+  MapPin,
   Settings2,
   Share2,
+  Star,
   Users,
 } from "lucide-react-native";
 import React, { useState } from "react";
@@ -22,11 +21,12 @@ import {
   Dimensions,
   Image,
   ScrollView,
+  StatusBar,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type VehicleDetailsRouteProp = RouteProp<UserStackParamList, "VehicleDetails">;
 type VehicleDetailsNavigationProp = NativeStackNavigationProp<
@@ -38,6 +38,7 @@ export default function VehicleDetails() {
   const route = useRoute<VehicleDetailsRouteProp>();
   const navigation = useNavigation<VehicleDetailsNavigationProp>();
   const { id } = route.params;
+  const insets = useSafeAreaInsets();
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [pricingType, setPricingType] = useState<"hour" | "day">("hour");
@@ -49,8 +50,8 @@ export default function VehicleDetails() {
 
   if (!vehicle || !shop) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Text className="text-muted-foreground">Vehicle not found</Text>
+      <View className="flex-1 items-center justify-center bg-[#0F1C23]">
+        <Text className="text-slate-400">Vehicle not found</Text>
       </View>
     );
   }
@@ -58,255 +59,286 @@ export default function VehicleDetails() {
   const { width } = Dimensions.get("window");
 
   return (
-    <View className="flex-1 bg-background">
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+    <View className="flex-1 bg-[#0F1C23]">
+      <StatusBar barStyle="light-content" />
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Image Gallery */}
-        <View className="relative h-72">
+        <View className="relative h-[400px]">
           <Image
             source={{ uri: vehicle.images[activeImageIndex] }}
             className="h-full w-full"
             resizeMode="cover"
           />
-          <View className="absolute inset-0 bg-black/30" />
+          <View className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#0F1C23]" />
 
           {/* Header actions */}
-          <SafeAreaView className="absolute left-0 right-0 top-0">
-            <View className="flex-row items-center justify-between p-4">
+          <View
+            className="absolute left-0 right-0 flex-row items-center justify-between px-4"
+            style={{ top: insets.top + 10 }}
+          >
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              className="rounded-full bg-black/40 p-3 backdrop-blur-md"
+            >
+              <ArrowLeft color="#fff" size={24} />
+            </TouchableOpacity>
+            <View className="flex-row gap-3">
               <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                className="rounded-xl bg-white/20 p-3 backdrop-blur-sm"
+                onPress={() => setIsFavorite(!isFavorite)}
+                className="rounded-full bg-black/40 p-3 backdrop-blur-md"
               >
-                <ArrowLeft color="white" size={20} />
+                <Heart
+                  color={isFavorite ? "#ef4444" : "#fff"}
+                  fill={isFavorite ? "#ef4444" : "transparent"}
+                  size={24}
+                />
               </TouchableOpacity>
-              <View className="flex-row gap-2">
-                <TouchableOpacity
-                  onPress={() => setIsFavorite(!isFavorite)}
-                  className="rounded-xl bg-white/20 p-3 backdrop-blur-sm"
-                >
-                  <Heart
-                    color={isFavorite ? "#ef4444" : "white"}
-                    fill={isFavorite ? "#ef4444" : "transparent"}
-                    size={20}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity className="rounded-xl bg-white/20 p-3 backdrop-blur-sm">
-                  <Share2 color="white" size={20} />
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity className="rounded-full bg-black/40 p-3 backdrop-blur-md">
+                <Share2 color="#fff" size={24} />
+              </TouchableOpacity>
             </View>
-          </SafeAreaView>
+          </View>
 
           {/* Image indicators */}
           {vehicle.images.length > 1 && (
-            <View className="absolute bottom-4 left-0 right-0 flex-row justify-center gap-2">
+            <View className="absolute bottom-6 left-0 right-0 flex-row justify-center gap-2">
               {vehicle.images.map((_, index: number) => (
                 <TouchableOpacity
                   key={index}
                   onPress={() => setActiveImageIndex(index)}
                   className={cn(
-                    "h-2 rounded-full",
+                    "h-1.5 rounded-full transition-all",
                     index === activeImageIndex
-                      ? "w-6 bg-primary"
-                      : "w-2 bg-white/60",
+                      ? "w-8 bg-[#22D3EE]"
+                      : "w-1.5 bg-white/40",
                   )}
                 />
               ))}
             </View>
           )}
-
-          {/* Type badge */}
-          <View className="absolute left-4 top-20">
-            <View className="flex-row items-center gap-1.5 rounded-lg bg-black/50 px-3 py-2">
-              {vehicle.type === "car" ? (
-                <Car color="white" size={16} />
-              ) : (
-                <Bike color="white" size={16} />
-              )}
-              <Text className="text-sm font-medium text-white capitalize">
-                {vehicle.type}
-              </Text>
-            </View>
-          </View>
         </View>
 
-        {/* Vehicle Info */}
-        <View className="px-4 -mt-6 relative z-10">
-          <View className="rounded-2xl bg-card p-5 shadow-sm border border-border">
-            <View>
-              <View
+        {/* Content */}
+        <View className="px-5 -mt-8 relative z-10">
+          {/* Availability Badge */}
+          <View className="mb-4 self-start">
+            <View
+              className={cn(
+                "rounded-full px-3 py-1 border",
+                vehicle.isAvailable
+                  ? "bg-green-500/10 border-green-500/20"
+                  : "bg-red-500/10 border-red-500/20",
+              )}
+            >
+              <Text
                 className={cn(
-                  "mb-2 self-start rounded-full px-3 py-1",
-                  vehicle.isAvailable ? "bg-green-100" : "bg-red-100",
+                  "text-xs font-bold uppercase tracking-wider",
+                  vehicle.isAvailable ? "text-green-500" : "text-red-500",
                 )}
               >
-                <Text
-                  className={cn(
-                    "text-xs font-semibold",
-                    vehicle.isAvailable ? "text-green-700" : "text-red-700",
-                  )}
-                >
-                  {vehicle.isAvailable ? "Available" : "Currently Booked"}
-                </Text>
-              </View>
-              <Text className="text-2xl font-bold text-foreground">
-                {vehicle.name}
-              </Text>
-              <Text className="text-muted-foreground">{vehicle.model}</Text>
-              {vehicle.vehicleNumber && (
-                <Text className="text-sm font-medium text-primary mt-1">
-                  {vehicle.vehicleNumber}
-                </Text>
-              )}
-            </View>
-
-            {/* Specs */}
-            <View className="mt-6 flex-row gap-4">
-              <View className="flex-1 rounded-xl bg-secondary p-4 items-center">
-                <Fuel color="#000" size={20} style={{ marginBottom: 4 }} />
-                <Text className="text-sm font-medium text-foreground">
-                  {vehicle.fuelType}
-                </Text>
-                <Text className="text-xs text-muted-foreground">Fuel</Text>
-              </View>
-              <View className="flex-1 rounded-xl bg-secondary p-4 items-center">
-                <Settings2 color="#000" size={20} style={{ marginBottom: 4 }} />
-                <Text className="text-sm font-medium text-foreground">
-                  {vehicle.transmission}
-                </Text>
-                <Text className="text-xs text-muted-foreground">
-                  Transmission
-                </Text>
-              </View>
-              {vehicle.seating && (
-                <View className="flex-1 rounded-xl bg-secondary p-4 items-center">
-                  <Users color="#000" size={20} style={{ marginBottom: 4 }} />
-                  <Text className="text-sm font-medium text-foreground">
-                    {vehicle.seating} Seats
-                  </Text>
-                  <Text className="text-xs text-muted-foreground">
-                    Capacity
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Features */}
-            <View className="mt-6">
-              <Text className="mb-3 font-semibold text-foreground">
-                Features
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {vehicle.features.map((feature) => (
-                  <View
-                    key={feature}
-                    className="flex-row items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-2"
-                  >
-                    <Check color="#000" size={14} />
-                    <Text className="text-sm font-medium text-primary">
-                      {feature}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Shop info */}
-            <View className="mt-6 rounded-xl border border-border p-4">
-              <Text className="text-xs text-muted-foreground">
-                Available at
-              </Text>
-              <Text className="font-semibold text-foreground">{shop.name}</Text>
-              <Text className="text-sm text-muted-foreground">
-                {shop.address}
+                {vehicle.isAvailable ? "Available" : "Booked"}
               </Text>
             </View>
           </View>
-        </View>
 
-        {/* Pricing */}
-        <View className="px-4 py-6">
-          <View className="rounded-2xl bg-card p-5 shadow-sm border border-border">
-            <Text className="mb-4 font-semibold text-foreground">Pricing</Text>
-            <View className="flex-row gap-4">
+          {/* Title Section */}
+          <View className="mb-8">
+            <Text className="text-3xl font-bold text-white mb-1">
+              {vehicle.name}
+            </Text>
+            <Text className="text-lg text-slate-400">{vehicle.model} 2023</Text>
+          </View>
+
+          {/* Specs Grid */}
+          <View className="flex-row gap-3 mb-8">
+            <View className="flex-1 rounded-2xl bg-[#1E293B] p-4 items-center border border-slate-800">
+              <Fuel color="#22D3EE" size={24} style={{ marginBottom: 8 }} />
+              <Text className="text-sm font-bold text-white mb-0.5">
+                {vehicle.fuelType}
+              </Text>
+              <Text className="text-[10px] text-slate-400 uppercase tracking-widest">
+                Fuel
+              </Text>
+            </View>
+            <View className="flex-1 rounded-2xl bg-[#1E293B] p-4 items-center border border-slate-800">
+              <Settings2
+                color="#22D3EE"
+                size={24}
+                style={{ marginBottom: 8 }}
+              />
+              <Text className="text-sm font-bold text-white mb-0.5">
+                {vehicle.transmission}
+              </Text>
+              <Text className="text-[10px] text-slate-400 uppercase tracking-widest">
+                Transmission
+              </Text>
+            </View>
+            {vehicle.seating && (
+              <View className="flex-1 rounded-2xl bg-[#1E293B] p-4 items-center border border-slate-800">
+                <Users color="#22D3EE" size={24} style={{ marginBottom: 8 }} />
+                <Text className="text-sm font-bold text-white mb-0.5">
+                  {vehicle.seating} Seats
+                </Text>
+                <Text className="text-[10px] text-slate-400 uppercase tracking-widest">
+                  Capacity
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* Features */}
+          <View className="mb-8">
+            <Text className="text-lg font-bold text-white mb-4">Features</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {vehicle.features.map((feature) => (
+                <View
+                  key={feature}
+                  className="flex-row items-center gap-2 rounded-full bg-[#1E293B] px-4 py-2.5 border border-slate-800"
+                >
+                  <Check color="#22D3EE" size={14} />
+                  <Text className="text-sm font-medium text-slate-300">
+                    {feature}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Shop/Location Info */}
+          <View className="mb-8">
+            <Text className="text-xs text-slate-400 uppercase tracking-widest mb-3">
+              Available at
+            </Text>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("ShopDetails", { id: shop.id })
+              }
+              className="rounded-2xl bg-[#1E293B] p-4 border border-slate-800"
+            >
+              <View className="flex-row justify-between items-start mb-2">
+                <Text className="text-lg font-bold text-white">
+                  {shop.name}
+                </Text>
+                <View className="flex-row items-center gap-1">
+                  <Star color="#F59E0B" fill="#F59E0B" size={14} />
+                  <Text className="font-bold text-white">{shop.rating}</Text>
+                </View>
+              </View>
+              <View className="flex-row items-center gap-2">
+                <MapPin color="#64748B" size={16} />
+                <Text className="text-slate-400 flex-1">{shop.address}</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Pricing Selector */}
+          <View className="mb-4">
+            <Text className="text-lg font-bold text-white mb-4">Pricing</Text>
+            <View className="flex-row gap-4 p-1 bg-[#1E293B] rounded-2xl border border-slate-800">
               <TouchableOpacity
                 onPress={() => setPricingType("hour")}
                 className={cn(
-                  "flex-1 rounded-xl p-4 items-center border",
-                  pricingType === "hour"
-                    ? "border-primary bg-primary/5"
-                    : "border-border",
+                  "flex-1 flex-row items-center justify-center gap-2 py-4 rounded-xl",
+                  pricingType === "hour" ? "bg-[#22D3EE]" : "bg-transparent",
                 )}
               >
                 <Clock
-                  color={pricingType === "hour" ? "#000" : "#6b7280"}
-                  size={20}
-                  style={{ marginBottom: 4 }}
+                  color={pricingType === "hour" ? "#0F1C23" : "#94A3B8"}
+                  size={18}
                 />
-                <Text
-                  className={cn(
-                    "text-2xl font-bold",
-                    pricingType === "hour" ? "text-primary" : "text-foreground",
-                  )}
-                >
-                  ${vehicle.pricePerHour}
-                </Text>
-                <Text className="text-sm text-muted-foreground">per hour</Text>
+                <View>
+                  <Text
+                    className={cn(
+                      "text-xs font-medium",
+                      pricingType === "hour"
+                        ? "text-slate-800"
+                        : "text-slate-500",
+                    )}
+                  >
+                    Hourly
+                  </Text>
+                  <Text
+                    className={cn(
+                      "text-lg font-bold -mt-1",
+                      pricingType === "hour" ? "text-[#0F1C23]" : "text-white",
+                    )}
+                  >
+                    ${vehicle.pricePerHour}
+                  </Text>
+                </View>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setPricingType("day")}
                 className={cn(
-                  "flex-1 rounded-xl p-4 items-center border",
-                  pricingType === "day"
-                    ? "border-primary bg-primary/5"
-                    : "border-border",
+                  "flex-1 flex-row items-center justify-center gap-2 py-4 rounded-xl",
+                  pricingType === "day" ? "bg-[#22D3EE]" : "bg-transparent",
                 )}
               >
                 <Calendar
-                  color={pricingType === "day" ? "#000" : "#6b7280"}
-                  size={20}
-                  style={{ marginBottom: 4 }}
+                  color={pricingType === "day" ? "#0F1C23" : "#94A3B8"}
+                  size={18}
                 />
-                <Text
-                  className={cn(
-                    "text-2xl font-bold",
-                    pricingType === "day" ? "text-primary" : "text-foreground",
-                  )}
-                >
-                  ${vehicle.pricePerDay}
-                </Text>
-                <Text className="text-sm text-muted-foreground">per day</Text>
+                <View>
+                  <Text
+                    className={cn(
+                      "text-xs font-medium",
+                      pricingType === "day"
+                        ? "text-slate-800"
+                        : "text-slate-500",
+                    )}
+                  >
+                    Daily
+                  </Text>
+                  <Text
+                    className={cn(
+                      "text-lg font-bold -mt-1",
+                      pricingType === "day" ? "text-[#0F1C23]" : "text-white",
+                    )}
+                  >
+                    ${vehicle.pricePerDay}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Bottom action */}
-      <View className="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-4 pb-8">
-        <View className="flex-row items-center gap-4">
+      {/* Sticky Bottom Footer */}
+      <View
+        className="absolute bottom-0 left-0 right-0 bg-[#0F1C23] border-t border-slate-800 px-5 pt-4"
+        style={{ paddingBottom: insets.bottom + 16 }}
+      >
+        <View className="flex-row items-center justify-between gap-6">
           <View>
-            <Text className="text-sm text-muted-foreground">
-              {pricingType === "hour" ? "Per hour" : "Per day"}
+            <Text className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
+              Total Price
             </Text>
-            <Text className="text-2xl font-bold text-primary">
-              $
-              {pricingType === "hour"
-                ? vehicle.pricePerHour
-                : vehicle.pricePerDay}
-              <Text className="text-sm font-normal text-muted-foreground">
-                {pricingType === "hour" ? "/hr" : "/day"}
+            <View className="flex-row items-baseline gap-1">
+              <Text className="text-3xl font-bold text-[#22D3EE]">
+                $
+                {pricingType === "hour"
+                  ? vehicle.pricePerHour
+                  : vehicle.pricePerDay}
               </Text>
-            </Text>
+              <Text className="text-sm font-medium text-slate-400">
+                /{pricingType === "hour" ? "hr" : "day"}
+              </Text>
+            </View>
           </View>
-          <Button
-            className="flex-1 h-14"
+
+          <TouchableOpacity
             disabled={!vehicle.isAvailable}
             onPress={() => navigation.navigate("Booking", { id: vehicle.id })}
+            className={cn(
+              "flex-1 bg-[#22D3EE] h-14 rounded-2xl items-center justify-center",
+              !vehicle.isAvailable && "opacity-50",
+            )}
           >
-            <Text className="text-primary-foreground font-bold text-lg">
-              {vehicle.isAvailable ? "Book Now" : "Not Available"}
+            <Text className="text-[#0F1C23] font-bold text-lg">
+              {vehicle.isAvailable ? "Book Now" : "Unavailable"}
             </Text>
-          </Button>
+          </TouchableOpacity>
         </View>
       </View>
     </View>

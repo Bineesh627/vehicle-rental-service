@@ -1,8 +1,8 @@
-import React from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
-import { Car, Bike, Fuel, Users, Settings2 } from "lucide-react-native";
-import { Vehicle } from "@/types";
 import { cn } from "@/lib/utils";
+import { Vehicle } from "@/types";
+import { Bike, Car, Fuel, Settings2, Users } from "lucide-react-native";
+import React from "react";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -13,89 +13,81 @@ export const VehicleCard = ({ vehicle, onClick }: VehicleCardProps) => {
   return (
     <TouchableOpacity
       onPress={onClick}
-      className="overflow-hidden rounded-2xl bg-card shadow-sm mb-4 border border-border"
+      className="overflow-hidden rounded-3xl bg-[#16202C] mb-4"
     >
-      <View className="relative h-44">
+      <View className="relative h-48">
         <Image
           source={{ uri: vehicle.images[0] }}
           className="h-full w-full"
           resizeMode="cover"
         />
-        <View className="absolute left-3 top-3">
-          <View className="flex-row items-center gap-1.5 rounded-lg bg-black/50 px-2.5 py-1.5">
+
+        {/* Type Badge - Top Left */}
+        <View className="absolute left-4 top-4">
+          <View className="flex-row items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur-sm">
             {vehicle.type === "car" ? (
-              <Car color="white" size={16} />
+              <Car color="white" size={14} />
             ) : (
-              <Bike color="white" size={16} />
+              <Bike color="white" size={14} />
             )}
             <Text className="text-xs font-medium text-white capitalize">
               {vehicle.type}
             </Text>
           </View>
         </View>
-        <View className="absolute right-3 top-3">
+
+        {/* Status Badge - Top Right */}
+        <View className="absolute right-4 top-4">
           <View
             className={cn(
-              "rounded-lg px-2.5 py-1.5",
-              vehicle.isAvailable ? "bg-green-100" : "bg-red-100",
+              "rounded-full px-3 py-1.5",
+              vehicle.isAvailable ? "bg-[#22C55E]" : "bg-red-500",
             )}
           >
-            <Text
-              className={cn(
-                "text-xs font-semibold",
-                vehicle.isAvailable ? "text-green-700" : "text-red-700",
-              )}
-            >
+            <Text className="text-xs font-bold text-white">
               {vehicle.isAvailable ? "Available" : "Booked"}
             </Text>
           </View>
         </View>
       </View>
 
-      <View className="p-4">
-        <View className="flex-row items-start justify-between">
+      <View className="p-5">
+        <View className="flex-row items-start justify-between mb-4">
           <View>
-            <Text className="text-lg font-bold text-foreground">
+            <Text className="text-xl font-bold text-white mb-1">
               {vehicle.name}
             </Text>
-            <Text className="text-sm text-muted-foreground">
-              {vehicle.brand}
-            </Text>
-            {vehicle.vehicleNumber && (
-              <Text className="text-xs font-medium text-primary mt-1">
-                {vehicle.vehicleNumber}
-              </Text>
-            )}
+            <Text className="text-sm text-slate-400">{vehicle.brand}</Text>
           </View>
           <View className="items-end">
-            <Text className="text-lg font-bold text-primary">
+            <Text className="text-xl font-bold text-[#22D3EE]">
               ${vehicle.pricePerHour}
             </Text>
-            <Text className="text-xs text-muted-foreground">/hour</Text>
+            <Text className="text-xs text-slate-400">/hour</Text>
           </View>
         </View>
 
-        <View className="mt-4 flex-row gap-3">
+        <View className="flex-row gap-3">
           {vehicle.fuelType && (
-            <View className="flex-row items-center gap-1.5 rounded-lg bg-secondary px-2.5 py-1.5">
-              <Fuel color="#6b7280" size={14} />
-              <Text className="text-xs font-medium text-muted-foreground">
+            <View className="flex-row items-center gap-2 rounded-full bg-[#0F1C23] px-3 py-2 border border-slate-700/50">
+              <Fuel color="#94A3B8" size={14} />
+              <Text className="text-xs font-medium text-slate-300">
                 {vehicle.fuelType}
               </Text>
             </View>
           )}
           {vehicle.transmission && (
-            <View className="flex-row items-center gap-1.5 rounded-lg bg-secondary px-2.5 py-1.5">
-              <Settings2 color="#6b7280" size={14} />
-              <Text className="text-xs font-medium text-muted-foreground">
+            <View className="flex-row items-center gap-2 rounded-full bg-[#0F1C23] px-3 py-2 border border-slate-700/50">
+              <Settings2 color="#94A3B8" size={14} />
+              <Text className="text-xs font-medium text-slate-300">
                 {vehicle.transmission}
               </Text>
             </View>
           )}
           {vehicle.seating && (
-            <View className="flex-row items-center gap-1.5 rounded-lg bg-secondary px-2.5 py-1.5">
-              <Users color="#6b7280" size={14} />
-              <Text className="text-xs font-medium text-muted-foreground">
+            <View className="flex-row items-center gap-2 rounded-full bg-[#0F1C23] px-3 py-2 border border-slate-700/50">
+              <Users color="#94A3B8" size={14} />
+              <Text className="text-xs font-medium text-slate-300">
                 {vehicle.seating}
               </Text>
             </View>

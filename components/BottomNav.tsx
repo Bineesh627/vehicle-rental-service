@@ -63,7 +63,7 @@ export const BottomNav = ({
                 {Icon &&
                   Icon({
                     focused: isFocused,
-                    color: isFocused ? "#FFFFFF" : "#6b7280",
+                    color: isFocused ? "#22D3EE" : "#94A3B8",
                     size: 20,
                   })}
               </View>
@@ -89,15 +89,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // bg-card/95
+    backgroundColor: "#0F1C23", // Deep Slate/Teal
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb", // border-border
+    borderTopColor: "#1E293B", // border-slate-800
+    paddingBottom: 0,
   },
   navInner: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    paddingVertical: 8,
+    paddingVertical: 12,
     maxWidth: 500,
     alignSelf: "center",
     width: "100%",
@@ -109,14 +110,14 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     padding: 8,
-    borderRadius: 12, // rounded-xl
+    borderRadius: 30, // rounded-full
   },
   activeIconContainer: {
-    backgroundColor: "#3b82f6", // Your primary color
-    shadowColor: "#3b82f6",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
+    backgroundColor: "rgba(34, 211, 238, 0.1)", // Cyan with opacity
+    shadowColor: "#22D3EE",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
     elevation: 5,
   },
   label: {
@@ -124,9 +125,9 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   activeLabel: {
-    color: "#3b82f6", // text-primary
+    color: "#22D3EE", // Cyan
   },
   inactiveLabel: {
-    color: "#6b7280", // text-muted-foreground
+    color: "#94A3B8", // Slate-400
   },
 });

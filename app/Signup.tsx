@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AuthStackParamList } from "@/navigation/types";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
+  ArrowLeftRight,
   ArrowRight,
   Chrome,
   Eye,
@@ -59,43 +59,45 @@ export default function Signup() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-[#0F1C23]">
       <ScrollView contentContainerClassName="flex-grow justify-center px-6 py-12">
         <View className="mb-8 items-center">
-          <View className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-sm">
-            <User color="white" size={32} />
+          <View className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-[#22D3EE] shadow-[0_0_20px_rgba(34,211,238,0.3)]">
+            <ArrowLeftRight color="#0F1C23" size={32} strokeWidth={2.5} />
           </View>
-          <Text className="text-3xl font-bold text-foreground">
+          <Text className="text-3xl font-bold text-white mb-2">
             Create Account
           </Text>
-          <Text className="mt-2 text-muted-foreground text-center">
+          <Text className="text-slate-400 text-base text-center">
             Start your journey with us today
           </Text>
         </View>
 
         {/* Form */}
-        <View className="space-y-4">
+        <View className="gap-4">
           <View>
             <View className="absolute left-4 top-[18px] z-10">
-              <User color="#6b7280" size={20} />
+              <User color="#94A3B8" size={20} />
             </View>
             <Input
               placeholder="Full name"
+              placeholderTextColor="#64748B"
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
-              className="pl-12"
+              className="pl-12 bg-[#16202C] border-slate-700/50 text-white h-14 rounded-2xl focus:border-[#22D3EE]"
             />
           </View>
 
           <View>
             <View className="absolute left-4 top-[18px] z-10">
-              <Mail color="#6b7280" size={20} />
+              <Mail color="#94A3B8" size={20} />
             </View>
             <Input
               placeholder="Email address"
+              placeholderTextColor="#64748B"
               value={formData.email}
               onChangeText={(text) => setFormData({ ...formData, email: text })}
-              className="pl-12"
+              className="pl-12 bg-[#16202C] border-slate-700/50 text-white h-14 rounded-2xl focus:border-[#22D3EE]"
               autoCapitalize="none"
               keyboardType="email-address"
             />
@@ -103,84 +105,87 @@ export default function Signup() {
 
           <View>
             <View className="absolute left-4 top-[18px] z-10">
-              <Phone color="#6b7280" size={20} />
+              <Phone color="#94A3B8" size={20} />
             </View>
             <Input
               placeholder="Phone number (optional)"
+              placeholderTextColor="#64748B"
               value={formData.phone}
               onChangeText={(text) => setFormData({ ...formData, phone: text })}
-              className="pl-12"
+              className="pl-12 bg-[#16202C] border-slate-700/50 text-white h-14 rounded-2xl focus:border-[#22D3EE]"
               keyboardType="phone-pad"
             />
           </View>
 
           <View>
             <View className="absolute left-4 top-[18px] z-10">
-              <Lock color="#6b7280" size={20} />
+              <Lock color="#94A3B8" size={20} />
             </View>
             <Input
               secureTextEntry={!showPassword}
               placeholder="Create password"
+              placeholderTextColor="#64748B"
               value={formData.password}
               onChangeText={(text) =>
                 setFormData({ ...formData, password: text })
               }
-              className="pl-12 pr-12"
+              className="pl-12 pr-12 bg-[#16202C] border-slate-700/50 text-white h-14 rounded-2xl focus:border-[#22D3EE]"
             />
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
               className="absolute right-4 top-[18px] z-10"
             >
               {showPassword ? (
-                <EyeOff color="#6b7280" size={20} />
+                <EyeOff color="#94A3B8" size={20} />
               ) : (
-                <Eye color="#6b7280" size={20} />
+                <Eye color="#94A3B8" size={20} />
               )}
             </TouchableOpacity>
           </View>
 
-          <Button onPress={handleSignup} className="w-full mt-4" size="lg">
-            <Text className="text-primary-foreground font-semibold mr-2">
+          <TouchableOpacity
+            onPress={handleSignup}
+            className="w-full mt-4 bg-[#22D3EE] h-14 rounded-full items-center justify-center flex-row gap-2 active:opacity-90 shadow-[0_0_20px_rgba(34,211,238,0.2)]"
+          >
+            <Text className="text-[#0F1C23] text-lg font-bold">
               Create Account
             </Text>
-            <ArrowRight color="white" size={20} />
-          </Button>
+            <ArrowRight color="#0F1C23" size={20} strokeWidth={2.5} />
+          </TouchableOpacity>
         </View>
 
         {/* Divider */}
-        <View className="my-6 flex-row items-center gap-4">
-          <View className="h-[1px] flex-1 bg-border" />
-          <Text className="text-sm text-muted-foreground">
-            or continue with
-          </Text>
-          <View className="h-[1px] flex-1 bg-border" />
+        <View className="my-8 flex-row items-center gap-4">
+          <View className="h-[1px] flex-1 bg-slate-800" />
+          <Text className="text-sm text-slate-500">or continue with</Text>
+          <View className="h-[1px] flex-1 bg-slate-800" />
         </View>
 
         {/* Social signup */}
-        <Button
-          variant="outline"
-          className="w-full flex-row"
-          size="lg"
+        <TouchableOpacity
           onPress={handleGoogleSignup}
+          className="w-full h-14 rounded-full bg-[#16202C] border border-slate-700/50 items-center justify-center flex-row gap-3 active:opacity-80"
         >
-          <Chrome color="black" size={20} style={{ marginRight: 8 }} />
-          <Text>Continue with Google</Text>
-        </Button>
+          <Chrome color="white" size={20} />
+          <Text className="text-white font-semibold text-base">
+            Continue with Google
+          </Text>
+        </TouchableOpacity>
 
         {/* Terms */}
-        <View className="mt-6 px-4">
-          <Text className="text-center text-xs text-muted-foreground">
-            By signing up, you agree to our Terms of Service and Privacy Policy
+        <View className="mt-8 px-4">
+          <Text className="text-center text-xs text-slate-500 leading-5">
+            By signing up, you agree to our{" "}
+            <Text className="text-[#22D3EE]">Terms of Service</Text> and{" "}
+            <Text className="text-[#22D3EE]">Privacy Policy</Text>
           </Text>
         </View>
 
         {/* Login link */}
-        <View className="mt-6 flex-row justify-center">
-          <Text className="text-sm text-muted-foreground">
-            Already have an account?{" "}
-          </Text>
+        <View className="mt-6 flex-row justify-center items-center">
+          <Text className="text-slate-400">Already have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text className="text-sm font-semibold text-primary">Sign in</Text>
+            <Text className="font-bold text-[#22D3EE]">Sign in</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

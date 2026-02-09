@@ -9,8 +9,11 @@ export interface RentalShop {
   phone?: string;
   image?: string;
   rating?: number;
-  reviews?: number;
+  reviewCount?: number;
   vehicleCount: { cars: number; bikes: number };
+  distance?: number;
+  operatingHours?: string;
+  isOpen?: boolean;
 }
 
 export interface Vehicle {
