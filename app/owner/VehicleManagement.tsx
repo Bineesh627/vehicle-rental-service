@@ -25,6 +25,7 @@ import { useState } from "react";
 import {
   Image,
   Modal,
+  Pressable,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -32,6 +33,46 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+
+const TabItem = ({
+  tab,
+  isActive,
+  count,
+  onPress,
+}: {
+  tab: string;
+  isActive: boolean;
+  count: number;
+  onPress: () => void;
+}) => (
+  <Pressable
+    onPress={onPress}
+    style={{
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: "center",
+      borderRadius: 8,
+      backgroundColor: isActive ? "hsl(var(--background))" : "transparent",
+      shadowColor: isActive ? "#000" : undefined,
+      shadowOffset: isActive ? { width: 0, height: 1 } : undefined,
+      shadowOpacity: isActive ? 0.05 : undefined,
+      shadowRadius: isActive ? 2 : undefined,
+      elevation: isActive ? 2 : undefined,
+    }}
+  >
+    <Text
+      style={{
+        textTransform: "capitalize",
+        fontWeight: "500",
+        color: isActive
+          ? "hsl(var(--foreground))"
+          : "hsl(var(--muted-foreground))",
+      }}
+    >
+      {tab} ({count})
+    </Text>
+  </Pressable>
+);
 
 export default function VehicleManagement() {
   const router = useRouter();
@@ -287,27 +328,17 @@ export default function VehicleManagement() {
           {/* Tabs */}
           <View className="flex-row mb-4 bg-secondary/50 p-1 rounded-xl">
             {["all", "car", "bike"].map((tab) => (
-              <TouchableOpacity
+              <TabItem
                 key={tab}
-                className={`flex-1 py-2 items-center rounded-lg ${
-                  activeTab === tab ? "bg-background shadow-sm" : ""
-                }`}
-                onPress={() => setActiveTab(tab)}
-              >
-                <Text
-                  className={`capitalize font-medium ${
-                    activeTab === tab
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {tab} (
-                  {tab === "all"
+                tab={tab}
+                isActive={activeTab === tab}
+                count={
+                  tab === "all"
                     ? vehicles.length
-                    : vehicles.filter((v) => v.type === tab).length}
-                  )
-                </Text>
-              </TouchableOpacity>
+                    : vehicles.filter((v) => v.type === tab).length
+                }
+                onPress={() => setActiveTab(tab)}
+              />
             ))}
           </View>
 

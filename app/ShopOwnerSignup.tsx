@@ -19,7 +19,7 @@ import Toast from "react-native-toast-message";
 
 type ShopOwnerSignupNavigationProp = NativeStackNavigationProp<
   AuthStackParamList,
-  "ShopSignup"
+  "ShopOwnerSignup"
 >;
 
 export default function ShopOwnerSignup() {

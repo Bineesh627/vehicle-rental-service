@@ -24,13 +24,13 @@ import Toast from "react-native-toast-message";
 
 const menuItems = [
   { icon: User, label: "Edit Profile", path: "EditProfile" },
-  { icon: FileText, label: "KYC Verification", path: "KYC" },
+  { icon: FileText, label: "KYC Verification", path: "KYCVerification" },
   { icon: MapPin, label: "Saved Locations", path: "SavedLocations" },
   { icon: CreditCard, label: "Payment Methods", path: "PaymentMethods" },
   { icon: Bell, label: "Notifications", path: "Notifications" },
   { icon: Settings, label: "Settings", path: "Settings" },
-  { icon: HelpCircle, label: "Help & Support", path: "Support" },
-  { icon: Shield, label: "Privacy & Security", path: "Privacy" },
+  { icon: HelpCircle, label: "Help & Support", path: "HelpSupport" },
+  { icon: Shield, label: "Privacy & Security", path: "PrivacySecurity" },
 ];
 
 export default function Profile() {
@@ -126,7 +126,7 @@ export default function Profile() {
             {menuItems.map((item, index) => (
               <TouchableOpacity
                 key={item.label}
-                onPress={() => {}} // Navigate to respective screens if they exist
+                onPress={() => router.push(`/user/${item.path}` as any)}
                 className="flex-row w-full items-center gap-4 border-b border-border p-4 bg-card"
               >
                 <View className="rounded-xl bg-secondary p-3">

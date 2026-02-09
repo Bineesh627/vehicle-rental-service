@@ -232,7 +232,9 @@ export const Login = () => {
           <Text className="text-sm text-muted-foreground">
             Own a rental shop?{" "}
           </Text>
-          <TouchableOpacity onPress={() => navigation.navigate("ShopSignup")}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("ShopOwnerSignup")}
+          >
             <Text className="text-sm font-semibold text-purple-500">
               Register as partner
             </Text>

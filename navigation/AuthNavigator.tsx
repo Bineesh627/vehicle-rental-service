@@ -11,7 +11,7 @@ export const AuthNavigator = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Signup" component={Signup} />
-      <Stack.Screen name="ShopSignup" component={ShopOwnerSignup} />
+      <Stack.Screen name="ShopOwnerSignup" component={ShopOwnerSignup} />
     </Stack.Navigator>
   );
 };

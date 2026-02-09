@@ -12,7 +12,7 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
-  ShopSignup: undefined;
+  ShopOwnerSignup: undefined;
 };
 
 export type UserTabParamList = {
