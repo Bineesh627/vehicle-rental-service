@@ -1,3 +1,19 @@
+import { rentalShops, vehicles } from "@/data/mockData";
+import { UserStackParamList } from "@/navigation/types";
+import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import { useRouter } from "expo-router";
+import {
+  ArrowLeft,
+  Calendar as CalendarIcon,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  CreditCard,
+  MapPin,
+  Smartphone,
+  Truck,
+  Wallet,
+} from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Alert,
@@ -8,33 +24,15 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-// FIX 1: Use safe-area-context instead of react-native's SafeAreaView
-import { UserStackParamList } from "@/navigation/types";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  CreditCard,
-  MapPin,
-  Package,
-  Smartphone,
-  Truck,
-  Wallet,
-} from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Ensure these paths are correct in your project
-import { Button } from "@/components/ui/button";
+// Assuming these components handle their own modal styling,
+// but we'll focus on the main screen styling here.
 import { DeliveryLocationSelector } from "@/components/user/DeliveryLocationSelector";
-import { rentalShops, vehicles } from "@/data/mockData";
-import { useRouter } from "expo-router";
 
 type PaymentMethod = "card" | "upi" | "wallet";
 type DeliveryOption = "self" | "delivery";
-type PickupOption = "self" | "pickup";
 
-// FIX 2: Changed to default export function
 export default function Booking() {
   const navigation = useNavigation();
   const router = useRouter();
@@ -43,17 +41,17 @@ export default function Booking() {
   const { id, type } = route.params;
   const bookingType = type === "day" ? "day" : "hour";
 
-  const [selectedDate, setSelectedDate] = useState("Today");
+  // Calendar State
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
   const [selectedTime, setSelectedTime] = useState("10:00 AM");
   const [duration, setDuration] = useState(bookingType === "day" ? 1 : 4);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
 
   const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>("self");
-  const [pickupOption, setPickupOption] = useState<PickupOption>("self");
   const [deliveryAddress, setDeliveryAddress] = useState("");
-  const [pickupAddress, setPickupAddress] = useState("");
   const [showDeliverySelector, setShowDeliverySelector] = useState(false);
-  const [showPickupSelector, setShowPickupSelector] = useState(false);
 
   const vehicle = vehicles.find((v) => v.id === id);
   const shop = vehicle
@@ -71,12 +69,9 @@ export default function Booking() {
   const pricePerUnit =
     bookingType === "day" ? vehicle.pricePerDay : vehicle.pricePerHour;
   const deliveryFee = deliveryOption === "delivery" ? 10 : 0;
-  const pickupFee = pickupOption === "pickup" ? 10 : 0;
   const serviceFee = 5;
-  const totalPrice =
-    pricePerUnit * duration + deliveryFee + pickupFee + serviceFee;
+  const totalPrice = pricePerUnit * duration + deliveryFee + serviceFee;
 
-  const dates = ["Today", "Tomorrow", "Wed, 5 Feb", "Thu, 6 Feb"];
   const times = [
     "9:00 AM",
     "10:00 AM",
@@ -86,19 +81,75 @@ export default function Booking() {
     "4:00 PM",
   ];
 
+  // Calendar Logic
+  const months = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+  ];
+
+  const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+  const generateCalendar = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startingDayIndex = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+
+    const calendarDays = [];
+    // Padding for days before the 1st
+    for (let i = 0; i < startingDayIndex; i++) {
+      calendarDays.push(null);
+    }
+    // Actual days
+    for (let i = 1; i <= daysInMonth; i++) {
+      calendarDays.push(new Date(year, month, i));
+    }
+    return calendarDays;
+  };
+
+  const changeMonth = (direction: -1 | 1) => {
+    const newDate = new Date(currentMonth);
+    newDate.setMonth(newDate.getMonth() + direction);
+    setCurrentMonth(newDate);
+  };
+
+  const isSameDay = (d1: Date, d2: Date) => {
+    return (
+      d1.getDate() === d2.getDate() &&
+      d1.getMonth() === d2.getMonth() &&
+      d1.getFullYear() === d2.getFullYear()
+    );
+  };
+
   const handleConfirmBooking = () => {
     if (deliveryOption === "delivery" && !deliveryAddress) {
       Alert.alert("Error", "Please set a delivery location");
       return;
     }
-    if (pickupOption === "pickup" && !pickupAddress) {
-      Alert.alert("Error", "Please set a pickup location");
-      return;
-    }
 
     Alert.alert(
       "Booking confirmed!",
-      `Your ${vehicle.name} is booked for ${duration} ${bookingType === "day" ? (duration === 1 ? "day" : "days") : duration === 1 ? "hour" : "hours"}`,
+      `Your ${vehicle.name} is booked for ${duration} ${
+        bookingType === "day"
+          ? duration === 1
+            ? "day"
+            : "days"
+          : duration === 1
+            ? "hour"
+            : "hours"
+      } on ${selectedDate.toLocaleDateString()}`,
       [{ text: "OK", onPress: () => router.replace("/(tabs)/bookings") }],
     );
   };
@@ -111,7 +162,7 @@ export default function Booking() {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <ArrowLeft size={20} color="#000" />
+          <ArrowLeft size={20} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Book Vehicle</Text>
       </View>
@@ -128,53 +179,87 @@ export default function Booking() {
               <Text style={styles.vehicleName}>{vehicle.name}</Text>
               <Text style={styles.mutedText}>{vehicle.model}</Text>
               <View style={styles.locationRow}>
-                <MapPin size={14} color="#6B7280" />
+                <MapPin size={14} color="#94a3b8" />
                 <Text style={styles.locationText}>{shop.name}</Text>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Date selection */}
+        {/* Date selection (Calendar UI) */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Calendar size={20} color="#2563EB" />
+            <CalendarIcon size={20} color="#2dd4bf" />
             <Text style={styles.sectionTitle}>Select Date</Text>
           </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipContainer}
-          >
-            {dates.map((date) => (
+          <View style={styles.calendarCard}>
+            {/* Calendar Header */}
+            <View style={styles.calendarHeader}>
               <TouchableOpacity
-                key={date}
-                onPress={() => setSelectedDate(date)}
-                style={[
-                  styles.chip,
-                  selectedDate === date
-                    ? styles.chipActive
-                    : styles.chipInactive,
-                ]}
+                onPress={() => changeMonth(-1)}
+                style={styles.monthNavButton}
               >
-                <Text
-                  style={
-                    selectedDate === date
-                      ? styles.chipTextActive
-                      : styles.chipTextInactive
-                  }
-                >
-                  {date}
-                </Text>
+                <ChevronLeft size={20} color="#ffffff" />
               </TouchableOpacity>
-            ))}
-          </ScrollView>
+              <Text style={styles.monthTitle}>
+                {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
+              </Text>
+              <TouchableOpacity
+                onPress={() => changeMonth(1)}
+                style={styles.monthNavButton}
+              >
+                <ChevronRight size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Week Days */}
+            <View style={styles.weekDaysRow}>
+              {weekDays.map((day) => (
+                <Text key={day} style={styles.weekDayText}>
+                  {day}
+                </Text>
+              ))}
+            </View>
+
+            {/* Days Grid */}
+            <View style={styles.daysGrid}>
+              {generateCalendar().map((date, index) => {
+                if (!date) {
+                  return <View key={`empty-${index}`} style={styles.dayCell} />;
+                }
+                const isSelected = isSameDay(date, selectedDate);
+                const isToday = isSameDay(date, new Date());
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.dayCell,
+                      isSelected && styles.selectedDayCell,
+                      !isSelected && isToday && styles.todayDayCell,
+                    ]}
+                    onPress={() => setSelectedDate(date)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayText,
+                        isSelected && styles.selectedDayText,
+                        !isSelected && isToday && styles.todayDayText,
+                      ]}
+                    >
+                      {date.getDate()}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
         </View>
 
         {/* Time selection */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Clock size={20} color="#2563EB" />
+            <Clock size={20} color="#2dd4bf" />
             <Text style={styles.sectionTitle}>Select Time</Text>
           </View>
           <View style={styles.grid}>
@@ -207,9 +292,9 @@ export default function Booking() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             {bookingType === "day" ? (
-              <Calendar size={20} color="#2563EB" />
+              <CalendarIcon size={20} color="#2dd4bf" />
             ) : (
-              <Clock size={20} color="#2563EB" />
+              <Clock size={20} color="#2dd4bf" />
             )}
             <Text style={styles.sectionTitle}>
               Duration ({bookingType === "day" ? "days" : "hours"})
@@ -276,7 +361,7 @@ export default function Booking() {
                 >
                   <method.icon
                     size={20}
-                    color={paymentMethod === method.id ? "#FFF" : "#6B7280"}
+                    color={paymentMethod === method.id ? "#0f172a" : "#64748b"}
                   />
                 </View>
                 <Text style={styles.paymentLabel}>{method.label}</Text>
@@ -300,7 +385,7 @@ export default function Booking() {
         {/* Delivery Option */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Truck size={20} color="#2563EB" />
+            <Truck size={20} color="#2dd4bf" />
             <Text style={styles.sectionTitle}>Vehicle Delivery</Text>
           </View>
           <View style={styles.grid}>
@@ -309,15 +394,15 @@ export default function Booking() {
               style={[
                 styles.gridItemHalf,
                 deliveryOption === "self"
-                  ? styles.chipActive
-                  : styles.chipInactive,
+                  ? styles.outlineActive
+                  : styles.outlineInactive,
               ]}
             >
               <Text
                 style={
                   deliveryOption === "self"
-                    ? styles.chipTextActive
-                    : styles.chipTextInactive
+                    ? styles.outlineTextActive
+                    : styles.outlineTextInactive
                 }
               >
                 Self Pickup
@@ -331,15 +416,15 @@ export default function Booking() {
               style={[
                 styles.gridItemHalf,
                 deliveryOption === "delivery"
-                  ? styles.chipActive
-                  : styles.chipInactive,
+                  ? styles.outlineActive
+                  : styles.outlineInactive,
               ]}
             >
               <Text
                 style={
                   deliveryOption === "delivery"
-                    ? styles.chipTextActive
-                    : styles.chipTextInactive
+                    ? styles.outlineTextActive
+                    : styles.outlineTextInactive
                 }
               >
                 Home Delivery (+$10)
@@ -352,72 +437,9 @@ export default function Booking() {
               onPress={() => setShowDeliverySelector(true)}
               style={styles.locationSelectorBtn}
             >
-              <MapPin size={20} color="#2563EB" />
+              <MapPin size={20} color="#2dd4bf" />
               <Text style={styles.locationSelectorText}>
                 {deliveryAddress || "Set delivery location..."}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Pickup Option */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Package size={20} color="#2563EB" />
-            <Text style={styles.sectionTitle}>Vehicle Return</Text>
-          </View>
-          <View style={styles.grid}>
-            <TouchableOpacity
-              onPress={() => setPickupOption("self")}
-              style={[
-                styles.gridItemHalf,
-                pickupOption === "self"
-                  ? styles.chipActive
-                  : styles.chipInactive,
-              ]}
-            >
-              <Text
-                style={
-                  pickupOption === "self"
-                    ? styles.chipTextActive
-                    : styles.chipTextInactive
-                }
-              >
-                Return to Shop
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => {
-                setPickupOption("pickup");
-                if (!pickupAddress) setShowPickupSelector(true);
-              }}
-              style={[
-                styles.gridItemHalf,
-                pickupOption === "pickup"
-                  ? styles.chipActive
-                  : styles.chipInactive,
-              ]}
-            >
-              <Text
-                style={
-                  pickupOption === "pickup"
-                    ? styles.chipTextActive
-                    : styles.chipTextInactive
-                }
-              >
-                Schedule Pickup (+$10)
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {pickupOption === "pickup" && (
-            <TouchableOpacity
-              onPress={() => setShowPickupSelector(true)}
-              style={styles.locationSelectorBtn}
-            >
-              <MapPin size={20} color="#2563EB" />
-              <Text style={styles.locationSelectorText}>
-                {pickupAddress || "Set pickup location..."}
               </Text>
             </TouchableOpacity>
           )}
@@ -445,12 +467,6 @@ export default function Booking() {
               <Text style={styles.summaryValue}>${deliveryFee}</Text>
             </View>
           )}
-          {pickupFee > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.mutedText}>Pickup fee</Text>
-              <Text style={styles.summaryValue}>${pickupFee}</Text>
-            </View>
-          )}
           <View style={styles.summaryRow}>
             <Text style={styles.mutedText}>Service fee</Text>
             <Text style={styles.summaryValue}>${serviceFee}</Text>
@@ -467,11 +483,14 @@ export default function Booking() {
 
       {/* Bottom action */}
       <View style={styles.bottomBar}>
-        <Button className="w-full" onPress={handleConfirmBooking}>
-          <Text style={{ color: "white", fontWeight: "bold" }}>
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={handleConfirmBooking}
+        >
+          <Text style={styles.confirmButtonText}>
             Confirm Booking • ${totalPrice}
           </Text>
-        </Button>
+        </TouchableOpacity>
       </View>
 
       <DeliveryLocationSelector
@@ -484,68 +503,69 @@ export default function Booking() {
         }}
         onClose={() => setShowDeliverySelector(false)}
       />
-
-      <DeliveryLocationSelector
-        visible={showPickupSelector}
-        type="pickup"
-        currentAddress={pickupAddress}
-        onSelect={(address) => {
-          setPickupAddress(address);
-          setShowPickupSelector(false);
-        }}
-        onClose={() => setShowPickupSelector(false)}
-      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
-  centerContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  centerContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "#0f172a", // Dark header
     borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
+    borderBottomColor: "#1e293b",
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "bold",
     marginLeft: 16,
-    color: "#111827",
+    color: "#ffffff",
   },
-  backButton: { padding: 10, borderRadius: 12, backgroundColor: "#F3F4F6" },
+  backButton: {
+    padding: 10,
+    borderRadius: 12,
+    backgroundColor: "#1e293b", // Slate-800
+  },
   scrollContent: { padding: 16 },
   card: {
-    backgroundColor: "#FFF",
+    backgroundColor: "#1e293b", // Slate-800
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   row: { flexDirection: "row", gap: 16 },
   vehicleImage: {
     width: 100,
     height: 80,
     borderRadius: 12,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#334155",
   },
   vehicleInfo: { flex: 1 },
-  vehicleName: { fontSize: 18, fontWeight: "bold", color: "#111827" },
-  mutedText: { fontSize: 14, color: "#6B7280" },
+  vehicleName: { fontSize: 18, fontWeight: "bold", color: "#ffffff" },
+  mutedText: { fontSize: 14, color: "#94a3b8" }, // Slate-400
   locationRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     marginTop: 4,
   },
-  locationText: { fontSize: 12, color: "#6B7280" },
+  locationText: { fontSize: 12, color: "#94a3b8" },
   section: { marginBottom: 24 },
   sectionHeader: {
     flexDirection: "row",
@@ -553,22 +573,95 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 16, fontWeight: "600", color: "#111827" },
-  chipContainer: { flexDirection: "row", gap: 8 },
-  chip: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 12,
-    marginRight: 8,
-  },
-  chipActive: { backgroundColor: "#2563EB" },
-  chipInactive: {
-    backgroundColor: "#FFF",
+  sectionTitle: { fontSize: 16, fontWeight: "600", color: "#ffffff" },
+  // Calendar Styles
+  calendarCard: {
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#334155",
   },
-  chipTextActive: { color: "#FFF", fontWeight: "600", fontSize: 14 },
-  chipTextInactive: { color: "#6B7280", fontWeight: "500", fontSize: 14 },
+  calendarHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  monthTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#ffffff",
+  },
+  monthNavButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "#0f172a",
+  },
+  weekDaysRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  weekDayText: {
+    color: "#94a3b8",
+    width: 32,
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  daysGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+  },
+  dayCell: {
+    width: "14.28%", // 7 days in a week
+    aspectRatio: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  selectedDayCell: {
+    backgroundColor: "#2dd4bf", // Teal
+    borderRadius: 20,
+  },
+  todayDayCell: {
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
+    borderRadius: 20,
+  },
+  dayText: {
+    color: "#ffffff",
+    fontSize: 14,
+  },
+  selectedDayText: {
+    color: "#0f172a", // Dark text on teal
+    fontWeight: "700",
+  },
+  todayDayText: {
+    color: "#2dd4bf",
+    fontWeight: "600",
+  },
+  // Time & other styles
+  chipActive: {
+    backgroundColor: "#2dd4bf", // Teal-400
+  },
+  chipInactive: {
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  chipTextActive: {
+    color: "#0f172a", // Dark text on active
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  chipTextInactive: {
+    color: "#94a3b8", // Slate-400
+    fontWeight: "500",
+    fontSize: 14,
+  },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   gridItem: {
     width: "31%",
@@ -582,42 +675,72 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
+  outlineActive: {
+    backgroundColor: "rgba(45, 212, 191, 0.05)",
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
+    borderRadius: 12,
+  },
+  outlineInactive: {
+    backgroundColor: "#1e293b",
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 12,
+  },
+  outlineTextActive: {
+    color: "#2dd4bf",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  outlineTextInactive: {
+    color: "#94a3b8",
+    fontWeight: "500",
+    fontSize: 14,
+  },
   durationControl: { flexDirection: "row", alignItems: "center", gap: 16 },
   counterButton: {
     width: 48,
     height: 48,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#334155", // Slate-700
     borderRadius: 12,
   },
-  counterButtonText: { fontSize: 24, fontWeight: "bold", color: "#111827" },
+  counterButtonText: { fontSize: 24, fontWeight: "bold", color: "#ffffff" },
   durationDisplay: {
     flex: 1,
     alignItems: "center",
     padding: 12,
-    backgroundColor: "#FFF",
+    backgroundColor: "#1e293b",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#334155",
   },
-  durationValue: { fontSize: 24, fontWeight: "bold", color: "#2563EB" },
-  paymentContainer: { gap: 8 },
+  durationValue: { fontSize: 24, fontWeight: "bold", color: "#2dd4bf" },
+  paymentContainer: { gap: 12 },
   paymentOption: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#E5E7EB",
-    backgroundColor: "#FFF",
+    backgroundColor: "#1e293b",
   },
-  paymentOptionActive: { borderColor: "#2563EB", backgroundColor: "#EFF6FF" },
-  paymentOptionInactive: { borderColor: "#E5E7EB" },
-  paymentIconBox: { padding: 8, borderRadius: 8, marginRight: 12 },
-  bgPrimary: { backgroundColor: "#2563EB" },
-  bgSecondary: { backgroundColor: "#F3F4F6" },
-  paymentLabel: { flex: 1, fontWeight: "500", color: "#111827" },
+  paymentOptionActive: {
+    borderColor: "#2dd4bf",
+    backgroundColor: "rgba(45, 212, 191, 0.05)",
+  },
+  paymentOptionInactive: {
+    borderColor: "#334155",
+  },
+  paymentIconBox: {
+    padding: 8,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  bgPrimary: { backgroundColor: "#2dd4bf" },
+  bgSecondary: { backgroundColor: "#334155" },
+  paymentLabel: { flex: 1, fontWeight: "500", color: "#ffffff" },
   radioOuter: {
     width: 20,
     height: 20,
@@ -626,37 +749,64 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  borderPrimary: { borderColor: "#2563EB", backgroundColor: "#2563EB" },
-  borderGray: { borderColor: "#E5E7EB" },
-  radioInner: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#FFF" },
+  borderPrimary: {
+    borderColor: "#2dd4bf",
+    backgroundColor: "transparent",
+  },
+  borderGray: { borderColor: "#64748b" },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#2dd4bf",
+  },
   locationSelectorBtn: {
     flexDirection: "row",
     alignItems: "center",
     padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
     borderStyle: "dashed",
     marginTop: 12,
   },
-  locationSelectorText: { marginLeft: 12, fontSize: 14, color: "#111827" },
+  locationSelectorText: { marginLeft: 12, fontSize: 14, color: "#ffffff" },
   summaryRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 8,
   },
-  summaryValue: { fontWeight: "500", color: "#111827" },
-  divider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 12 },
-  totalLabel: { fontSize: 18, fontWeight: "600", color: "#111827" },
-  totalValue: { fontSize: 18, fontWeight: "bold", color: "#2563EB" },
+  summaryValue: { fontWeight: "500", color: "#ffffff" },
+  divider: { height: 1, backgroundColor: "#334155", marginVertical: 12 },
+  totalLabel: { fontSize: 18, fontWeight: "600", color: "#ffffff" },
+  totalValue: { fontSize: 18, fontWeight: "bold", color: "#2dd4bf" },
   bottomBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
     padding: 16,
-    backgroundColor: "rgba(255,255,255,0.95)",
+    backgroundColor: "#0f172a",
     borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
+    borderTopColor: "#1e293b",
+  },
+  confirmButton: {
+    width: "100%",
+    backgroundColor: "#2dd4bf", // Teal-400
+    paddingVertical: 16,
+    borderRadius: 9999, // Pill shape
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#2dd4bf",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  confirmButtonText: {
+    color: "#0f172a", // Dark text
+    fontSize: 18,
+    fontWeight: "700",
   },
 });
