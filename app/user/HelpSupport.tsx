@@ -1,6 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -21,6 +18,7 @@ import {
   Linking,
   Modal,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -82,7 +80,7 @@ export default function HelpSupport() {
   const filteredFaqs = faqs.filter(
     (faq) =>
       faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.answer.toLowerCase().includes(searchQuery.toLowerCase()),
+      faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleSubmitTicket = () => {
@@ -126,51 +124,47 @@ export default function HelpSupport() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1 bg-background">
+    <View style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => router.navigate("profile" as never)}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
           >
-            <ArrowLeft size={20} className="text-foreground" />
-          </Button>
-          <Text className="text-lg font-bold text-foreground">
-            Help & Support
-          </Text>
+            <ArrowLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Help & Support</Text>
         </View>
 
         <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ gap: 24, paddingBottom: 40 }}
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
         >
           {/* Search */}
-          <View className="relative">
+          <View style={styles.searchContainer}>
             <Search
-              size={16}
-              className="absolute left-3 top-3.5 z-10 text-muted-foreground"
+              size={18}
+              color="#94a3b8"
+              style={styles.searchIcon}
             />
-            <Input
+            <TextInput
               placeholder="Search for help..."
+              placeholderTextColor="#64748b"
               value={searchQuery}
               onChangeText={setSearchQuery}
-              className="pl-10"
+              style={styles.searchInput}
             />
           </View>
 
           {/* Contact Options */}
-          <View className="flex-row gap-3">
-            <TouchableOpacity
-              className="flex-1 items-center justify-center p-4 rounded-xl border border-border bg-card gap-2"
-              onPress={handleCall}
-            >
-              <Phone size={20} className="text-green-500" />
-              <Text className="text-xs text-foreground">Call Us</Text>
+          <View style={styles.contactRow}>
+            <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
+              <Phone size={24} color="#22c55e" style={{ marginBottom: 8 }} />
+              <Text style={styles.contactButtonText}>Call Us</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 items-center justify-center p-4 rounded-xl border border-border bg-card gap-2"
+              style={styles.contactButton}
               onPress={() =>
                 Toast.show({
                   type: "info",
@@ -179,130 +173,114 @@ export default function HelpSupport() {
                 })
               }
             >
-              <MessageCircle size={20} className="text-primary" />
-              <Text className="text-xs text-foreground">Live Chat</Text>
+              <MessageCircle
+                size={24}
+                color="#2dd4bf"
+                style={{ marginBottom: 8 }}
+              />
+              <Text style={styles.contactButtonText}>Live Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              className="flex-1 items-center justify-center p-4 rounded-xl border border-border bg-card gap-2"
+              style={styles.contactButton}
               onPress={handleEmail}
             >
-              <Mail size={20} className="text-orange-500" />
-              <Text className="text-xs text-foreground">Email</Text>
+              <Mail size={24} color="#f97316" style={{ marginBottom: 8 }} />
+              <Text style={styles.contactButtonText}>Email</Text>
             </TouchableOpacity>
           </View>
 
           {/* Submit Ticket */}
-          <TouchableOpacity onPress={() => setShowContactDialog(true)}>
-            <Card className="border-border">
-              <CardContent className="p-4 flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3">
-                  <View className="h-10 w-10 rounded-xl bg-primary/10 items-center justify-center">
-                    <FileText size={20} className="text-primary" />
-                  </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Submit a Ticket
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
-                      Describe your issue in detail
-                    </Text>
-                  </View>
-                </View>
-                <ChevronRight size={20} className="text-muted-foreground" />
-              </CardContent>
-            </Card>
+          <TouchableOpacity
+            style={styles.ticketCard}
+            onPress={() => setShowContactDialog(true)}
+          >
+            <View style={styles.ticketCardContent}>
+              <View style={styles.iconContainer}>
+                <FileText size={20} color="#2dd4bf" />
+              </View>
+              <View style={styles.ticketTextContainer}>
+                <Text style={styles.ticketTitle}>Submit a Ticket</Text>
+                <Text style={styles.ticketSubtitle}>
+                  Describe your issue in detail
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={20} color="#94a3b8" />
           </TouchableOpacity>
 
           {/* FAQS */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center gap-2">
-                <HelpCircle size={16} className="text-foreground" />
-                <CardTitle className="text-base text-foreground">
-                  Frequently Asked Questions
-                </CardTitle>
-              </View>
-            </CardHeader>
-            <CardContent>
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <HelpCircle size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>Frequently Asked Questions</Text>
+            </View>
+            <View style={styles.cardBody}>
               {filteredFaqs.map((faq, index) => (
                 <View
                   key={index}
-                  className={`border-b border-border ${
-                    index === filteredFaqs.length - 1 ? "border-0" : ""
-                  }`}
+                  style={[
+                    styles.faqItem,
+                    index === filteredFaqs.length - 1 && styles.noBorder,
+                  ]}
                 >
                   <TouchableOpacity
-                    className="py-3 flex-row items-center justify-between"
+                    style={styles.faqQuestion}
                     onPress={() => toggleFaq(index)}
                   >
-                    <Text className="text-sm font-medium text-foreground flex-1 pr-4">
-                      {faq.question}
-                    </Text>
+                    <Text style={styles.faqQuestionText}>{faq.question}</Text>
                     {expandedFaqIndex === index ? (
-                      <ChevronUp size={16} className="text-muted-foreground" />
+                      <ChevronUp size={16} color="#94a3b8" />
                     ) : (
-                      <ChevronDown
-                        size={16}
-                        className="text-muted-foreground"
-                      />
+                      <ChevronDown size={16} color="#94a3b8" />
                     )}
                   </TouchableOpacity>
                   {expandedFaqIndex === index && (
-                    <Text className="text-sm text-muted-foreground pb-3">
-                      {faq.answer}
-                    </Text>
+                    <Text style={styles.faqAnswer}>{faq.answer}</Text>
                   )}
                 </View>
               ))}
               {filteredFaqs.length === 0 && (
-                <Text className="text-center text-muted-foreground py-4 text-sm">
-                  No results found
-                </Text>
+                <Text style={styles.noResultsText}>No results found</Text>
               )}
-            </CardContent>
-          </Card>
+            </View>
+          </View>
 
           {/* Resources */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-0">
-              <CardTitle className="text-base text-foreground">
-                Resources
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Resources</Text>
+            </View>
+            <View style={styles.cardBody}>
               {["User Guide", "Terms of Service", "Refund Policy"].map(
                 (item, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`flex-row items-center justify-between p-4 border-b border-border ${
-                      index === 2 ? "border-0" : ""
-                    }`}
+                    style={[
+                      styles.resourceItem,
+                      index === 2 && styles.noBorder,
+                    ]}
                   >
-                    <View className="flex-row items-center gap-3">
-                      <FileText size={16} className="text-muted-foreground" />
-                      <Text className="text-sm text-foreground">{item}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <FileText
+                        size={16}
+                        color="#94a3b8"
+                        style={{ marginRight: 12 }}
+                      />
+                      <Text style={styles.resourceText}>{item}</Text>
                     </View>
-                    <ExternalLink size={16} className="text-muted-foreground" />
+                    <ExternalLink size={16} color="#94a3b8" />
                   </TouchableOpacity>
-                ),
+                )
               )}
-            </CardContent>
-          </Card>
+            </View>
+          </View>
 
-          {/* Contact Info Footer */}
-          <Card className="border-border bg-secondary/30">
-            <CardContent className="p-4 items-center">
-              <Text className="text-sm text-muted-foreground">
-                24/7 Customer Support
-              </Text>
-              <Text className="text-lg font-bold text-foreground mt-1">
-                1-800-RENTALS
-              </Text>
-              <Text className="text-sm text-muted-foreground mt-1">
-                support@vehiclerental.com
-              </Text>
-            </CardContent>
-          </Card>
+          {/* Footer Info */}
+          <View style={styles.footerInfo}>
+            <Text style={styles.footerLabel}>24/7 Customer Support</Text>
+            <Text style={styles.footerPhone}>1-800-RENTALS</Text>
+            <Text style={styles.footerEmail}>support@vehiclerental.com</Text>
+          </View>
         </ScrollView>
 
         {/* Support Ticket Modal */}
@@ -312,66 +290,339 @@ export default function HelpSupport() {
           animationType="fade"
           onRequestClose={() => setShowContactDialog(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
-                  Submit a Support Ticket
-                </Text>
-                <TouchableOpacity onPress={() => setShowContactDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Submit a Support Ticket</Text>
+                <TouchableOpacity
+                  onPress={() => setShowContactDialog(false)}
+                >
+                  <X size={24} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-4">
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Subject
-                  </Text>
-                  <Input
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Subject</Text>
+                  <TextInput
                     value={contactForm.subject}
                     onChangeText={(text) =>
                       setContactForm((prev) => ({ ...prev, subject: text }))
                     }
                     placeholder="Brief description of your issue"
+                    placeholderTextColor="#64748b"
+                    style={styles.input}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Message
-                  </Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Message</Text>
                   <TextInput
-                    className="flex min-h-[120px] w-full rounded-xl border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
-                    multiline
-                    numberOfLines={5}
-                    textAlignVertical="top"
                     value={contactForm.message}
                     onChangeText={(text) =>
                       setContactForm((prev) => ({ ...prev, message: text }))
                     }
                     placeholder="Describe your issue in detail..."
+                    placeholderTextColor="#64748b"
+                    multiline
+                    numberOfLines={5}
+                    style={[styles.input, styles.textArea]}
+                    textAlignVertical="top"
                   />
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
                   onPress={() => setShowContactDialog(false)}
                 >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button className="flex-1" onPress={handleSubmitTicket}>
-                  <Text className="text-primary-foreground font-semibold">
-                    Submit Ticket
-                  </Text>
-                </Button>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.submitButton}
+                  onPress={handleSubmitTicket}
+                >
+                  <Text style={styles.submitButtonText}>Submit Ticket</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+    gap: 24,
+  },
+  searchContainer: {
+    position: "relative",
+  },
+  searchIcon: {
+    position: "absolute",
+    left: 12,
+    top: 14,
+    zIndex: 1,
+  },
+  searchInput: {
+    backgroundColor: "#1e293b",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingLeft: 40,
+    paddingRight: 16,
+    color: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    fontSize: 14,
+  },
+  contactRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  contactButton: {
+    flex: 1,
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#2dd4bf", // Teal border for buttons
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+  },
+  contactButtonText: {
+    fontSize: 12,
+    color: "#ffffff",
+    fontWeight: "500",
+  },
+  ticketCard: {
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  ticketCardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "rgba(45, 212, 191, 0.1)", // Teal tint
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ticketTextContainer: {
+    gap: 2,
+  },
+  ticketTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  ticketSubtitle: {
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+  card: {
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    overflow: "hidden",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  cardBody: {
+    paddingHorizontal: 16,
+  },
+  faqItem: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+    paddingVertical: 12,
+  },
+  noBorder: {
+    borderBottomWidth: 0,
+  },
+  faqQuestion: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  faqQuestionText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#ffffff",
+    flex: 1,
+    paddingRight: 16,
+  },
+  faqAnswer: {
+    fontSize: 14,
+    color: "#94a3b8",
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  noResultsText: {
+    textAlign: "center",
+    color: "#94a3b8",
+    paddingVertical: 16,
+  },
+  resourceItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  resourceText: {
+    fontSize: 14,
+    color: "#ffffff",
+  },
+  footerInfo: {
+    alignItems: "center",
+    paddingVertical: 16,
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  footerLabel: {
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+  footerPhone: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginTop: 4,
+  },
+  footerEmail: {
+    fontSize: 14,
+    color: "#94a3b8",
+    marginTop: 2,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalContainer: {
+    backgroundColor: "#020617",
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "500",
+  },
+  input: {
+    backgroundColor: "#1e293b",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    fontSize: 14,
+  },
+  textArea: {
+    height: 120,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+  submitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#2dd4bf",
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#0f172a",
+    fontWeight: "600",
+  },
+});

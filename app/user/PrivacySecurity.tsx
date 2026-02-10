@@ -1,11 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-
 import { useRouter } from "expo-router";
 import {
   AlertTriangle,
   ArrowLeft,
+  ChevronRight,
   Eye,
   EyeOff,
   FileText,
@@ -18,9 +15,12 @@ import {
 import { useState } from "react";
 import {
   Modal,
+  Platform,
   ScrollView,
+  StyleSheet,
   Switch,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -82,6 +82,16 @@ export default function PrivacySecurity() {
     });
   };
 
+  const renderSwitch = (value: boolean, onValueChange: () => void) => (
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: "#334155", true: "#2dd4bf" }}
+      thumbColor={Platform.OS === "ios" ? "#ffffff" : "#ffffff"}
+      ios_backgroundColor="#334155"
+    />
+  );
+
   const handleChangePassword = () => {
     if (
       !passwordForm.currentPassword ||
@@ -100,14 +110,6 @@ export default function PrivacySecurity() {
         type: "error",
         text1: "Error",
         text2: "New passwords do not match.",
-      });
-      return;
-    }
-    if (passwordForm.newPassword.length < 8) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Password must be at least 8 characters.",
       });
       return;
     }
@@ -148,261 +150,257 @@ export default function PrivacySecurity() {
     setShowDeleteDialog(false);
   };
 
+  // Helper for Input with Icon
+  const renderPasswordInput = (
+    label: string,
+    value: string,
+    field: keyof typeof passwordForm,
+    showKey: keyof typeof showPasswords,
+    placeholder: string
+  ) => (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.passwordContainer}>
+        <TextInput
+          secureTextEntry={!showPasswords[showKey]}
+          value={value}
+          onChangeText={(text) =>
+            setPasswordForm((prev) => ({ ...prev, [field]: text }))
+          }
+          placeholder={placeholder}
+          placeholderTextColor="#64748b"
+          style={styles.input}
+        />
+        <TouchableOpacity
+          style={styles.eyeIcon}
+          onPress={() =>
+            setShowPasswords((prev) => ({ ...prev, [showKey]: !prev[showKey] }))
+          }
+        >
+          {showPasswords[showKey] ? (
+            <EyeOff size={20} color="#94a3b8" />
+          ) : (
+            <Eye size={20} color="#94a3b8" />
+          )}
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1">
+    <View style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => router.navigate("profile" as never)}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
           >
-            <ArrowLeft size={20} className="text-foreground" />
-          </Button>
-          <Text className="text-lg font-bold text-foreground">
-            Privacy & Security
-          </Text>
+            <ArrowLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Privacy & Security</Text>
         </View>
 
         <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ gap: 24, paddingBottom: 40 }}
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
         >
           {/* Security */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center gap-2">
-                <Shield size={16} className="text-foreground" />
-                <CardTitle className="text-base text-foreground">
-                  Security
-                </CardTitle>
-              </View>
-            </CardHeader>
-            <CardContent className="gap-4">
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Shield size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>Security</Text>
+            </View>
+
+            <View style={styles.cardContent}>
               <TouchableOpacity
-                className="flex-row items-center py-2"
+                style={styles.changePasswordButton}
                 onPress={() => setShowPasswordDialog(true)}
               >
-                <Key size={16} className="text-muted-foreground mr-3" />
-                <Text className="text-base text-foreground">
-                  Change Password
-                </Text>
+                <Key size={18} color="#0f172a" style={{ marginRight: 8 }} />
+                <Text style={styles.changePasswordText}>Change Password</Text>
               </TouchableOpacity>
 
-              <View className="flex-row items-center justify-between py-2">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <Smartphone size={16} className="text-muted-foreground" />
-                  <View>
-                    <Text className="font-medium text-foreground">
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <Smartphone size={20} color="#94a3b8" />
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>
                       Two-Factor Authentication
                     </Text>
-                    <Text className="text-xs text-muted-foreground">
+                    <Text style={styles.settingDescription}>
                       Add extra security
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.twoFactorAuth}
-                  onValueChange={() => toggleSetting("twoFactorAuth")}
-                />
+                {renderSwitch(settings.twoFactorAuth, () =>
+                  toggleSetting("twoFactorAuth")
+                )}
               </View>
 
-              <View className="flex-row items-center justify-between py-2">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <Eye size={16} className="text-muted-foreground" />
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Biometric Login
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <Eye size={20} color="#94a3b8" />
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Biometric Login</Text>
+                    <Text style={styles.settingDescription}>
                       Use fingerprint or face ID
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.biometricLogin}
-                  onValueChange={() => toggleSetting("biometricLogin")}
-                />
+                {renderSwitch(settings.biometricLogin, () =>
+                  toggleSetting("biometricLogin")
+                )}
               </View>
 
-              <View className="flex-row items-center justify-between py-2">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <AlertTriangle size={16} className="text-muted-foreground" />
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Login Alerts
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <AlertTriangle size={20} color="#94a3b8" />
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Login Alerts</Text>
+                    <Text style={styles.settingDescription}>
                       Get notified of new logins
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.loginAlerts}
-                  onValueChange={() => toggleSetting("loginAlerts")}
-                />
+                {renderSwitch(settings.loginAlerts, () =>
+                  toggleSetting("loginAlerts")
+                )}
               </View>
-            </CardContent>
-          </Card>
+            </View>
+          </View>
 
           {/* Active Sessions */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-2">
-                  <Smartphone size={16} className="text-foreground" />
-                  <CardTitle className="text-base text-foreground">
-                    Active Sessions
-                  </CardTitle>
-                </View>
-                <TouchableOpacity onPress={handleLogoutAll}>
-                  <Text className="text-xs text-destructive font-medium">
-                    Logout All
-                  </Text>
-                </TouchableOpacity>
+          <View style={styles.card}>
+            <View style={[styles.cardHeader, { justifyContent: 'space-between' }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Smartphone size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                <Text style={styles.cardTitle}>Active Sessions</Text>
               </View>
-            </CardHeader>
-            <CardContent className="gap-3">
+              <TouchableOpacity onPress={handleLogoutAll}>
+                <Text style={styles.logoutAllText}>Logout All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.cardContent}>
               {sessions.map((session) => (
-                <View
-                  key={session.id}
-                  className="flex-row items-center justify-between p-3 rounded-xl bg-secondary/50"
-                >
-                  <View className="flex-row items-center gap-3 flex-1">
-                    <Smartphone size={20} className="text-muted-foreground" />
-                    <View>
-                      <View className="flex-row items-center gap-2">
-                        <Text className="font-medium text-foreground text-sm">
-                          {session.device}
-                        </Text>
+                <View key={session.id} style={styles.sessionRow}>
+                  <View style={styles.sessionLeft}>
+                    <Smartphone size={24} color="#64748b" />
+                    <View style={styles.sessionInfo}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Text style={styles.sessionDevice}>{session.device}</Text>
                         {session.current && (
-                          <View className="px-2 py-0.5 rounded-full bg-green-500/10">
-                            <Text className="text-xs text-green-500">
-                              Current
-                            </Text>
+                          <View style={styles.currentBadge}>
+                            <Text style={styles.currentBadgeText}>Current</Text>
                           </View>
                         )}
                       </View>
-                      <Text className="text-xs text-muted-foreground">
+                      <Text style={styles.sessionMeta}>
                         {session.location} • {session.lastActive}
                       </Text>
                     </View>
                   </View>
                   {!session.current && (
-                    <TouchableOpacity
-                      onPress={() => handleLogoutSession(session.id)}
-                    >
-                      <Text className="text-xs text-destructive font-medium">
-                        Logout
-                      </Text>
+                    <TouchableOpacity onPress={() => handleLogoutSession(session.id)}>
+                      <Text style={styles.logoutText}>Logout</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               ))}
-            </CardContent>
-          </Card>
+            </View>
+          </View>
 
           {/* Privacy */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center gap-2">
-                <Lock size={16} className="text-foreground" />
-                <CardTitle className="text-base text-foreground">
-                  Privacy
-                </CardTitle>
-              </View>
-            </CardHeader>
-            <CardContent className="gap-4">
-              <View className="flex-row items-center justify-between py-2">
-                <View className="flex-1">
-                  <Text className="font-medium text-foreground">
-                    Data Sharing
-                  </Text>
-                  <Text className="text-xs text-muted-foreground">
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Lock size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>Privacy</Text>
+            </View>
+
+            <View style={styles.cardContent}>
+              <View style={styles.settingRow}>
+                <View style={styles.textContainerNoIcon}>
+                  <Text style={styles.settingLabel}>Data Sharing</Text>
+                  <Text style={styles.settingDescription}>
                     Share data with partners for offers
                   </Text>
                 </View>
-                <Switch
-                  value={settings.dataSharing}
-                  onValueChange={() => toggleSetting("dataSharing")}
-                />
+                {renderSwitch(settings.dataSharing, () =>
+                  toggleSetting("dataSharing")
+                )}
               </View>
-              <View className="flex-row items-center justify-between py-2">
-                <View className="flex-1">
-                  <Text className="font-medium text-foreground">
-                    Location Tracking
-                  </Text>
-                  <Text className="text-xs text-muted-foreground">
+
+              <View style={styles.settingRow}>
+                <View style={styles.textContainerNoIcon}>
+                  <Text style={styles.settingLabel}>Location Tracking</Text>
+                  <Text style={styles.settingDescription}>
                     Allow location access for delivery
                   </Text>
                 </View>
-                <Switch
-                  value={settings.locationTracking}
-                  onValueChange={() => toggleSetting("locationTracking")}
-                />
+                {renderSwitch(settings.locationTracking, () =>
+                  toggleSetting("locationTracking")
+                )}
               </View>
-              <View className="flex-row items-center justify-between py-2">
-                <View className="flex-1">
-                  <Text className="font-medium text-foreground">
-                    Marketing Emails
-                  </Text>
-                  <Text className="text-xs text-muted-foreground">
+
+              <View style={styles.settingRow}>
+                <View style={styles.textContainerNoIcon}>
+                  <Text style={styles.settingLabel}>Marketing Emails</Text>
+                  <Text style={styles.settingDescription}>
                     Receive promotional emails
                   </Text>
                 </View>
-                <Switch
-                  value={settings.marketingEmails}
-                  onValueChange={() => toggleSetting("marketingEmails")}
-                />
+                {renderSwitch(settings.marketingEmails, () =>
+                  toggleSetting("marketingEmails")
+                )}
               </View>
-            </CardContent>
-          </Card>
+            </View>
+          </View>
 
           {/* Policies */}
-          <Card className="border-border">
-            <CardContent className="p-0">
+          <View style={styles.card}>
+            <View style={styles.cardContent}>
               {["Privacy Policy", "Terms of Service", "Data Usage Policy"].map(
                 (item, index) => (
                   <TouchableOpacity
                     key={index}
-                    className={`flex-row items-center p-4 ${
-                      index !== 2 ? "border-b border-border" : ""
-                    }`}
+                    style={[
+                      styles.policyItem,
+                      index === 2 && styles.noBorder,
+                    ]}
                   >
-                    <FileText
-                      size={16}
-                      className="mr-3 text-muted-foreground"
-                    />
-                    <Text className="text-foreground">{item}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <FileText
+                        size={16}
+                        color="#94a3b8"
+                        style={{ marginRight: 12 }}
+                      />
+                      <Text style={styles.policyText}>{item}</Text>
+                    </View>
                   </TouchableOpacity>
-                ),
+                )
               )}
-            </CardContent>
-          </Card>
+            </View>
+          </View>
 
           {/* Delete Account */}
-          <Card className="border-destructive/20 bg-destructive/5">
-            <CardContent className="p-4 flex-row items-start gap-3">
-              <AlertTriangle size={20} className="text-destructive mt-0.5" />
-              <View className="flex-1">
-                <Text className="font-medium text-foreground">
-                  Delete Account
-                </Text>
-                <Text className="text-xs text-muted-foreground mt-1">
-                  Permanently delete your account and all associated data.
-                </Text>
-                <TouchableOpacity
-                  className="mt-3 bg-destructive self-start px-3 py-1.5 rounded-md"
-                  onPress={() => setShowDeleteDialog(true)}
-                >
-                  <Text className="text-destructive-foreground text-xs font-semibold">
-                    Delete My Account
-                  </Text>
-                </TouchableOpacity>
+          <View style={[styles.card, styles.deleteCard]}>
+            <View style={styles.cardContent}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8 }}>
+                <AlertTriangle size={18} color="#ef4444" style={{ marginRight: 8 }} />
+                <Text style={styles.deleteTitle}>Delete Account</Text>
               </View>
-            </CardContent>
-          </Card>
+              <Text style={styles.deleteDescription}>
+                Permanently delete your account and all associated data.
+              </Text>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => setShowDeleteDialog(true)}
+              >
+                <Text style={styles.deleteButtonText}>Delete My Account</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </ScrollView>
 
         {/* Change Password Modal */}
@@ -412,135 +410,48 @@ export default function PrivacySecurity() {
           animationType="fade"
           onRequestClose={() => setShowPasswordDialog(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
-                  Change Password
-                </Text>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Lock size={18} color="#ffffff" style={{ marginRight: 8 }} />
+                  <Text style={styles.modalTitle}>Change Password</Text>
+                </View>
                 <TouchableOpacity onPress={() => setShowPasswordDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+                  <X size={24} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-4">
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Current Password
-                  </Text>
-                  <View className="relative">
-                    <Input
-                      secureTextEntry={!showPasswords.current}
-                      value={passwordForm.currentPassword}
-                      onChangeText={(text) =>
-                        setPasswordForm((prev) => ({
-                          ...prev,
-                          currentPassword: text,
-                        }))
-                      }
-                      placeholder="Enter current password"
-                    />
-                    <TouchableOpacity
-                      className="absolute right-3 top-3"
-                      onPress={() =>
-                        setShowPasswords((prev) => ({
-                          ...prev,
-                          current: !prev.current,
-                        }))
-                      }
-                    >
-                      {showPasswords.current ? (
-                        <EyeOff size={16} className="text-muted-foreground" />
-                      ) : (
-                        <Eye size={16} className="text-muted-foreground" />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    New Password
-                  </Text>
-                  <View className="relative">
-                    <Input
-                      secureTextEntry={!showPasswords.new}
-                      value={passwordForm.newPassword}
-                      onChangeText={(text) =>
-                        setPasswordForm((prev) => ({
-                          ...prev,
-                          newPassword: text,
-                        }))
-                      }
-                      placeholder="Enter new password"
-                    />
-                    <TouchableOpacity
-                      className="absolute right-3 top-3"
-                      onPress={() =>
-                        setShowPasswords((prev) => ({
-                          ...prev,
-                          new: !prev.new,
-                        }))
-                      }
-                    >
-                      {showPasswords.new ? (
-                        <EyeOff size={16} className="text-muted-foreground" />
-                      ) : (
-                        <Eye size={16} className="text-muted-foreground" />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Confirm New Password
-                  </Text>
-                  <View className="relative">
-                    <Input
-                      secureTextEntry={!showPasswords.confirm}
-                      value={passwordForm.confirmPassword}
-                      onChangeText={(text) =>
-                        setPasswordForm((prev) => ({
-                          ...prev,
-                          confirmPassword: text,
-                        }))
-                      }
-                      placeholder="Confirm new password"
-                    />
-                    <TouchableOpacity
-                      className="absolute right-3 top-3"
-                      onPress={() =>
-                        setShowPasswords((prev) => ({
-                          ...prev,
-                          confirm: !prev.confirm,
-                        }))
-                      }
-                    >
-                      {showPasswords.confirm ? (
-                        <EyeOff size={16} className="text-muted-foreground" />
-                      ) : (
-                        <Eye size={16} className="text-muted-foreground" />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                </View>
+              <View style={styles.form}>
+                {renderPasswordInput(
+                  "Current Password",
+                  passwordForm.currentPassword,
+                  "currentPassword",
+                  "current",
+                  "Enter current password"
+                )}
+                {renderPasswordInput(
+                  "New Password",
+                  passwordForm.newPassword,
+                  "newPassword",
+                  "new",
+                  "Enter new password"
+                )}
+                {renderPasswordInput(
+                  "Confirm New Password",
+                  passwordForm.confirmPassword,
+                  "confirmPassword",
+                  "confirm",
+                  "Confirm new password"
+                )}
               </View>
 
-              <View className="flex-row gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onPress={() => setShowPasswordDialog(false)}
-                >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button className="flex-1" onPress={handleChangePassword}>
-                  <Text className="text-primary-foreground font-semibold">
-                    Update Password
-                  </Text>
-                </Button>
-              </View>
+              <TouchableOpacity
+                style={styles.updatePasswordButton}
+                onPress={handleChangePassword}
+              >
+                <Text style={styles.updatePasswordText}>Update Password</Text>
+              </TouchableOpacity>
             </View>
           </View>
         </Modal>
@@ -552,58 +463,345 @@ export default function PrivacySecurity() {
           animationType="fade"
           onRequestClose={() => setShowDeleteDialog(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-destructive">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: "#ef4444" }]}>
                   Delete Account
                 </Text>
                 <TouchableOpacity onPress={() => setShowDeleteDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+                  <X size={24} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-2">
-                <Text className="text-muted-foreground">
-                  Are you sure you want to delete your account? This will:
+              <View style={styles.form}>
+                <Text style={styles.deleteWarningText}>
+                  Are you sure you want to delete your account? This action cannot be undone.
                 </Text>
-                <View className="gap-1 pl-2">
-                  <Text className="text-sm text-muted-foreground">
-                    • Remove all your personal data
-                  </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    • Cancel any active bookings
-                  </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    • Delete saved payment methods
-                  </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    • This action cannot be undone
-                  </Text>
+                <View style={styles.warningList}>
+                  <Text style={styles.warningItem}>• All personal data will be removed</Text>
+                  <Text style={styles.warningItem}>• Active bookings will be cancelled</Text>
+                  <Text style={styles.warningItem}>• Saved payment methods will be deleted</Text>
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
                   onPress={() => setShowDeleteDialog(false)}
                 >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button
-                  className="flex-1 bg-destructive"
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.confirmDeleteButton}
                   onPress={handleDeleteAccount}
                 >
-                  <Text className="text-destructive-foreground font-semibold">
-                    Delete Account
-                  </Text>
-                </Button>
+                  <Text style={styles.confirmDeleteText}>Delete Account</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+    gap: 24,
+  },
+  card: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    overflow: "hidden",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  cardContent: {
+    padding: 16,
+    gap: 20,
+  },
+  // Security Section Styles
+  changePasswordButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#2dd4bf", // Teal
+    paddingVertical: 14,
+    borderRadius: 9999,
+    marginBottom: 8,
+  },
+  changePasswordText: {
+    color: "#0f172a", // Dark text
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  settingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  settingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    paddingRight: 16,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  textContainerNoIcon: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#ffffff",
+    marginBottom: 2,
+  },
+  settingDescription: {
+    fontSize: 12,
+    color: "#94a3b8", // Slate-400
+  },
+  // Active Sessions Styles
+  logoutAllText: {
+    color: "#ef4444", // Red-500
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  sessionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  sessionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+  },
+  sessionInfo: {
+    flex: 1,
+  },
+  sessionDevice: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "500",
+  },
+  currentBadge: {
+    backgroundColor: "rgba(34, 197, 94, 0.1)", // Green tint
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  currentBadgeText: {
+    color: "#22c55e", // Green-500
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  sessionMeta: {
+    fontSize: 12,
+    color: "#64748b", // Slate-500
+    marginTop: 2,
+  },
+  logoutText: {
+    color: "#ef4444",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  // Policies
+  policyItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  noBorder: {
+    borderBottomWidth: 0,
+  },
+  policyText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  // Delete Account
+  deleteCard: {
+    borderColor: "rgba(239, 68, 68, 0.2)",
+    backgroundColor: "rgba(239, 68, 68, 0.05)",
+  },
+  deleteTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  deleteDescription: {
+    fontSize: 12,
+    color: "#94a3b8",
+    marginBottom: 16,
+  },
+  deleteButton: {
+    backgroundColor: "#b91c1c", // Dark Red
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    width: 140,
+  },
+  deleteButtonText: {
+    color: "#ffffff",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalContainer: {
+    backgroundColor: "#020617",
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "500",
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  input: {
+    backgroundColor: "#1e293b",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    color: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    fontSize: 14,
+  },
+  eyeIcon: {
+    position: 'absolute',
+    right: 12,
+    top: 12,
+  },
+  updatePasswordButton: {
+    backgroundColor: "#2dd4bf", // Teal
+    paddingVertical: 14,
+    borderRadius: 9999,
+    alignItems: "center",
+    marginTop: 24,
+  },
+  updatePasswordText: {
+    color: "#0f172a",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  deleteWarningText: {
+    color: "#94a3b8",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  warningList: {
+    gap: 4,
+    paddingLeft: 4,
+  },
+  warningItem: {
+    color: "#64748b",
+    fontSize: 13,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+  confirmDeleteButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+  },
+  confirmDeleteText: {
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+});

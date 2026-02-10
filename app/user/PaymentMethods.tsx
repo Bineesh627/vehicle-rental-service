@@ -1,7 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -14,7 +10,15 @@ import {
   X,
 } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -54,7 +58,7 @@ export default function PaymentMethods() {
   const router = useRouter();
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(
-    initialPaymentMethods,
+    initialPaymentMethods
   );
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState<string | null>(null);
@@ -69,7 +73,11 @@ export default function PaymentMethods() {
     setFormData({ cardNumber: "", cardHolder: "", expiryDate: "", cvv: "" });
 
   const handleAddCard = () => {
-    if (!formData.cardNumber || !formData.cardHolder || !formData.expiryDate) {
+    if (
+      !formData.cardNumber ||
+      !formData.cardHolder ||
+      !formData.expiryDate
+    ) {
       Toast.show({
         type: "error",
         text1: "Error",
@@ -97,7 +105,7 @@ export default function PaymentMethods() {
 
   const setAsDefault = (id: string) => {
     setPaymentMethods((prev) =>
-      prev.map((pm) => ({ ...pm, isDefault: pm.id === id })),
+      prev.map((pm) => ({ ...pm, isDefault: pm.id === id }))
     );
     Toast.show({
       type: "success",
@@ -127,115 +135,96 @@ export default function PaymentMethods() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1">
+    <View style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => router.navigate("profile" as never)}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
             >
-              <ArrowLeft size={20} className="text-foreground" />
-            </Button>
-            <Text className="text-lg font-bold text-foreground">
-              Payment Methods
-            </Text>
+              <ArrowLeft size={24} color="#ffffff" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Payment Methods</Text>
           </View>
           <TouchableOpacity
             onPress={() => setShowAddDialog(true)}
-            className="flex-row items-center gap-1 bg-primary px-3 py-1.5 rounded-md"
+            style={styles.addButton}
           >
-            <Plus size={16} className="text-primary-foreground" />
-            <Text className="text-primary-foreground text-xs font-semibold">
-              Add
-            </Text>
+            <Plus size={16} color="#0f172a" />
+            <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ gap: 16, paddingBottom: 40 }}
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
         >
           {paymentMethods.length === 0 ? (
-            <Card className="border-border">
-              <CardContent className="p-8 items-center">
-                <CreditCard size={48} className="text-muted-foreground mb-3" />
-                <Text className="text-muted-foreground">
-                  No payment methods saved
-                </Text>
-                <Button
-                  className="mt-4 flex-row gap-1"
-                  onPress={() => setShowAddDialog(true)}
-                >
-                  <Plus size={16} className="text-primary-foreground" />
-                  <Text className="text-primary-foreground font-semibold">
-                    Add Payment Method
-                  </Text>
-                </Button>
-              </CardContent>
-            </Card>
+            <View style={styles.emptyState}>
+              <CreditCard
+                size={48}
+                color="#64748b"
+                style={{ marginBottom: 12 }}
+              />
+              <Text style={styles.emptyText}>No payment methods saved</Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => setShowAddDialog(true)}
+              >
+                <Plus size={16} color="#0f172a" />
+                <Text style={styles.emptyButtonText}>Add Payment Method</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             paymentMethods.map((method) => (
-              <Card
+              <View
                 key={method.id}
-                className={`border-border ${
-                  method.isDefault ? "border-primary border-2" : ""
-                }`}
+                style={[
+                  styles.card,
+                  method.isDefault && styles.cardDefault,
+                ]}
               >
-                <CardContent className="p-4">
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-3">
-                      <View
-                        className={`h-12 w-12 rounded-xl items-center justify-center ${
-                          method.type === "card"
-                            ? "bg-primary/10"
-                            : method.type === "upi"
-                              ? "bg-purple-500/10"
-                              : "bg-green-500/10"
-                        }`}
-                      >
-                        {method.type === "card" ? (
-                          <CreditCard size={24} className="text-primary" />
-                        ) : (
-                          <Wallet size={24} className="text-purple-500" />
+                <View style={styles.cardContent}>
+                  <View style={styles.cardLeft}>
+                    <View
+                      style={[
+                        styles.iconContainer,
+                        method.type === "card"
+                          ? styles.iconBgTeal
+                          : styles.iconBgPurple,
+                      ]}
+                    >
+                      {method.type === "card" ? (
+                        <CreditCard size={20} color="#2dd4bf" />
+                      ) : (
+                        <Wallet size={20} color="#a855f7" />
+                      )}
+                    </View>
+                    <View>
+                      <View style={styles.cardHeaderRow}>
+                        <Text style={styles.methodName}>{method.name}</Text>
+                        {method.isDefault && (
+                          <View style={styles.defaultBadge}>
+                            <Text style={styles.defaultText}>Default</Text>
+                          </View>
                         )}
                       </View>
-                      <View>
-                        <View className="flex-row items-center gap-2">
-                          <Text className="font-medium text-foreground">
-                            {method.name}
-                          </Text>
-                          {method.isDefault && (
-                            <View className="px-2 py-0.5 rounded-full bg-primary/10">
-                              <Text className="text-xs text-primary">
-                                Default
-                              </Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text className="text-sm text-muted-foreground">
-                          {method.details}
-                        </Text>
-                      </View>
+                      <Text style={styles.methodDetails}>{method.details}</Text>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => setShowOptionsModal(method.id)}
-                    >
-                      <MoreVertical
-                        size={20}
-                        className="text-muted-foreground"
-                      />
-                    </TouchableOpacity>
                   </View>
-                </CardContent>
-              </Card>
+                  <TouchableOpacity onPress={() => setShowOptionsModal(method.id)}>
+                    <MoreVertical size={20} color="#94a3b8" />
+                  </TouchableOpacity>
+                </View>
+              </View>
             ))
           )}
 
+          {/* Add UPI Button - Updated to Outlined Design */}
           <TouchableOpacity
-            className="w-full flex-row items-center p-4 border border-input rounded-xl gap-3"
+            style={styles.addUpiButton}
             onPress={() => {
               const newUPI: PaymentMethod = {
                 id: Date.now().toString(),
@@ -252,12 +241,12 @@ export default function PaymentMethods() {
               });
             }}
           >
-            <View className="h-10 w-10 rounded-xl bg-purple-500/10 items-center justify-center">
-              <Wallet size={20} className="text-purple-500" />
+            <View style={styles.upiIconContainer}>
+              <Wallet size={20} color="#a855f7" />
             </View>
             <View>
-              <Text className="font-medium text-foreground">Add UPI</Text>
-              <Text className="text-sm text-muted-foreground">
+              <Text style={styles.upiText}>Add UPI</Text>
+              <Text style={styles.upiSubtext}>
                 Pay using Google Pay, PhonePe, etc.
               </Text>
             </View>
@@ -271,92 +260,90 @@ export default function PaymentMethods() {
           animationType="fade"
           onRequestClose={() => setShowAddDialog(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
-                  Add New Card
-                </Text>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Add New Card</Text>
                 <TouchableOpacity onPress={() => setShowAddDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+                  <X size={24} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-4">
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Card Number
-                  </Text>
-                  <Input
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Card Number</Text>
+                  <TextInput
                     value={formData.cardNumber}
                     onChangeText={(text) =>
                       setFormData((prev) => ({ ...prev, cardNumber: text }))
                     }
                     placeholder="1234 5678 9012 3456"
+                    placeholderTextColor="#64748b"
                     keyboardType="numeric"
                     maxLength={19}
+                    style={styles.input}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Cardholder Name
-                  </Text>
-                  <Input
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Cardholder Name</Text>
+                  <TextInput
                     value={formData.cardHolder}
                     onChangeText={(text) =>
                       setFormData((prev) => ({ ...prev, cardHolder: text }))
                     }
                     placeholder="John Doe"
+                    placeholderTextColor="#64748b"
+                    style={styles.input}
                   />
                 </View>
-                <View className="flex-row gap-3">
-                  <View className="flex-1 gap-2">
-                    <Text className="text-sm font-medium text-foreground">
-                      Expiry Date
-                    </Text>
-                    <Input
+                <View style={styles.row}>
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text style={styles.label}>Expiry Date</Text>
+                    <TextInput
                       value={formData.expiryDate}
                       onChangeText={(text) =>
                         setFormData((prev) => ({ ...prev, expiryDate: text }))
                       }
                       placeholder="MM/YY"
+                      placeholderTextColor="#64748b"
                       maxLength={5}
+                      style={styles.input}
                     />
                   </View>
-                  <View className="flex-1 gap-2">
-                    <Text className="text-sm font-medium text-foreground">
-                      CVV
-                    </Text>
-                    <Input
+                  <View style={[styles.inputGroup, { flex: 1 }]}>
+                    <Text style={styles.label}>CVV</Text>
+                    <TextInput
                       secureTextEntry
                       value={formData.cvv}
                       onChangeText={(text) =>
                         setFormData((prev) => ({ ...prev, cvv: text }))
                       }
                       placeholder="***"
+                      placeholderTextColor="#64748b"
                       maxLength={4}
                       keyboardType="numeric"
+                      style={styles.input}
                     />
                   </View>
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleAddCard}
+                >
+                  <Text style={styles.saveButtonText}>Add Card</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelButton}
                   onPress={() => {
                     setShowAddDialog(false);
                     resetForm();
                   }}
                 >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button className="flex-1" onPress={handleAddCard}>
-                  <Text className="text-primary-foreground font-semibold">
-                    Add Card
-                  </Text>
-                </Button>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -370,45 +357,334 @@ export default function PaymentMethods() {
           onRequestClose={() => setShowOptionsModal(null)}
         >
           <TouchableOpacity
-            className="flex-1 bg-black/50 justify-end"
+            style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => setShowOptionsModal(null)}
           >
-            <View className="bg-background rounded-t-xl p-4 gap-2">
-              <Text className="text-lg font-bold text-foreground mb-2 px-2">
-                Payment Options
-              </Text>
+            <View style={styles.optionsModalContainer}>
+              <Text style={styles.optionsTitle}>Payment Options</Text>
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 rounded-lg active:bg-secondary"
+                style={styles.optionItem}
                 onPress={() =>
                   showOptionsModal && setAsDefault(showOptionsModal)
                 }
               >
-                <CheckCircle size={20} className="text-foreground" />
-                <Text className="text-base text-foreground">
-                  Set as Default
-                </Text>
+                <CheckCircle size={20} color="#ffffff" />
+                <Text style={styles.optionText}>Set as Default</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 rounded-lg active:bg-secondary"
+                style={styles.optionItem}
                 onPress={() =>
                   showOptionsModal && deletePaymentMethod(showOptionsModal)
                 }
               >
-                <Trash2 size={20} className="text-destructive" />
-                <Text className="text-base text-destructive">Remove</Text>
+                <Trash2 size={20} color="#ef4444" />
+                <Text style={[styles.optionText, { color: "#ef4444" }]}>
+                  Remove
+                </Text>
               </TouchableOpacity>
-              <Button
-                variant="outline"
-                className="mt-2"
+              <TouchableOpacity
+                style={styles.closeOptionsButton}
                 onPress={() => setShowOptionsModal(null)}
               >
-                <Text className="text-foreground">Cancel</Text>
-              </Button>
+                <Text style={styles.closeOptionsText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </Modal>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2dd4bf", // Teal
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    gap: 4,
+  },
+  addButtonText: {
+    color: "#0f172a",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 16,
+    paddingBottom: 40,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  emptyText: {
+    color: "#94a3b8",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  emptyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2dd4bf",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  emptyButtonText: {
+    color: "#0f172a",
+    fontWeight: "600",
+  },
+  // Card Styles
+  card: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 20,
+  },
+  cardDefault: {
+    borderColor: "#2dd4bf", // Teal border for default
+    borderWidth: 1.5,
+  },
+  cardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconBgTeal: {
+    backgroundColor: "rgba(45, 212, 191, 0.1)",
+  },
+  iconBgPurple: {
+    backgroundColor: "rgba(168, 85, 247, 0.1)",
+  },
+  cardHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 4,
+  },
+  methodName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  defaultBadge: {
+    backgroundColor: "rgba(45, 212, 191, 0.2)",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  defaultText: {
+    color: "#2dd4bf",
+    fontSize: 10,
+    fontWeight: "bold",
+  },
+  methodDetails: {
+    fontSize: 14,
+    color: "#94a3b8",
+  },
+  // Add UPI Button - UPDATED for Unselected State
+  addUpiButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1e293b", // Dark background
+    borderWidth: 1,
+    borderColor: "#2dd4bf", // Teal Border
+    padding: 20,
+    borderRadius: 20,
+    gap: 16,
+  },
+  upiIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "rgba(168, 85, 247, 0.1)", // Purple tint for wallet icon
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  upiText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#2dd4bf", // Teal Text
+  },
+  upiSubtext: {
+    fontSize: 14,
+    color: "#94a3b8", // Slate-400
+    fontWeight: "500",
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalContainer: {
+    backgroundColor: "#020617", // Very dark modal bg
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#1e293b",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  form: {
+    gap: 20,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  row: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  label: {
+    fontSize: 14,
+    color: "#ffffff",
+    fontWeight: "500",
+  },
+  input: {
+    backgroundColor: "#1e293b",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    fontSize: 16,
+  },
+  modalActions: {
+    marginTop: 24,
+    gap: 12,
+  },
+  saveButton: {
+    backgroundColor: "#2dd4bf", // Teal
+    paddingVertical: 14,
+    borderRadius: 9999,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#0f172a",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  cancelButton: {
+    paddingVertical: 14,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#ffffff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  // Options Modal
+  optionsModalContainer: {
+    backgroundColor: "#1e293b",
+    width: "100%",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  optionsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  optionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: "#0f172a",
+  },
+  optionText: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontWeight: "500",
+  },
+  closeOptionsButton: {
+    marginTop: 12,
+    padding: 16,
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  closeOptionsText: {
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+});

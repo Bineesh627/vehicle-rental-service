@@ -23,6 +23,7 @@ export interface Vehicle {
   name: string;
   brand: string;
   model: string;
+  number: string;
   images: string[];
   pricePerHour: number;
   pricePerDay: number;

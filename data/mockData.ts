@@ -1,11 +1,14 @@
-import { RentalShop, Vehicle, Booking } from "@/types";
+import { Booking, RentalShop, Vehicle } from "@/types";
 
 export const rentalShops: RentalShop[] = [
   {
     id: "1",
     name: "SpeedWheels Rentals",
-    image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&q=80",
     address: "123 Main Street, Downtown",
+    latitude: 12.9716,
+    longitude: 77.5946,
     distance: 0.8,
     rating: 4.8,
     reviewCount: 234,
@@ -16,8 +19,11 @@ export const rentalShops: RentalShop[] = [
   {
     id: "2",
     name: "Urban Rides Co.",
-    image: "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1580273916550-e323be2ae537?w=800&q=80",
     address: "456 Oak Avenue, Midtown",
+    latitude: 12.975,
+    longitude: 77.6,
     distance: 1.2,
     rating: 4.6,
     reviewCount: 189,
@@ -28,8 +34,11 @@ export const rentalShops: RentalShop[] = [
   {
     id: "3",
     name: "Premium Motors",
-    image: "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=800&q=80",
     address: "789 Luxury Lane, Uptown",
+    latitude: 12.96,
+    longitude: 77.58,
     distance: 2.5,
     rating: 4.9,
     reviewCount: 156,
@@ -40,8 +49,11 @@ export const rentalShops: RentalShop[] = [
   {
     id: "4",
     name: "EcoRide Station",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
+    image:
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
     address: "321 Green Street, Eco District",
+    latitude: 12.98,
+    longitude: 77.59,
     distance: 3.1,
     rating: 4.5,
     reviewCount: 98,
@@ -59,6 +71,7 @@ export const vehicles: Vehicle[] = [
     name: "Toyota Camry",
     brand: "Toyota",
     model: "Camry 2024",
+    number: "KA 01 AB 1234",
     images: [
       "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&q=80",
       "https://images.unsplash.com/photo-1550355291-bbee04a92027?w=800&q=80",
@@ -78,6 +91,7 @@ export const vehicles: Vehicle[] = [
     name: "Honda Civic",
     brand: "Honda",
     model: "Civic 2023",
+    number: "KA 01 AB 1234",
     images: [
       "https://images.unsplash.com/photo-1606611013016-969c19ba27bb?w=800&q=80",
     ],
@@ -96,6 +110,7 @@ export const vehicles: Vehicle[] = [
     name: "Royal Enfield Classic",
     brand: "Royal Enfield",
     model: "Classic 350",
+    number: "KA 01 AB 1234",
     images: [
       "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
     ],
@@ -113,6 +128,7 @@ export const vehicles: Vehicle[] = [
     name: "Honda Activa",
     brand: "Honda",
     model: "Activa 6G",
+    number: "KA 01 AB 1234",
     images: [
       "https://images.unsplash.com/photo-1571188654248-7a89213915f7?w=800&q=80",
     ],
@@ -130,6 +146,7 @@ export const vehicles: Vehicle[] = [
     name: "BMW 3 Series",
     brand: "BMW",
     model: "330i 2024",
+    number: "KA 01 AB 1234",
     images: [
       "https://images.unsplash.com/photo-1555215695-3004980ad54e?w=800&q=80",
     ],
@@ -139,7 +156,13 @@ export const vehicles: Vehicle[] = [
     transmission: "Automatic",
     seating: 5,
     isAvailable: true,
-    features: ["GPS", "Leather Seats", "Sunroof", "Premium Sound", "360° Camera"],
+    features: [
+      "GPS",
+      "Leather Seats",
+      "Sunroof",
+      "Premium Sound",
+      "360° Camera",
+    ],
   },
 ];
 

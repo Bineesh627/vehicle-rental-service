@@ -6,14 +6,13 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export const BottomNav = (props: Partial<BottomTabBarProps>) => {
   const nativeNavigation = useNavigation();
-  const { state, descriptors, insets, navigation } = props;
+  const { state, descriptors, navigation } = props;
 
   // Map route names to Icons and Labels
-  // Expo Router default routes: "index", "explore", "bookings", "profile" for (tabs)
   const getRouteConfig = (routeName: string) => {
     switch (routeName) {
       case "index":
-      case "Home": // Fallback for manual nav
+      case "Home":
         return { icon: Home, label: "Home" };
       case "explore":
       case "Explore":
@@ -22,13 +21,14 @@ export const BottomNav = (props: Partial<BottomTabBarProps>) => {
       case "Bookings":
         return { icon: Calendar, label: "Bookings" };
       case "profile":
-        return { icon: User, label: "profile" };
+      case "Profile":
+        return { icon: User, label: "Profile" };
       default:
         return { icon: Home, label: "Home" };
     }
   };
 
-  // Standalone mode (when used in VehicleDetails)
+  // Standalone mode (when used in screens without tab nav context)
   if (!state) {
     const navItems = [
       { name: "index", label: "Home", icon: Home },
@@ -44,17 +44,13 @@ export const BottomNav = (props: Partial<BottomTabBarProps>) => {
             <TouchableOpacity
               key={item.name}
               onPress={() => {
-                // Navigate to the tab screen
-                // We assume these are under the 'Tabs' group or accessible via root
-                // Using "navigate" with the hierarchical path might be safest if using global nav
-                // But simple strings often work if configured in strict typed stack
                 nativeNavigation.navigate(item.name as never);
               }}
               style={styles.navItem}
               activeOpacity={0.8}
             >
               <View style={styles.iconWrapper}>
-                <item.icon size={24} color="#94a3b8" />
+                <item.icon size={24} color="#94a3b8" strokeWidth={2} />
               </View>
               <Text style={[styles.label, styles.labelInactive]}>
                 {item.label}
@@ -87,7 +83,7 @@ export const BottomNav = (props: Partial<BottomTabBarProps>) => {
                 CommonActions.navigate({
                   name: route.name,
                   merge: true,
-                }),
+                })
               );
             }
           };
@@ -119,7 +115,7 @@ export const BottomNav = (props: Partial<BottomTabBarProps>) => {
                 <config.icon
                   size={24}
                   color={isFocused ? "#0f172a" : "#94a3b8"}
-                  strokeWidth={isFocused ? 2.5 : 2}
+                  strokeWidth={2}
                 />
               </View>
               <Text
@@ -142,45 +138,48 @@ const styles = StyleSheet.create({
   navContainer: {
     backgroundColor: "#0f172a", // Dark background
     borderTopWidth: 1,
-    borderTopColor: "#1e293b", // Slightly lighter border
+    borderTopColor: "#1e293b", // Subtle border
     paddingBottom: 20,
     paddingTop: 12,
   },
   navContent: {
     flexDirection: "row",
-    justifyContent: "space-around",
+    justifyContent: "space-between",
     alignItems: "center",
-    maxWidth: 400,
-    alignSelf: "center",
-    width: "100%",
+    paddingHorizontal: 24,
   },
   navItem: {
     alignItems: "center",
+    justifyContent: "center",
     gap: 4,
-    paddingHorizontal: 12,
+    minWidth: 64,
   },
   iconWrapper: {
-    padding: 10,
-    borderRadius: 50, // Circular
+    width: 48,
+    height: 48,
+    borderRadius: 999, // Ensure perfect circle
     backgroundColor: "transparent",
     alignItems: "center",
     justifyContent: "center",
-    width: 44,
-    height: 44,
   },
   iconWrapperActive: {
-    backgroundColor: "#22d3ee", // Cyan-400
-    shadowColor: "#22d3ee",
+    backgroundColor: "#2dd4bf", // Teal Active Background
+    shadowColor: "#2dd4bf",
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
+    shadowOpacity: 0.6,
+    shadowRadius: 12, // Glow effect
     elevation: 5,
   },
   label: {
     fontSize: 12,
     fontWeight: "500",
-    marginTop: 4,
+    marginTop: 2,
   },
-  labelActive: { color: "#22d3ee" }, // Cyan-400
-  labelInactive: { color: "#94a3b8" }, // Slate-400
+  labelActive: {
+    color: "#2dd4bf", // Teal Text
+    fontWeight: "600",
+  },
+  labelInactive: {
+    color: "#94a3b8", // Slate-400
+  },
 });

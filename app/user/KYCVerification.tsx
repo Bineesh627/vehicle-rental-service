@@ -1,44 +1,39 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "expo-router";
 import {
   AlertCircle,
   ArrowLeft,
   Calendar,
   CheckCircle,
+  ChevronDown,
   FileText,
   Mail,
   MapPin,
   Phone,
   Upload,
   User,
+  X,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import Toast from "react-native-toast-message";
 
 export default function KYCVerification() {
   const router = useRouter();
-  const { toast } = useToast();
 
   const [kycData, setKycData] = useState({
     fullName: "John Doe",
-    dateOfBirth: "1990-05-15",
+    dateOfBirth: "15/05/1990",
     address: "123 Main Street, Downtown, City 12345",
     phone: "+1 555-0400",
     email: "john.doe@example.com",
@@ -53,14 +48,29 @@ export default function KYCVerification() {
     "pending" | "verified" | "not_submitted"
   >("not_submitted");
 
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [isDocTypeModalVisible, setDocTypeModalVisible] = useState(false);
+
+  const docTypes = [
+    "Aadhar Card",
+    "Voter ID",
+    "Passport",
+    "PAN Card",
+    "National ID",
+  ];
+
   const handleKycChange = (field: string, value: string | any | null) => {
     setKycData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleFileChange = (field: string) => {
-    // Mock file selection since we cannot add document picker library imports
     const mockFile = { name: "document.jpg", uri: "path/to/image" };
     handleKycChange(field, mockFile);
+    Toast.show({
+      type: "success",
+      text1: "File Uploaded",
+      text2: `${mockFile.name} attached successfully`,
+    });
   };
 
   const handleSubmitKYC = () => {
@@ -71,58 +81,69 @@ export default function KYCVerification() {
       !kycData.phone ||
       !kycData.email
     ) {
-      toast({
-        title: "Missing Information",
-        description: "Please fill in all personal details.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!kycData.drivingLicenseNumber || !kycData.drivingLicensePhoto) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide driving license details and photo.",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (
-      !kycData.secondaryDocType ||
-      !kycData.secondaryDocNumber ||
-      !kycData.secondaryDocPhoto
-    ) {
-      toast({
-        title: "Missing Information",
-        description: "Please provide secondary document details and photo.",
-        variant: "destructive",
+      Toast.show({
+        type: "error",
+        text1: "Missing Information",
+        text2: "Please fill in all personal details.",
       });
       return;
     }
     setKycStatus("pending");
-    toast({
-      title: "KYC Submitted",
-      description:
-        "Your documents are being verified. This may take 24-48 hours.",
+    Toast.show({
+      type: "success",
+      text1: "KYC Submitted",
+      text2: "Your documents are being verified.",
     });
   };
 
+  // Helper for Input Fields - Fixed Alignment by using View for label container
+  const renderInput = (
+    label: string,
+    icon: React.ReactNode,
+    value: string,
+    fieldKey: string,
+    placeholder: string,
+    keyboardType: "default" | "email-address" | "phone-pad" = "default"
+  ) => (
+    <View style={styles.inputGroup}>
+      <View style={styles.labelContainer}>
+        {icon}
+        <Text style={styles.labelText}>{label}</Text>
+      </View>
+      <TextInput
+        value={value}
+        onChangeText={(text) => handleKycChange(fieldKey, text)}
+        placeholder={placeholder}
+        placeholderTextColor="#64748b"
+        keyboardType={keyboardType}
+        editable={kycStatus === "not_submitted"}
+        onFocus={() => setFocusedField(fieldKey)}
+        onBlur={() => setFocusedField(null)}
+        style={[
+          styles.input,
+          focusedField === fieldKey && styles.inputFocused,
+          kycStatus !== "not_submitted" && styles.inputDisabled,
+        ]}
+      />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      <SafeAreaView
-        edges={["top"]}
-        style={{ backgroundColor: "rgba(255, 255, 255, 0.95)" }}
-      >
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.headerLeft}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onPress={() => router.navigate("profile" as never)}
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <TouchableOpacity
+                onPress={() => router.back()}
                 style={styles.backButton}
               >
-                <ArrowLeft size={20} color="#0f172a" />
-              </Button>
+                <ArrowLeft size={24} color="#ffffff" />
+              </TouchableOpacity>
               <View>
                 <Text style={styles.headerTitle}>KYC Verification</Text>
                 <Text style={styles.headerSubtitle}>
@@ -143,251 +164,298 @@ export default function KYCVerification() {
               </View>
             )}
           </View>
-        </View>
-      </SafeAreaView>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.main}>
-          {/* Personal Details */}
-          <Card style={styles.card}>
-            <CardHeader style={styles.cardHeader}>
-              <CardTitle style={styles.cardTitle}>
-                <User size={16} color="#0f172a" style={styles.iconSpacing} />
-                <Text>Personal Details</Text>
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={styles.cardContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  <User size={16} color="#64748b" style={styles.labelIcon} />
-                  <Text>Full Name (as per documents) *</Text>
-                </Text>
-                <Input
-                  value={kycData.fullName}
-                  onChangeText={(text) => handleKycChange("fullName", text)}
-                  placeholder="Enter full name"
-                  editable={kycStatus === "not_submitted"}
-                />
-              </View>
-
-              <View style={styles.gridCols2}>
-                <View style={[styles.inputGroup, styles.flex1]}>
-                  <Text style={styles.label}>
-                    <Calendar
-                      size={16}
-                      color="#64748b"
-                      style={styles.labelIcon}
-                    />
-                    <Text>Date of Birth *</Text>
-                  </Text>
-                  <Input
-                    value={kycData.dateOfBirth}
-                    onChangeText={(text) =>
-                      handleKycChange("dateOfBirth", text)
-                    }
-                    editable={kycStatus === "not_submitted"}
-                  />
-                </View>
-                <View style={[styles.inputGroup, styles.flex1]}>
-                  <Text style={styles.label}>
-                    <Phone size={16} color="#64748b" style={styles.labelIcon} />
-                    <Text>Phone *</Text>
-                  </Text>
-                  <Input
-                    value={kycData.phone}
-                    onChangeText={(text) => handleKycChange("phone", text)}
-                    placeholder="Phone number"
-                    editable={kycStatus === "not_submitted"}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  <Mail size={16} color="#64748b" style={styles.labelIcon} />
-                  <Text>Email Address *</Text>
-                </Text>
-                <Input
-                  value={kycData.email}
-                  onChangeText={(text) => handleKycChange("email", text)}
-                  placeholder="Email address"
-                  editable={kycStatus === "not_submitted"}
-                  keyboardType="email-address"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>
-                  <MapPin size={16} color="#64748b" style={styles.labelIcon} />
-                  <Text>Full Address *</Text>
-                </Text>
-                <Input
-                  value={kycData.address}
-                  onChangeText={(text) => handleKycChange("address", text)}
-                  placeholder="Enter complete address"
-                  editable={kycStatus === "not_submitted"}
-                />
-              </View>
-            </CardContent>
-          </Card>
-
-          {/* Driving License */}
-          <Card style={styles.card}>
-            <CardHeader style={styles.cardHeader}>
-              <CardTitle style={styles.cardTitle}>
-                <FileText
-                  size={16}
-                  color="#0f172a"
-                  style={styles.iconSpacing}
-                />
-                <Text>Driving License</Text>
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={styles.cardContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>License Number *</Text>
-                <Input
-                  value={kycData.drivingLicenseNumber}
-                  onChangeText={(text) =>
-                    handleKycChange("drivingLicenseNumber", text)
-                  }
-                  placeholder="Enter driving license number"
-                  editable={kycStatus === "not_submitted"}
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Upload License Photo *</Text>
-                <TouchableOpacity
-                  style={styles.uploadBox}
-                  onPress={() => handleFileChange("drivingLicensePhoto")}
-                  disabled={kycStatus !== "not_submitted"}
-                >
-                  {kycData.drivingLicensePhoto ? (
-                    <View style={styles.fileUploaded}>
-                      <CheckCircle size={20} color="#22c55e" />
-                      <Text style={styles.fileName}>
-                        {kycData.drivingLicensePhoto.name}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.uploadPlaceholder}>
-                      <Upload size={32} color="#64748b" />
-                      <Text style={styles.uploadText}>
-                        Tap to upload license photo
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </CardContent>
-          </Card>
-
-          {/* Secondary ID Proof */}
-          <Card style={styles.card}>
-            <CardHeader style={styles.cardHeader}>
-              <CardTitle style={styles.cardTitle}>
-                <FileText
-                  size={16}
-                  color="#0f172a"
-                  style={styles.iconSpacing}
-                />
-                <Text>Secondary ID Proof</Text>
-              </CardTitle>
-            </CardHeader>
-            <CardContent style={styles.cardContent}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Document Type *</Text>
-                <Select
-                  value={kycData.secondaryDocType}
-                  onValueChange={(v: string) =>
-                    handleKycChange("secondaryDocType", v)
-                  }
-                  disabled={kycStatus !== "not_submitted"}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select document type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="aadhar" label="Aadhar Card" />
-                    <SelectItem value="voter_id" label="Voter ID" />
-                    <SelectItem value="passport" label="Passport" />
-                    <SelectItem value="pan_card" label="PAN Card" />
-                    <SelectItem value="national_id" label="National ID" />
-                  </SelectContent>
-                </Select>
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Document Number *</Text>
-                <Input
-                  value={kycData.secondaryDocNumber}
-                  onChangeText={(text) =>
-                    handleKycChange("secondaryDocNumber", text)
-                  }
-                  placeholder="Enter document number"
-                  editable={kycStatus === "not_submitted"}
-                />
-              </View>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Upload Document Photo *</Text>
-                <TouchableOpacity
-                  style={styles.uploadBox}
-                  onPress={() => handleFileChange("secondaryDocPhoto")}
-                  disabled={kycStatus !== "not_submitted"}
-                >
-                  {kycData.secondaryDocPhoto ? (
-                    <View style={styles.fileUploaded}>
-                      <CheckCircle size={20} color="#22c55e" />
-                      <Text style={styles.fileName}>
-                        {kycData.secondaryDocPhoto.name}
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.uploadPlaceholder}>
-                      <Upload size={32} color="#64748b" />
-                      <Text style={styles.uploadText}>
-                        Tap to upload document photo
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              </View>
-            </CardContent>
-          </Card>
-
-          {/* Submit Button */}
-          <Button
-            style={styles.submitButton}
-            size="lg"
-            onPress={handleSubmitKYC}
-            disabled={kycStatus === "pending" || kycStatus === "verified"}
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            {kycStatus === "verified" ? (
-              <View style={styles.buttonContent}>
-                <CheckCircle
-                  size={16}
-                  color="white"
-                  style={styles.buttonIcon}
-                />
-                <Text style={styles.buttonText}>KYC Verified</Text>
+            <View style={styles.main}>
+              {/* Personal Details */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <User size={18} color="#ffffff" style={styles.iconSpacing} />
+                  <Text style={styles.cardTitle}>Personal Details</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {renderInput(
+                    "Full Name (as per documents) *",
+                    null,
+                    kycData.fullName,
+                    "fullName",
+                    "John Doe"
+                  )}
+
+                  <View style={styles.gridCols2}>
+                    <View style={styles.flex1}>
+                      {renderInput(
+                        "Date of Birth *",
+                        <Calendar
+                          size={14}
+                          color="#94a3b8"
+                          style={styles.labelIcon}
+                        />,
+                        kycData.dateOfBirth,
+                        "dateOfBirth",
+                        "DD/MM/YYYY"
+                      )}
+                    </View>
+                    <View style={styles.flex1}>
+                      {renderInput(
+                        "Phone *",
+                        <Phone
+                          size={14}
+                          color="#94a3b8"
+                          style={styles.labelIcon}
+                        />,
+                        kycData.phone,
+                        "phone",
+                        "+1 234 567 8900",
+                        "phone-pad"
+                      )}
+                    </View>
+                  </View>
+
+                  {renderInput(
+                    "Email Address *",
+                    <Mail
+                      size={14}
+                      color="#94a3b8"
+                      style={styles.labelIcon}
+                    />,
+                    kycData.email,
+                    "email",
+                    "john.doe@example.com",
+                    "email-address"
+                  )}
+
+                  {renderInput(
+                    "Full Address *",
+                    <MapPin
+                      size={14}
+                      color="#94a3b8"
+                      style={styles.labelIcon}
+                    />,
+                    kycData.address,
+                    "address",
+                    "123 Street Name, City"
+                  )}
+                </View>
               </View>
-            ) : kycStatus === "pending" ? (
-              <View style={styles.buttonContent}>
-                <AlertCircle
-                  size={16}
-                  color="white"
-                  style={styles.buttonIcon}
-                />
-                <Text style={styles.buttonText}>Verification Pending</Text>
+
+              {/* Driving License */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <FileText
+                    size={18}
+                    color="#ffffff"
+                    style={styles.iconSpacing}
+                  />
+                  <Text style={styles.cardTitle}>Driving License</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  {renderInput(
+                    "License Number *",
+                    null,
+                    kycData.drivingLicenseNumber,
+                    "drivingLicenseNumber",
+                    "Enter driving license number"
+                  )}
+
+                  <View style={styles.inputGroup}>
+                    <View style={styles.labelContainer}>
+                      <Text style={styles.labelText}>
+                        Upload License Photo *
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.uploadBox}
+                      onPress={() => handleFileChange("drivingLicensePhoto")}
+                      disabled={kycStatus !== "not_submitted"}
+                    >
+                      {kycData.drivingLicensePhoto ? (
+                        <View style={styles.fileUploaded}>
+                          <CheckCircle size={20} color="#2dd4bf" />
+                          <Text style={styles.fileName}>
+                            {kycData.drivingLicensePhoto.name}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.uploadPlaceholder}>
+                          <Upload size={24} color="#64748b" />
+                          <Text style={styles.uploadText}>
+                            Tap to upload license photo
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
-            ) : (
-              <Text style={styles.buttonText}>Submit KYC for Verification</Text>
-            )}
-          </Button>
-        </View>
-      </ScrollView>
+
+              {/* Secondary ID Proof */}
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <FileText
+                    size={18}
+                    color="#ffffff"
+                    style={styles.iconSpacing}
+                  />
+                  <Text style={styles.cardTitle}>Secondary ID Proof</Text>
+                </View>
+                <View style={styles.cardContent}>
+                  <View style={styles.inputGroup}>
+                    <View style={styles.labelContainer}>
+                      <Text style={styles.labelText}>Document Type *</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.selectInput}
+                      onPress={() => setDocTypeModalVisible(true)}
+                      disabled={kycStatus !== "not_submitted"}
+                    >
+                      <Text
+                        style={
+                          kycData.secondaryDocType
+                            ? styles.selectValue
+                            : styles.selectPlaceholder
+                        }
+                      >
+                        {kycData.secondaryDocType || "Select document type"}
+                      </Text>
+                      <ChevronDown size={20} color="#64748b" />
+                    </TouchableOpacity>
+                  </View>
+
+                  {renderInput(
+                    "Document Number *",
+                    null,
+                    kycData.secondaryDocNumber,
+                    "secondaryDocNumber",
+                    "Enter document number"
+                  )}
+
+                  <View style={styles.inputGroup}>
+                    <View style={styles.labelContainer}>
+                      <Text style={styles.labelText}>
+                        Upload Document Photo *
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.uploadBox}
+                      onPress={() => handleFileChange("secondaryDocPhoto")}
+                      disabled={kycStatus !== "not_submitted"}
+                    >
+                      {kycData.secondaryDocPhoto ? (
+                        <View style={styles.fileUploaded}>
+                          <CheckCircle size={20} color="#2dd4bf" />
+                          <Text style={styles.fileName}>
+                            {kycData.secondaryDocPhoto.name}
+                          </Text>
+                        </View>
+                      ) : (
+                        <View style={styles.uploadPlaceholder}>
+                          <Upload size={24} color="#64748b" />
+                          <Text style={styles.uploadText}>
+                            Tap to upload document photo
+                          </Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+
+              {/* Submit Button */}
+              <TouchableOpacity
+                style={[
+                  styles.submitButton,
+                  (kycStatus === "pending" || kycStatus === "verified") &&
+                    styles.submitButtonDisabled,
+                ]}
+                onPress={handleSubmitKYC}
+                disabled={kycStatus === "pending" || kycStatus === "verified"}
+              >
+                {kycStatus === "verified" ? (
+                  <View style={styles.buttonContent}>
+                    <CheckCircle
+                      size={20}
+                      color="#0f172a"
+                      style={styles.buttonIcon}
+                    />
+                    <Text style={styles.buttonText}>KYC Verified</Text>
+                  </View>
+                ) : kycStatus === "pending" ? (
+                  <View style={styles.buttonContent}>
+                    <AlertCircle
+                      size={20}
+                      color="#0f172a"
+                      style={styles.buttonIcon}
+                    />
+                    <Text style={styles.buttonText}>Verification Pending</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.buttonText}>
+                    Submit KYC for Verification
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+
+          {/* Document Type Picker Modal */}
+          <Modal
+            visible={isDocTypeModalVisible}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setDocTypeModalVisible(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setDocTypeModalVisible(false)}
+            >
+              <View style={styles.modalContent}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Document Type</Text>
+                  <TouchableOpacity
+                    onPress={() => setDocTypeModalVisible(false)}
+                  >
+                    <X size={20} color="#94a3b8" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView>
+                  {docTypes.map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[
+                        styles.modalOption,
+                        kycData.secondaryDocType === type &&
+                          styles.modalOptionSelected,
+                      ]}
+                      onPress={() => {
+                        handleKycChange("secondaryDocType", type);
+                        setDocTypeModalVisible(false);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.modalOptionText,
+                          kycData.secondaryDocType === type &&
+                            styles.modalOptionTextSelected,
+                        ]}
+                      >
+                        {type}
+                      </Text>
+                      {kycData.secondaryDocType === type && (
+                        <CheckCircle size={18} color="#2dd4bf" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableOpacity>
+          </Modal>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </View>
   );
 }
@@ -395,111 +463,127 @@ export default function KYCVerification() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFBFC", // bg-background
+    backgroundColor: "#0f172a", // Dark background
   },
   header: {
+    backgroundColor: "#0f172a",
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0", // border-border
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // bg-card/95
-  },
-  headerContent: {
+    borderBottomColor: "#1e293b",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
   },
-  headerLeft: {
+  headerContent: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
   },
   backButton: {
-    // Style handled by component props or global theme usually,
-    // but ensuring layout here
+    padding: 4,
   },
   headerTitle: {
-    fontSize: 18, // text-lg
-    fontWeight: "700", // font-bold
-    color: "#020817", // text-foreground
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
   },
   headerSubtitle: {
-    fontSize: 12, // text-xs
-    color: "#64748b", // text-muted-foreground
+    fontSize: 12,
+    color: "#94a3b8", // Slate-400
   },
   badgeVerified: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(34, 197, 94, 0.1)", // bg-green-500/10
+    backgroundColor: "rgba(34, 197, 94, 0.1)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 9999,
   },
   badgeTextVerified: {
     fontSize: 12,
-    color: "#22c55e", // text-green-500
+    color: "#22c55e",
   },
   badgePending: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: "rgba(249, 115, 22, 0.1)", // bg-orange-500/10
+    backgroundColor: "rgba(249, 115, 22, 0.1)",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 9999,
   },
   badgeTextPending: {
     fontSize: 12,
-    color: "#f97316", // text-orange-500
+    color: "#f97316",
   },
   scrollContent: {
-    paddingBottom: 100, // pb-24 equivalent
+    paddingBottom: 100,
   },
   main: {
     paddingHorizontal: 16,
     paddingVertical: 24,
-    gap: 24, // space-y-6
+    gap: 24,
   },
   card: {
-    borderColor: "#E2E8F0", // border-border
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 16,
     borderWidth: 1,
-    borderRadius: 12,
-    backgroundColor: "white",
+    borderColor: "#334155",
   },
   cardHeader: {
-    paddingBottom: 12,
-    paddingHorizontal: 24,
-    paddingTop: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
   },
   cardTitle: {
-    fontSize: 16, // text-base
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
+    fontSize: 16,
     fontWeight: "600",
+    color: "#ffffff",
   },
   iconSpacing: {
-    marginRight: 8,
+    marginRight: 10,
   },
   cardContent: {
-    gap: 16, // space-y-4
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    padding: 16,
+    gap: 16,
   },
   inputGroup: {
-    gap: 8, // space-y-2
+    gap: 8,
   },
-  label: {
-    fontSize: 14, // text-sm
-    fontWeight: "500",
-    color: "#020817", // text-foreground
+  labelContainer: {
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 4,
     gap: 8,
   },
   labelIcon: {
-    marginRight: 8,
+    // No specific style needed as it's handled by gap in container
+  },
+  labelText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#ffffff",
+  },
+  input: {
+    backgroundColor: "#0f172a", // Darker input background
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    color: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+    fontSize: 16,
+  },
+  inputFocused: {
+    borderColor: "#2dd4bf", // Teal border on focus
+    backgroundColor: "rgba(45, 212, 191, 0.05)",
+  },
+  inputDisabled: {
+    opacity: 0.7,
   },
   gridCols2: {
     flexDirection: "row",
@@ -508,35 +592,63 @@ const styles = StyleSheet.create({
   flex1: {
     flex: 1,
   },
+  selectInput: {
+    backgroundColor: "#0f172a",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: "#334155",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  selectValue: {
+    color: "#ffffff",
+    fontSize: 16,
+  },
+  selectPlaceholder: {
+    color: "#64748b",
+    fontSize: 16,
+  },
   uploadBox: {
     borderWidth: 2,
     borderStyle: "dashed",
-    borderColor: "#E2E8F0", // border-border
-    borderRadius: 12, // rounded-xl
-    padding: 16,
+    borderColor: "#334155",
+    borderRadius: 12,
+    padding: 20,
     alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "rgba(15, 23, 42, 0.3)",
   },
   fileUploaded: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     gap: 8,
   },
   fileName: {
-    fontSize: 14, // text-sm
-    color: "#22c55e", // text-green-500
+    fontSize: 14,
+    color: "#2dd4bf", // Teal
   },
   uploadPlaceholder: {
     alignItems: "center",
     gap: 8,
   },
   uploadText: {
-    fontSize: 14, // text-sm
-    color: "#64748b", // text-muted-foreground
+    fontSize: 14,
+    color: "#64748b",
   },
   submitButton: {
-    width: "100%",
+    backgroundColor: "#2dd4bf", // Teal
+    paddingVertical: 16,
+    borderRadius: 9999, // Pill shape
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+  },
+  submitButtonDisabled: {
+    opacity: 0.7,
+    backgroundColor: "#94a3b8",
   },
   buttonContent: {
     flexDirection: "row",
@@ -546,13 +658,54 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   buttonText: {
-    color: "white",
-    fontWeight: "500",
+    color: "#0f172a", // Dark text on Teal button
+    fontSize: 16,
+    fontWeight: "700",
   },
-  bottomNavContainer: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    maxHeight: "60%",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  modalOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  modalOptionSelected: {
+    backgroundColor: "rgba(45, 212, 191, 0.1)",
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: "#94a3b8",
+  },
+  modalOptionTextSelected: {
+    color: "#2dd4bf",
+    fontWeight: "600",
   },
 });

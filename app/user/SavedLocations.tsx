@@ -1,7 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -18,7 +14,15 @@ import {
   X,
 } from "lucide-react-native";
 import { useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -78,7 +82,7 @@ export default function SavedLocations() {
   const [isEditing, setIsEditing] = useState(false);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
-    null,
+    null
   );
   const [showOptionsModal, setShowOptionsModal] =
     useState<SavedLocation | null>(null);
@@ -108,8 +112,8 @@ export default function SavedLocations() {
     if (isEditing && selectedLocationId) {
       setLocations((prev) =>
         prev.map((loc) =>
-          loc.id === selectedLocationId ? { ...loc, ...formData } : loc,
-        ),
+          loc.id === selectedLocationId ? { ...loc, ...formData } : loc
+        )
       );
       Toast.show({
         type: "success",
@@ -156,113 +160,98 @@ export default function SavedLocations() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1">
+    <View style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => router.navigate("profile" as never)}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
             >
-              <ArrowLeft size={20} className="text-foreground" />
-            </Button>
-            <Text className="text-lg font-bold text-foreground">
-              Saved Locations
-            </Text>
+              <ArrowLeft size={24} color="#ffffff" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Saved Locations</Text>
           </View>
           <TouchableOpacity
             onPress={() => {
               resetForm();
               setShowDialog(true);
             }}
-            className="flex-row items-center gap-1 bg-primary px-3 py-1.5 rounded-md"
+            style={styles.addButton}
           >
-            <Plus size={16} className="text-primary-foreground" />
-            <Text className="text-primary-foreground text-xs font-semibold">
-              Add
-            </Text>
+            <Plus size={16} color="#0f172a" />
+            <Text style={styles.addButtonText}>Add</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ gap: 16, paddingBottom: 40 }}
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
         >
           {locations.length === 0 ? (
-            <Card className="border-border">
-              <CardContent className="p-8 items-center">
-                <MapPin size={48} className="text-muted-foreground mb-3" />
-                <Text className="text-muted-foreground">
-                  No saved locations yet
-                </Text>
-                <Button
-                  className="mt-4 flex-row gap-1"
-                  onPress={() => {
-                    resetForm();
-                    setShowDialog(true);
-                  }}
-                >
-                  <Plus size={16} className="text-primary-foreground" />
-                  <Text className="text-primary-foreground font-semibold">
-                    Add Location
-                  </Text>
-                </Button>
-              </CardContent>
-            </Card>
+            <View style={styles.emptyState}>
+              <MapPin size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <Text style={styles.emptyText}>No saved locations yet</Text>
+              <TouchableOpacity
+                style={styles.emptyButton}
+                onPress={() => {
+                  resetForm();
+                  setShowDialog(true);
+                }}
+              >
+                <Plus size={16} color="#0f172a" />
+                <Text style={styles.emptyButtonText}>Add Location</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             locations.map((location) => {
               const Icon = getLocationIcon(location.type);
+              const iconColor =
+                location.type === "home"
+                  ? "#2dd4bf" // Teal
+                  : location.type === "work"
+                  ? "#a855f7" // Purple
+                  : location.type === "favorite"
+                  ? "#f97316" // Orange
+                  : "#94a3b8"; // Slate
+
+              const iconBg =
+                location.type === "home"
+                  ? "rgba(45, 212, 191, 0.1)"
+                  : location.type === "work"
+                  ? "rgba(168, 85, 247, 0.1)"
+                  : location.type === "favorite"
+                  ? "rgba(249, 115, 22, 0.1)"
+                  : "#334155";
+
               return (
-                <Card key={location.id} className="border-border">
-                  <CardContent className="p-4">
-                    <View className="flex-row items-start justify-between">
-                      <View className="flex-row items-start gap-3 flex-1">
-                        <View
-                          className={`h-10 w-10 rounded-xl items-center justify-center ${
-                            location.type === "home"
-                              ? "bg-primary/10"
-                              : location.type === "work"
-                                ? "bg-purple-500/10"
-                                : location.type === "favorite"
-                                  ? "bg-orange-500/10"
-                                  : "bg-secondary"
-                          }`}
-                        >
-                          <Icon
-                            size={20}
-                            className={
-                              location.type === "home"
-                                ? "text-primary"
-                                : location.type === "work"
-                                  ? "text-purple-500"
-                                  : location.type === "favorite"
-                                    ? "text-orange-500"
-                                    : "text-muted-foreground"
-                            }
-                          />
-                        </View>
-                        <View className="flex-1">
-                          <Text className="font-medium text-foreground">
-                            {location.name}
-                          </Text>
-                          <Text className="text-sm text-muted-foreground mt-1">
-                            {location.address}
-                          </Text>
-                        </View>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => setShowOptionsModal(location)}
+                <View key={location.id} style={styles.card}>
+                  <View style={styles.cardContent}>
+                    <View style={styles.cardLeft}>
+                      <View
+                        style={[
+                          styles.iconContainer,
+                          { backgroundColor: iconBg },
+                        ]}
                       >
-                        <MoreVertical
-                          size={20}
-                          className="text-muted-foreground"
-                        />
-                      </TouchableOpacity>
+                        <Icon size={20} color={iconColor} />
+                      </View>
+                      <View style={styles.textContainer}>
+                        <Text style={styles.locationName}>{location.name}</Text>
+                        <Text style={styles.locationAddress}>
+                          {location.address}
+                        </Text>
+                      </View>
                     </View>
-                  </CardContent>
-                </Card>
+                    <TouchableOpacity
+                      onPress={() => setShowOptionsModal(location)}
+                      style={styles.moreButton}
+                    >
+                      <MoreVertical size={20} color="#94a3b8" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               );
             })
           )}
@@ -275,74 +264,72 @@ export default function SavedLocations() {
           animationType="fade"
           onRequestClose={() => setShowDialog(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
                   {isEditing ? "Edit Location" : "Add New Location"}
                 </Text>
                 <TouchableOpacity onPress={() => setShowDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+                  <X size={24} color="#94a3b8" />
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-4">
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Location Name *
-                  </Text>
-                  <Input
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Location Name *</Text>
+                  <TextInput
                     value={formData.name}
                     onChangeText={(text) =>
                       setFormData((prev) => ({ ...prev, name: text }))
                     }
                     placeholder="e.g., Home, Office"
+                    placeholderTextColor="#64748b"
+                    style={styles.input}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Address *
-                  </Text>
-                  <Input
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Address *</Text>
+                  <TextInput
                     value={formData.address}
                     onChangeText={(text) =>
                       setFormData((prev) => ({ ...prev, address: text }))
                     }
                     placeholder="Enter full address"
+                    placeholderTextColor="#64748b"
+                    style={styles.input}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Type
-                  </Text>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>Type</Text>
                   <TouchableOpacity
                     onPress={() => setShowTypeModal(true)}
-                    className="flex-row items-center justify-between border border-input rounded-md px-3 py-2 bg-background"
+                    style={styles.selectInput}
                   >
-                    <Text className="text-foreground capitalize">
-                      {formData.type}
-                    </Text>
-                    <ChevronDown size={16} className="text-muted-foreground" />
+                    <Text style={styles.selectValue}>{formData.type}</Text>
+                    <ChevronDown size={16} color="#94a3b8" />
                   </TouchableOpacity>
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
                   onPress={() => {
                     setShowDialog(false);
                     resetForm();
                   }}
                 >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button className="flex-1" onPress={handleSaveLocation}>
-                  <Text className="text-primary-foreground font-semibold">
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSaveLocation}
+                >
+                  <Text style={styles.saveButtonText}>
                     {isEditing ? "Save Changes" : "Save Location"}
                   </Text>
-                </Button>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -356,17 +343,18 @@ export default function SavedLocations() {
           onRequestClose={() => setShowTypeModal(false)}
         >
           <TouchableOpacity
-            className="flex-1 bg-black/50 justify-center items-center p-4"
+            style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => setShowTypeModal(false)}
           >
-            <View className="bg-background w-full max-w-xs rounded-xl overflow-hidden">
+            <View style={styles.typeModalContainer}>
               {locationTypes.map((type, index) => (
                 <TouchableOpacity
                   key={type.value}
-                  className={`p-4 border-b border-border ${
-                    index === locationTypes.length - 1 ? "border-0" : ""
-                  }`}
+                  style={[
+                    styles.typeOption,
+                    index === locationTypes.length - 1 && styles.noBorder,
+                  ]}
                   onPress={() => {
                     setFormData((prev) => ({
                       ...prev,
@@ -375,9 +363,7 @@ export default function SavedLocations() {
                     setShowTypeModal(false);
                   }}
                 >
-                  <Text className="text-foreground text-center">
-                    {type.label}
-                  </Text>
+                  <Text style={styles.typeOptionText}>{type.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -392,16 +378,15 @@ export default function SavedLocations() {
           onRequestClose={() => setShowOptionsModal(null)}
         >
           <TouchableOpacity
-            className="flex-1 bg-black/50 justify-end"
+            style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => setShowOptionsModal(null)}
           >
-            <View className="bg-background rounded-t-xl p-4 gap-2">
-              <Text className="text-lg font-bold text-foreground mb-2 px-2">
-                {showOptionsModal?.name}
-              </Text>
+            <View style={styles.optionsModalContainer}>
+              <Text style={styles.optionsTitle}>{showOptionsModal?.name}</Text>
+
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 rounded-lg active:bg-secondary"
+                style={styles.optionItem}
                 onPress={() =>
                   Toast.show({
                     type: "info",
@@ -410,38 +395,317 @@ export default function SavedLocations() {
                   })
                 }
               >
-                <Navigation size={20} className="text-foreground" />
-                <Text className="text-base text-foreground">Navigate</Text>
+                <Navigation size={20} color="#ffffff" />
+                <Text style={styles.optionText}>Navigate</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 rounded-lg active:bg-secondary"
+                style={styles.optionItem}
                 onPress={() =>
                   showOptionsModal && openEditDialog(showOptionsModal)
                 }
               >
-                <Edit size={20} className="text-foreground" />
-                <Text className="text-base text-foreground">Edit</Text>
+                <Edit size={20} color="#ffffff" />
+                <Text style={styles.optionText}>Edit</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 rounded-lg active:bg-secondary"
+                style={styles.optionItem}
                 onPress={() =>
                   showOptionsModal && deleteLocation(showOptionsModal.id)
                 }
               >
-                <Trash2 size={20} className="text-destructive" />
-                <Text className="text-base text-destructive">Delete</Text>
+                <Trash2 size={20} color="#ef4444" />
+                <Text style={[styles.optionText, { color: "#ef4444" }]}>
+                  Delete
+                </Text>
               </TouchableOpacity>
-              <Button
-                variant="outline"
-                className="mt-2"
+
+              <TouchableOpacity
+                style={styles.closeOptionsButton}
                 onPress={() => setShowOptionsModal(null)}
               >
-                <Text className="text-foreground">Cancel</Text>
-              </Button>
+                <Text style={styles.closeOptionsText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </Modal>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2dd4bf", // Teal
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    gap: 4,
+  },
+  addButtonText: {
+    color: "#0f172a",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    gap: 16,
+    paddingBottom: 40,
+  },
+  card: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 16,
+  },
+  cardContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  cardLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    flex: 1,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24, // Circle
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textContainer: {
+    flex: 1,
+  },
+  locationName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+    marginBottom: 4,
+  },
+  locationAddress: {
+    fontSize: 14,
+    color: "#94a3b8", // Slate-400
+  },
+  moreButton: {
+    padding: 8,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  emptyText: {
+    color: "#94a3b8",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  emptyButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#2dd4bf",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 8,
+  },
+  emptyButtonText: {
+    color: "#0f172a",
+    fontWeight: "600",
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalContainer: {
+    backgroundColor: "#1e293b",
+    width: "100%",
+    maxWidth: 360,
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  form: {
+    gap: 16,
+  },
+  inputGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    color: "#94a3b8",
+    fontWeight: "500",
+  },
+  input: {
+    backgroundColor: "#0f172a",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  selectInput: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "#0f172a",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  selectValue: {
+    color: "#ffffff",
+    textTransform: "capitalize",
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+    alignItems: "center",
+  },
+  cancelButtonText: {
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: "#2dd4bf",
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#0f172a",
+    fontWeight: "600",
+  },
+  // Type Modal
+  typeModalContainer: {
+    backgroundColor: "#1e293b",
+    width: "100%",
+    maxWidth: 280,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  typeOption: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+    alignItems: "center",
+  },
+  noBorder: {
+    borderBottomWidth: 0,
+  },
+  typeOptionText: {
+    color: "#ffffff",
+    fontSize: 16,
+  },
+  // Options Modal
+  optionsModalContainer: {
+    backgroundColor: "#1e293b",
+    width: "100%",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  optionsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  optionItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: "#0f172a",
+  },
+  optionText: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontWeight: "500",
+  },
+  closeOptionsButton: {
+    marginTop: 8,
+    padding: 16,
+    alignItems: "center",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  closeOptionsText: {
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+});

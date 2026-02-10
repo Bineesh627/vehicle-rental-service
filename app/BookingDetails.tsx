@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { bookings } from "@/data/mockData";
 import {
   NavigationProp,
@@ -21,20 +20,21 @@ import {
   Dimensions,
   Image,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import { UserStackParamList } from "../navigation/types";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { UserStackParamList } from "@/navigation/types";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 export default function BookingDetails() {
   const route = useRoute();
   const navigation = useNavigation<NavigationProp<UserStackParamList>>();
+  const insets = useSafeAreaInsets();
   const { id } = (route.params as { id: string }) || {};
 
   const booking = bookings.find((b) => b.id === id);
@@ -53,36 +53,30 @@ export default function BookingDetails() {
   const getStatusStyles = (status: string) => {
     switch (status) {
       case "upcoming":
-        return { bg: styles.statusBgUpcoming, text: styles.statusTextUpcoming };
+        return { bg: styles.statusBgUpcoming, text: styles.statusTextUpcoming, label: "Upcoming Booking" };
       case "completed":
-        return {
-          bg: styles.statusBgCompleted,
-          text: styles.statusTextCompleted,
-        };
+        return { bg: styles.statusBgCompleted, text: styles.statusTextCompleted, label: "Completed" };
       case "cancelled":
-        return {
-          bg: styles.statusBgCancelled,
-          text: styles.statusTextCancelled,
-        };
+        return { bg: styles.statusBgCancelled, text: styles.statusTextCancelled, label: "Cancelled" };
       case "active":
-        return { bg: styles.statusBgActive, text: styles.statusTextActive };
+        return { bg: styles.statusBgActive, text: styles.statusTextActive, label: "Active Rental" };
       default:
-        return { bg: styles.statusBgUpcoming, text: styles.statusTextUpcoming };
+        return { bg: styles.statusBgUpcoming, text: styles.statusTextUpcoming, label: "Upcoming" };
     }
   };
 
   const statusStyle = getStatusStyles(booking.status);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerContent}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
-            <ArrowLeft size={20} color="#1e293b" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Booking Details</Text>
         </View>
@@ -95,14 +89,9 @@ export default function BookingDetails() {
         <View style={styles.mainContent}>
           {/* Status banner */}
           <View style={[styles.statusBanner, statusStyle.bg]}>
+            <Calendar size={18} color={statusStyle.text.color} style={{ marginRight: 8 }} />
             <Text style={[styles.statusText, statusStyle.text]}>
-              {booking.status === "upcoming"
-                ? "🗓️ Upcoming Booking"
-                : booking.status === "completed"
-                  ? "✅ Completed"
-                  : booking.status === "active"
-                    ? "🚗 Active Rental"
-                    : "❌ Cancelled"}
+              {statusStyle.label}
             </Text>
           </View>
 
@@ -116,9 +105,9 @@ export default function BookingDetails() {
               <View style={styles.vehicleInfo}>
                 <View style={styles.vehicleTypeContainer}>
                   {booking.vehicle.type === "car" ? (
-                    <Car size={16} color="#1CBFA1" />
+                    <Car size={14} color="#2dd4bf" />
                   ) : (
-                    <Bike size={16} color="#1CBFA1" />
+                    <Bike size={14} color="#2dd4bf" />
                   )}
                   <Text style={styles.vehicleTypeLabel}>
                     {booking.vehicle.type.toUpperCase()}
@@ -142,13 +131,13 @@ export default function BookingDetails() {
             </View>
           </View>
 
-          {/* Date & Time */}
+          {/* Schedule */}
           <View style={styles.card}>
             <Text style={styles.sectionTitle}>Schedule</Text>
             <View style={styles.scheduleContainer}>
               <View style={styles.scheduleRow}>
                 <View style={styles.iconBoxPrimary}>
-                  <Calendar size={20} color="#1CBFA1" />
+                  <Calendar size={20} color="#2dd4bf" />
                 </View>
                 <View style={styles.scheduleTextContainer}>
                   <Text style={styles.label}>Pickup Date</Text>
@@ -159,7 +148,7 @@ export default function BookingDetails() {
               </View>
               <View style={styles.scheduleRow}>
                 <View style={styles.iconBoxPrimary}>
-                  <Clock size={20} color="#1CBFA1" />
+                  <Clock size={20} color="#2dd4bf" />
                 </View>
                 <View style={styles.scheduleTextContainer}>
                   <Text style={styles.label}>Pickup Time</Text>
@@ -168,10 +157,12 @@ export default function BookingDetails() {
                   </Text>
                 </View>
               </View>
+              
               <View style={styles.divider} />
+              
               <View style={styles.scheduleRow}>
                 <View style={styles.iconBoxSecondary}>
-                  <Calendar size={20} color="#64748b" />
+                  <Calendar size={20} color="#94a3b8" />
                 </View>
                 <View style={styles.scheduleTextContainer}>
                   <Text style={styles.label}>Return Date</Text>
@@ -182,7 +173,7 @@ export default function BookingDetails() {
               </View>
               <View style={styles.scheduleRow}>
                 <View style={styles.iconBoxSecondary}>
-                  <Clock size={20} color="#64748b" />
+                  <Clock size={20} color="#94a3b8" />
                 </View>
                 <View style={styles.scheduleTextContainer}>
                   <Text style={styles.label}>Return Time</Text>
@@ -203,7 +194,7 @@ export default function BookingDetails() {
               <View style={styles.shopInfo}>
                 <Text style={styles.shopName}>{booking.shop.name}</Text>
                 <View style={styles.addressRow}>
-                  <MapPin size={14} color="#64748b" />
+                  <MapPin size={14} color="#94a3b8" />
                   <Text style={styles.addressText} numberOfLines={1}>
                     {booking.shop.address}
                   </Text>
@@ -211,28 +202,20 @@ export default function BookingDetails() {
               </View>
             </View>
             <View style={styles.actionButtonsRow}>
-              <View style={styles.actionButtonWrapper}>
-                <Button variant="outline" size="sm" className="w-full flex-row">
-                  <Phone size={16} color="#0f172a" style={{ marginRight: 8 }} />
-                  <Text style={styles.actionButtonText}>Call Shop</Text>
-                </Button>
-              </View>
-              <View style={styles.actionButtonGap} />
-              <View style={styles.actionButtonWrapper}>
-                <Button variant="outline" size="sm" className="w-full flex-row">
-                  <Navigation
-                    size={16}
-                    color="#0f172a"
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text style={styles.actionButtonText}>Directions</Text>
-                </Button>
-              </View>
+              <TouchableOpacity style={styles.outlineButton}>
+                <Phone size={16} color="#2dd4bf" style={{ marginRight: 8 }} />
+                <Text style={styles.outlineButtonText}>Call Shop</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.solidButtonSmall}>
+                <Navigation size={16} color="#0f172a" style={{ marginRight: 8 }} />
+                <Text style={styles.solidButtonTextSmall}>Directions</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
           {/* Payment Summary */}
-          <View style={[styles.card, styles.lastCard]}>
+          <View style={styles.card}>
             <Text style={styles.sectionTitle}>Payment Summary</Text>
             <View style={styles.paymentContainer}>
               <View style={styles.paymentRow}>
@@ -260,142 +243,121 @@ export default function BookingDetails() {
         <View style={styles.footerContent}>
           {booking.status === "upcoming" && (
             <>
-              <View style={styles.footerButtonWrapper}>
-                <Button variant="outline" className="w-full">
-                  <Text style={styles.footerButtonTextOutline}>
-                    Cancel Booking
-                  </Text>
-                </Button>
-              </View>
-              <View style={styles.actionButtonGap} />
-              <View style={styles.footerButtonWrapper}>
-                <Button className="w-full">
-                  <Text style={styles.footerButtonTextPrimary}>
-                    Modify Booking
-                  </Text>
-                </Button>
-              </View>
+              <TouchableOpacity style={styles.footerCancelButton}>
+                <Text style={styles.footerCancelText}>Cancel Booking</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.footerModifyButton}>
+                <Text style={styles.footerModifyText}>Modify Booking</Text>
+              </TouchableOpacity>
             </>
           )}
+          
           {booking.status === "completed" && (
-            <Button
-              className="w-full"
-              onPress={() =>
-                navigation.navigate("VehicleDetails", {
-                  id: booking.vehicleId,
-                })
-              }
+            <TouchableOpacity 
+              style={styles.footerModifyButtonFull}
+              onPress={() => navigation.navigate("VehicleDetails", { id: booking.vehicleId })}
             >
-              <Text style={styles.footerButtonTextPrimary}>Book Again</Text>
-            </Button>
+              <Text style={styles.footerModifyText}>Book Again</Text>
+            </TouchableOpacity>
           )}
+          
           {booking.status === "cancelled" && (
-            <Button
-              className="w-full"
-              onPress={() =>
-                navigation.navigate("VehicleDetails", {
-                  id: booking.vehicleId,
-                })
-              }
+            <TouchableOpacity 
+              style={styles.footerModifyButtonFull}
+              onPress={() => navigation.navigate("VehicleDetails", { id: booking.vehicleId })}
             >
-              <Text style={styles.footerButtonTextPrimary}>Rebook Vehicle</Text>
-            </Button>
+              <Text style={styles.footerModifyText}>Rebook Vehicle</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FAFBFC", // --background
+    backgroundColor: "#0f172a", // Dark background
   },
   notFoundContainer: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#FAFBFC",
+    backgroundColor: "#0f172a",
   },
   notFoundText: {
-    color: "#64748b", // --muted-foreground
+    color: "#94a3b8",
     fontSize: 16,
   },
   header: {
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // bg-card/95
+    backgroundColor: "#0f172a",
     borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0", // --border
+    borderBottomColor: "#1e293b",
     zIndex: 40,
   },
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     gap: 16,
   },
   backButton: {
-    backgroundColor: "#F1F5F9", // --secondary
-    padding: 10,
-    borderRadius: 12,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#020817", // --foreground
+    color: "#ffffff",
   },
   scrollContent: {
-    paddingBottom: 100, // Space for fixed footer
+    paddingBottom: 100,
   },
   mainContent: {
     padding: 16,
     gap: 24,
   },
+  // Status Banner
   statusBanner: {
-    borderRadius: 16,
-    padding: 16,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 8,
   },
   statusText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
-    textTransform: "capitalize",
   },
-  // Status Colors
-  statusBgUpcoming: { backgroundColor: "rgba(28, 191, 161, 0.1)" }, // bg-primary/10
-  statusTextUpcoming: { color: "#1CBFA1" }, // text-primary
-  statusBgCompleted: { backgroundColor: "rgba(34, 197, 94, 0.1)" }, // bg-success/10
-  statusTextCompleted: { color: "#22c55e" }, // text-success
-  statusBgCancelled: { backgroundColor: "rgba(239, 68, 68, 0.1)" }, // bg-destructive/10
-  statusTextCancelled: { color: "#ef4444" }, // text-destructive
-  statusBgActive: { backgroundColor: "rgba(245, 158, 11, 0.1)" }, // bg-warning/10
-  statusTextActive: { color: "#f59e0b" }, // text-warning
+  statusBgUpcoming: { backgroundColor: "rgba(45, 212, 191, 0.1)" }, // Teal tint
+  statusTextUpcoming: { color: "#2dd4bf" },
+  statusBgCompleted: { backgroundColor: "rgba(34, 197, 94, 0.1)" }, // Green tint
+  statusTextCompleted: { color: "#22c55e" },
+  statusBgCancelled: { backgroundColor: "rgba(239, 68, 68, 0.1)" }, // Red tint
+  statusTextCancelled: { color: "#ef4444" },
+  statusBgActive: { backgroundColor: "rgba(245, 158, 11, 0.1)" }, // Orange tint
+  statusTextActive: { color: "#f59e0b" },
 
+  // Card
   card: {
-    backgroundColor: "#FFFFFF", // bg-card
+    backgroundColor: "#1e293b", // Slate-800
     borderRadius: 16,
-    padding: 16, // p-4 or p-5
-    // Shadow
-    shadowColor: "#1CBFA1", // --shadow-card based color
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 4,
-    marginBottom: 6,
-  },
-  lastCard: {
-    marginBottom: 0,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
   vehicleCardContent: {
     flexDirection: "row",
     gap: 16,
   },
   vehicleImage: {
-    height: 112, // h-28
-    width: 144, // w-36
-    borderRadius: 12, // rounded-xl
+    height: 100,
+    width: 120,
+    borderRadius: 12,
+    backgroundColor: "#0f172a",
     resizeMode: "cover",
   },
   vehicleInfo: {
@@ -404,43 +366,48 @@ const styles = StyleSheet.create({
   vehicleTypeContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
+    gap: 6,
+    marginBottom: 6,
   },
   vehicleTypeLabel: {
     fontSize: 12,
-    fontWeight: "500",
-    color: "#64748b", // text-muted-foreground
+    fontWeight: "600",
+    color: "#94a3b8",
+    letterSpacing: 0.5,
   },
   vehicleName: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#020817", // text-foreground
+    color: "#ffffff",
+    marginBottom: 4,
   },
   vehicleModel: {
     fontSize: 14,
-    color: "#64748b", // text-muted-foreground
+    color: "#94a3b8",
+    marginBottom: 8,
   },
   tagsContainer: {
-    marginTop: 8,
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
   },
   tag: {
-    backgroundColor: "#F1F5F9", // bg-secondary
+    backgroundColor: "#0f172a",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#334155",
   },
   tagText: {
     fontSize: 12,
-    color: "#020817",
+    color: "#94a3b8",
+    fontWeight: "500",
   },
   sectionTitle: {
-    fontSize: 16, // text-base/lg
+    fontSize: 16,
     fontWeight: "600",
-    color: "#020817",
+    color: "#ffffff",
     marginBottom: 16,
   },
   scheduleContainer: {
@@ -448,48 +415,49 @@ const styles = StyleSheet.create({
   },
   scheduleRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
+    alignItems: "center",
     gap: 16,
   },
   iconBoxPrimary: {
-    backgroundColor: "rgba(28, 191, 161, 0.1)", // bg-primary/10
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: "rgba(45, 212, 191, 0.1)", // Teal tint
+    padding: 10,
+    borderRadius: 10,
   },
   iconBoxSecondary: {
-    backgroundColor: "#F1F5F9", // bg-secondary
-    padding: 12,
-    borderRadius: 12,
+    backgroundColor: "#334155", // Slate-700
+    padding: 10,
+    borderRadius: 10,
   },
   scheduleTextContainer: {
     flex: 1,
-    justifyContent: "center",
   },
   label: {
-    fontSize: 14,
-    color: "#64748b", // text-muted-foreground
+    fontSize: 12,
+    color: "#94a3b8",
+    marginBottom: 2,
   },
   value: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#020817", // text-foreground
-    marginTop: 2,
+    color: "#ffffff",
   },
   divider: {
     height: 1,
-    backgroundColor: "#E2E8F0", // bg-border
+    backgroundColor: "#334155",
     marginVertical: 4,
+    marginLeft: 56, // Align with text
   },
+  // Shop
   shopContainer: {
     flexDirection: "row",
     gap: 16,
-    marginBottom: 16,
+    marginBottom: 20,
   },
   shopImage: {
-    height: 64, // h-16
-    width: 64, // w-16
-    borderRadius: 12, // rounded-xl
-    resizeMode: "cover",
+    height: 56,
+    width: 56,
+    borderRadius: 12,
+    backgroundColor: "#0f172a",
   },
   shopInfo: {
     flex: 1,
@@ -498,35 +466,53 @@ const styles = StyleSheet.create({
   shopName: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#020817",
+    color: "#ffffff",
+    marginBottom: 4,
   },
   addressRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginTop: 4,
   },
   addressText: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#94a3b8",
     flex: 1,
   },
   actionButtonsRow: {
     flexDirection: "row",
-    gap: 8,
-    marginTop: 4,
+    gap: 12,
   },
-  actionButtonWrapper: {
+  outlineButton: {
     flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
   },
-  actionButtonGap: {
-    width: 12,
-  },
-  actionButtonText: {
+  outlineButtonText: {
+    color: "#2dd4bf",
+    fontWeight: "600",
     fontSize: 14,
-    fontWeight: "500",
-    color: "#0f172a",
   },
+  solidButtonSmall: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 9999,
+    backgroundColor: "#2dd4bf",
+  },
+  solidButtonTextSmall: {
+    color: "#0f172a",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  // Payment
   paymentContainer: {
     gap: 12,
   },
@@ -536,55 +522,76 @@ const styles = StyleSheet.create({
   },
   paymentLabel: {
     fontSize: 14,
-    color: "#64748b",
+    color: "#94a3b8",
   },
   paymentValue: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#020817",
+    color: "#ffffff",
   },
   paymentDivider: {
-    marginVertical: 12,
+    marginLeft: 0,
+    marginVertical: 8,
   },
   totalLabel: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#020817",
+    color: "#ffffff",
   },
   totalValue: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#1CBFA1", // text-primary
+    color: "#2dd4bf", // Teal
   },
+  // Footer
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.95)", // bg-card/95
+    backgroundColor: "#0f172a",
     borderTopWidth: 1,
-    borderTopColor: "#E2E8F0",
+    borderTopColor: "#1e293b",
     padding: 16,
     paddingBottom: Platform.OS === "ios" ? 32 : 16,
   },
   footerContent: {
     flexDirection: "row",
-    justifyContent: "center",
     gap: 16,
   },
-  footerButtonWrapper: {
+  footerCancelButton: {
     flex: 1,
+    paddingVertical: 16,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  footerButtonTextOutline: {
+  footerCancelText: {
+    color: "#2dd4bf",
+    fontWeight: "600",
     fontSize: 16,
+  },
+  footerModifyButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 9999,
+    backgroundColor: "#2dd4bf",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerModifyButtonFull: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 9999,
+    backgroundColor: "#2dd4bf",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerModifyText: {
     color: "#0f172a",
-    textAlign: "center",
-    fontWeight: "500",
-  },
-  footerButtonTextPrimary: {
+    fontWeight: "700",
     fontSize: 16,
-    color: "#ffffff",
-    textAlign: "center",
-    fontWeight: "500",
   },
 });

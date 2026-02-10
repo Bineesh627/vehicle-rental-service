@@ -1,6 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-
 import { useRouter } from "expo-router";
 import {
   AlertCircle,
@@ -14,7 +11,13 @@ import {
   Trash2,
 } from "lucide-react-native";
 import { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -87,20 +90,20 @@ const getNotificationIcon = (type: string) => {
   }
 };
 
-const getIconColor = (type: string) => {
+const getIconStyles = (type: string) => {
   switch (type) {
     case "booking":
-      return "bg-primary/10 text-primary";
+      return { bg: "rgba(45, 212, 191, 0.1)", color: "#2dd4bf" }; // Teal
     case "payment":
-      return "bg-green-500/10 text-green-500";
+      return { bg: "rgba(34, 197, 94, 0.1)", color: "#22c55e" }; // Green
     case "promo":
-      return "bg-purple-500/10 text-purple-500";
+      return { bg: "rgba(168, 85, 247, 0.1)", color: "#a855f7" }; // Purple
     case "alert":
-      return "bg-orange-500/10 text-orange-500";
+      return { bg: "rgba(249, 115, 22, 0.1)", color: "#f97316" }; // Orange
     case "success":
-      return "bg-green-500/10 text-green-500";
+      return { bg: "rgba(34, 197, 94, 0.1)", color: "#22c55e" }; // Green
     default:
-      return "bg-secondary text-muted-foreground";
+      return { bg: "#334155", color: "#94a3b8" }; // Slate
   }
 };
 
@@ -114,7 +117,7 @@ export default function Notifications() {
 
   const markAsRead = (id: string) =>
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
@@ -139,139 +142,256 @@ export default function Notifications() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1">
+    <View style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => router.navigate("profile" as never)}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              onPress={() => router.back()}
+              style={styles.backButton}
             >
-              <ArrowLeft size={20} className="text-foreground" />
-            </Button>
+              <ArrowLeft size={24} color="#ffffff" />
+            </TouchableOpacity>
             <View>
-              <Text className="text-lg font-bold text-foreground">
-                Notifications
-              </Text>
+              <Text style={styles.headerTitle}>Notifications</Text>
               {unreadCount > 0 && (
-                <Text className="text-xs text-muted-foreground">
-                  {unreadCount} unread
-                </Text>
+                <Text style={styles.unreadCount}>{unreadCount} unread</Text>
               )}
             </View>
           </View>
           {notifications.length > 0 && (
             <TouchableOpacity onPress={markAllAsRead}>
-              <Text className="text-sm font-medium text-primary">
-                Mark all read
-              </Text>
+              <Text style={styles.markReadText}>Mark all read</Text>
             </TouchableOpacity>
           )}
         </View>
 
         <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ gap: 16, paddingBottom: 40 }}
+          contentContainerStyle={styles.scrollContent}
+          style={styles.content}
         >
           {/* Clear All Button */}
           {notifications.length > 0 && (
-            <View className="flex-row justify-end">
+            <View style={styles.clearAllContainer}>
               <TouchableOpacity onPress={clearAll}>
-                <Text className="text-sm font-medium text-destructive">
-                  Clear All
-                </Text>
+                <Text style={styles.clearAllText}>Clear All</Text>
               </TouchableOpacity>
             </View>
           )}
 
           {/* Notifications List */}
           {notifications.length === 0 ? (
-            <Card className="border-border">
-              <CardContent className="p-8 items-center">
-                <BellOff size={48} className="text-muted-foreground mb-3" />
-                <Text className="font-medium text-foreground">
-                  No notifications yet
-                </Text>
-                <Text className="text-sm text-muted-foreground mt-1">
-                  We'll notify you when something arrives
-                </Text>
-              </CardContent>
-            </Card>
+            <View style={styles.emptyState}>
+              <BellOff size={48} color="#64748b" style={{ marginBottom: 12 }} />
+              <Text style={styles.emptyTitle}>No notifications yet</Text>
+              <Text style={styles.emptySubtitle}>
+                We'll notify you when something arrives
+              </Text>
+            </View>
           ) : (
-            <View className="gap-3">
+            <View style={styles.listContainer}>
               {notifications.map((notification) => {
                 const Icon = getNotificationIcon(notification.type);
-                const colorClass = getIconColor(notification.type);
-                const [bgColor, textColor] = colorClass.split(" ");
-                // Manual extraction of bg color and text color classes needs mapping or just use string manipulation logic if tailored classes
-                // For simplified NativeWind, we might need to adjust logic or pass specific style props.
-                // Assuming standard NativeWind working:
+                const { bg, color } = getIconStyles(notification.type);
 
                 return (
                   <TouchableOpacity
                     key={notification.id}
                     onPress={() => markAsRead(notification.id)}
+                    activeOpacity={0.8}
                   >
-                    <Card
-                      className={`border-border ${
-                        !notification.isRead
-                          ? "bg-primary/5 border-primary/20"
-                          : ""
-                      }`}
+                    <View
+                      style={[
+                        styles.card,
+                        !notification.isRead && styles.cardUnread,
+                      ]}
                     >
-                      <CardContent className="p-4">
-                        <View className="flex-row items-start gap-3">
+                      <View style={styles.cardContent}>
+                        <View style={styles.cardHeader}>
                           <View
-                            className={`h-10 w-10 rounded-xl items-center justify-center shrink-0 ${bgColor}`}
+                            style={[
+                              styles.iconContainer,
+                              { backgroundColor: bg },
+                            ]}
                           >
-                            <Icon size={20} className={textColor} />
+                            <Icon size={20} color={color} />
                           </View>
-                          <View className="flex-1">
-                            <View className="flex-row items-start justify-between gap-2">
-                              <View className="flex-1">
-                                <Text
-                                  className={`font-medium text-foreground ${
-                                    !notification.isRead ? "font-bold" : ""
-                                  }`}
-                                >
-                                  {notification.title}
-                                </Text>
-                                <Text
-                                  className="text-sm text-muted-foreground mt-0.5"
-                                  numberOfLines={2}
-                                >
-                                  {notification.message}
-                                </Text>
-                                <Text className="text-xs text-muted-foreground mt-1">
-                                  {notification.time}
-                                </Text>
-                              </View>
+                          <View style={styles.textContainer}>
+                            <View style={styles.titleRow}>
+                              <Text
+                                style={[
+                                  styles.title,
+                                  !notification.isRead && styles.titleBold,
+                                ]}
+                              >
+                                {notification.title}
+                              </Text>
                               <TouchableOpacity
-                                className="h-8 w-8 items-center justify-center"
                                 onPress={(e) => {
-                                  e.stopPropagation(); // Might not work as expected on Touchables if nested, but here it's fine
+                                  e.stopPropagation();
                                   deleteNotification(notification.id);
                                 }}
+                                style={styles.deleteButton}
                               >
-                                <Trash2
-                                  size={16}
-                                  className="text-muted-foreground"
-                                />
+                                <Trash2 size={16} color="#94a3b8" />
                               </TouchableOpacity>
                             </View>
+                            <Text
+                              style={styles.message}
+                              numberOfLines={2}
+                            >
+                              {notification.message}
+                            </Text>
+                            <Text style={styles.time}>{notification.time}</Text>
                           </View>
                         </View>
-                      </CardContent>
-                    </Card>
+                      </View>
+                    </View>
                   </TouchableOpacity>
                 );
               })}
             </View>
           )}
         </ScrollView>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  unreadCount: {
+    fontSize: 12,
+    color: "#94a3b8", // Slate-400
+  },
+  markReadText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#ffffff",
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
+  clearAllContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginBottom: 16,
+  },
+  clearAllText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#ef4444", // Red-500
+  },
+  listContainer: {
+    gap: 12,
+  },
+  card: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    overflow: "hidden",
+  },
+  cardUnread: {
+    backgroundColor: "rgba(45, 212, 191, 0.05)", // Slight Teal tint
+    borderColor: "rgba(45, 212, 191, 0.2)",
+  },
+  cardContent: {
+    padding: 16,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12, // Slightly rounded square
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textContainer: {
+    flex: 1,
+  },
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 16,
+    color: "#ffffff",
+    fontWeight: "500",
+    flex: 1,
+    marginRight: 8,
+  },
+  titleBold: {
+    fontWeight: "700",
+  },
+  message: {
+    fontSize: 14,
+    color: "#94a3b8", // Slate-400
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  time: {
+    fontSize: 12,
+    color: "#64748b", // Slate-500
+  },
+  deleteButton: {
+    padding: 4,
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 40,
+    backgroundColor: "#1e293b",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    marginTop: 20,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+    marginBottom: 4,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: "#94a3b8",
+    textAlign: "center",
+  },
+});

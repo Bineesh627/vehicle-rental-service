@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { rentalShops, vehicles } from "@/data/mockData";
 import { UserStackParamList } from "@/navigation/types";
 import {
@@ -158,6 +157,7 @@ export default function VehicleDetails() {
               </View>
               <Text style={styles.vehicleTitle}>{vehicle.name}</Text>
               <Text style={styles.vehicleModel}>{vehicle.model}</Text>
+              <Text style={styles.vehicleModel}>{vehicle.number}</Text>
               {vehicle.vehicleNumber && (
                 <Text style={styles.vehicleNumber}>
                   {vehicle.vehicleNumber}
@@ -165,7 +165,6 @@ export default function VehicleDetails() {
               )}
             </View>
 
-            {/* Specs */}
             {/* Specs */}
             <View style={styles.specsGrid}>
               <View style={styles.specItem}>
@@ -308,42 +307,43 @@ export default function VehicleDetails() {
         </View>
       </ScrollView>
 
-      {/* Bottom action */}
+      {/* Bottom action - Updated to match screenshot */}
       <View style={styles.footer}>
         <View style={styles.footerContent}>
-          <View>
+          <View style={styles.priceContainer}>
             <Text style={styles.footerLabel}>
               {pricingType === "hour" ? "Per hour" : "Per day"}
             </Text>
-            <View style={styles.footerPriceContainer}>
+            <View style={styles.footerPriceRow}>
+              <Text style={styles.footerPriceSymbol}>$</Text>
               <Text style={styles.footerPriceValue}>
-                $
                 {pricingType === "hour"
                   ? vehicle.pricePerHour
                   : vehicle.pricePerDay}
               </Text>
-              <Text style={styles.footerPriceValue}>
+              <Text style={styles.footerPriceUnit}>
                 {pricingType === "hour" ? "/hr" : "/day"}
               </Text>
             </View>
           </View>
-          <View style={styles.footerButtonContainer}>
-            <Button
-              size="lg"
-              disabled={!vehicle.isAvailable}
-              onPress={() =>
-                navigation.navigate("Booking", {
-                  id: vehicle.id,
-                  type: pricingType,
-                })
-              }
-              className="w-full"
-            >
-              <Text style={styles.buttonText}>
-                {vehicle.isAvailable ? "Book Now" : "Not Available"}
-              </Text>
-            </Button>
-          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.bookButton,
+              !vehicle.isAvailable && styles.bookButtonDisabled,
+            ]}
+            disabled={!vehicle.isAvailable}
+            onPress={() =>
+              navigation.navigate("Booking", {
+                id: vehicle.id,
+                type: pricingType,
+              })
+            }
+          >
+            <Text style={styles.bookButtonText}>
+              {vehicle.isAvailable ? "Book Now" : "Not Available"}
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -383,14 +383,12 @@ const styles = StyleSheet.create({
     bottom: 0,
     height: 120,
     backgroundColor: "transparent",
-    // In a real app we'd use LinearGradient here to fade to #0f172a
   },
   headerActionsContainer: {
     position: "absolute",
     left: 0,
     right: 0,
     zIndex: 20,
-    // Top padding will be applied via inline style using insets
   },
   headerActionsContent: {
     flexDirection: "row",
@@ -433,7 +431,6 @@ const styles = StyleSheet.create({
   typeBadgeContainer: {
     position: "absolute",
     left: 16,
-    // Top position will be adjusted dynamically or relative to header
     zIndex: 15,
   },
   typeBadge: {
@@ -634,48 +631,76 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#94a3b8",
   },
+  // --- Updated Footer Styles ---
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "#1e293b", // Slate-800
+    backgroundColor: "#111827", // Slightly darker/richer background for footer
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === "ios" ? 34 : 20,
     borderTopWidth: 1,
-    borderTopColor: "#334155",
-    padding: 16,
-    paddingBottom: Platform.OS === "ios" ? 32 : 16,
+    borderTopColor: "rgba(30, 41, 59, 0.5)",
   },
   footerContent: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 16,
-    maxWidth: 448,
-    alignSelf: "center",
-    width: "100%",
+  },
+  priceContainer: {
+    flexDirection: "column",
+    justifyContent: "center",
   },
   footerLabel: {
     fontSize: 14,
-    color: "#94a3b8",
+    color: "#94a3b8", // Slate-400
+    fontWeight: "500",
+    marginBottom: 2,
   },
-  footerPriceContainer: {
+  footerPriceRow: {
     flexDirection: "row",
     alignItems: "baseline",
-    gap: 2,
   },
-  footerPriceValue: {
+  footerPriceSymbol: {
     fontSize: 24,
     fontWeight: "700",
     color: "#22d3ee", // Cyan-400
-    marginTop: 4,
   },
-  footerButtonContainer: {
-    flex: 1,
+  footerPriceValue: {
+    fontSize: 28, // Slightly larger
+    fontWeight: "800",
+    color: "#22d3ee", // Cyan-400
+    letterSpacing: -0.5,
   },
-  buttonText: {
-    color: "#0f172a", // Dark text on Cyan button
-    fontSize: 16,
+  footerPriceUnit: {
+    fontSize: 20,
     fontWeight: "600",
+    color: "#22d3ee", // Cyan-400
+  },
+  bookButton: {
+    flex: 1,
+    backgroundColor: "#22d3ee", // Cyan-400
+    borderRadius: 9999, // Full pill shape
+    paddingVertical: 16,
+    marginLeft: 32, // Spacing from price
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#22d3ee",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  bookButtonDisabled: {
+    backgroundColor: "#475569",
+    shadowOpacity: 0,
+  },
+  bookButtonText: {
+    color: "#0f172a", // Dark Slate - High contrast
+    fontSize: 18,
+    fontWeight: "700",
     textAlign: "center",
   },
 });

@@ -1,6 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -13,7 +10,15 @@ import {
   MessageSquare,
 } from "lucide-react-native";
 import { useState } from "react";
-import { ScrollView, Switch, Text, View } from "react-native";
+import {
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -38,192 +43,271 @@ export default function Settings() {
     });
   };
 
+  const renderSwitch = (value: boolean, onValueChange: () => void) => (
+    <Switch
+      value={value}
+      onValueChange={onValueChange}
+      trackColor={{ false: "#334155", true: "#2dd4bf" }}
+      thumbColor={Platform.OS === "ios" ? "#ffffff" : "#ffffff"}
+      ios_backgroundColor="#334155"
+    />
+  );
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-1">
+    <View style={styles.container}>
+      <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            onPress={() => router.navigate("profile" as never)}
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.backButton}
           >
-            <ArrowLeft size={20} className="text-foreground" />
-          </Button>
-          <Text className="text-lg font-bold text-foreground">Settings</Text>
+            <ArrowLeft size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Settings</Text>
         </View>
 
         <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ gap: 24, paddingBottom: 40 }}
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
         >
           {/* Notification Channels */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center gap-2">
-                <Bell size={16} className="text-foreground" />
-                <CardTitle className="text-base text-foreground">
-                  Notification Channels
-                </CardTitle>
-              </View>
-            </CardHeader>
-            <CardContent className="gap-4">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="h-10 w-10 rounded-xl bg-primary/10 items-center justify-center">
-                    <Bell size={20} className="text-primary" />
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Bell size={18} color="#ffffff" style={{ marginRight: 8 }} />
+              <Text style={styles.cardTitle}>Notification Channels</Text>
+            </View>
+
+            <View style={styles.cardContent}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconContainer, styles.iconTeal]}>
+                    <Bell size={20} color="#2dd4bf" />
                   </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Push Notifications
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Push Notifications</Text>
+                    <Text style={styles.settingDescription}>
                       Receive push notifications on your device
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.pushNotifications}
-                  onValueChange={() => toggleSetting("pushNotifications")}
-                />
+                {renderSwitch(settings.pushNotifications, () =>
+                  toggleSetting("pushNotifications")
+                )}
               </View>
 
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="h-10 w-10 rounded-xl bg-purple-500/10 items-center justify-center">
-                    <Mail size={20} className="text-purple-500" />
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconContainer, styles.iconPurple]}>
+                    <Mail size={20} color="#a855f7" />
                   </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Email Notifications
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Email Notifications</Text>
+                    <Text style={styles.settingDescription}>
                       Receive updates via email
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.emailNotifications}
-                  onValueChange={() => toggleSetting("emailNotifications")}
-                />
+                {renderSwitch(settings.emailNotifications, () =>
+                  toggleSetting("emailNotifications")
+                )}
               </View>
 
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="h-10 w-10 rounded-xl bg-green-500/10 items-center justify-center">
-                    <MessageSquare size={20} className="text-green-500" />
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconContainer, styles.iconGreen]}>
+                    <MessageSquare size={20} color="#22c55e" />
                   </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      SMS Notifications
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>SMS Notifications</Text>
+                    <Text style={styles.settingDescription}>
                       Receive SMS alerts
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.smsNotifications}
-                  onValueChange={() => toggleSetting("smsNotifications")}
-                />
+                {renderSwitch(settings.smsNotifications, () =>
+                  toggleSetting("smsNotifications")
+                )}
               </View>
-            </CardContent>
-          </Card>
+            </View>
+          </View>
 
           {/* Notification Types */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <CardTitle className="text-base text-foreground">
-                Notification Types
-              </CardTitle>
-              <Text className="text-xs text-muted-foreground mt-1">
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Notification Types</Text>
+              <Text style={styles.headerSubtitle}>
                 Choose what you want to be notified about
               </Text>
-            </CardHeader>
-            <CardContent className="gap-4">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="h-10 w-10 rounded-xl bg-primary/10 items-center justify-center">
-                    <Car size={20} className="text-primary" />
+            </View>
+
+            <View style={styles.cardContent}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconContainer, styles.iconTeal]}>
+                    <Car size={20} color="#2dd4bf" />
                   </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Booking Updates
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Booking Updates</Text>
+                    <Text style={styles.settingDescription}>
                       Status changes, confirmations
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.bookingUpdates}
-                  onValueChange={() => toggleSetting("bookingUpdates")}
-                />
+                {renderSwitch(settings.bookingUpdates, () =>
+                  toggleSetting("bookingUpdates")
+                )}
               </View>
 
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="h-10 w-10 rounded-xl bg-green-500/10 items-center justify-center">
-                    <CreditCard size={20} className="text-green-500" />
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconContainer, styles.iconGreen]}>
+                    <CreditCard size={20} color="#22c55e" />
                   </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Payment Alerts
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Payment Alerts</Text>
+                    <Text style={styles.settingDescription}>
                       Payment confirmations, refunds
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.paymentAlerts}
-                  onValueChange={() => toggleSetting("paymentAlerts")}
-                />
+                {renderSwitch(settings.paymentAlerts, () =>
+                  toggleSetting("paymentAlerts")
+                )}
               </View>
 
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="h-10 w-10 rounded-xl bg-purple-500/10 items-center justify-center">
-                    <Gift size={20} className="text-purple-500" />
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconContainer, styles.iconPurple]}>
+                    <Gift size={20} color="#a855f7" />
                   </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Promotions & Offers
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Promotions & Offers</Text>
+                    <Text style={styles.settingDescription}>
                       Deals, discounts, special offers
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.promotions}
-                  onValueChange={() => toggleSetting("promotions")}
-                />
+                {renderSwitch(settings.promotions, () =>
+                  toggleSetting("promotions")
+                )}
               </View>
 
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="h-10 w-10 rounded-xl bg-orange-500/10 items-center justify-center">
-                    <Clock size={20} className="text-orange-500" />
+              <View style={styles.settingRow}>
+                <View style={styles.settingLeft}>
+                  <View style={[styles.iconContainer, styles.iconOrange]}>
+                    <Clock size={20} color="#f97316" />
                   </View>
-                  <View>
-                    <Text className="font-medium text-foreground">
-                      Ride Reminders
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
+                  <View style={styles.textContainer}>
+                    <Text style={styles.settingLabel}>Ride Reminders</Text>
+                    <Text style={styles.settingDescription}>
                       Upcoming bookings, returns
                     </Text>
                   </View>
                 </View>
-                <Switch
-                  value={settings.reminders}
-                  onValueChange={() => toggleSetting("reminders")}
-                />
+                {renderSwitch(settings.reminders, () =>
+                  toggleSetting("reminders")
+                )}
               </View>
-            </CardContent>
-          </Card>
+            </View>
+          </View>
         </ScrollView>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  content: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+    gap: 24,
+  },
+  card: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    overflow: "hidden",
+  },
+  cardHeader: {
+    padding: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155",
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    color: "#94a3b8", // Slate-400
+    marginTop: 4,
+  },
+  cardContent: {
+    padding: 16,
+    gap: 20,
+  },
+  settingRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  settingLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    flex: 1,
+    paddingRight: 16,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12, // Slightly rounded square
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconTeal: { backgroundColor: "rgba(45, 212, 191, 0.1)" },
+  iconPurple: { backgroundColor: "rgba(168, 85, 247, 0.1)" },
+  iconGreen: { backgroundColor: "rgba(34, 197, 94, 0.1)" },
+  iconOrange: { backgroundColor: "rgba(249, 115, 22, 0.1)" },
+  textContainer: {
+    flex: 1,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#ffffff",
+    marginBottom: 2,
+  },
+  settingDescription: {
+    fontSize: 12,
+    color: "#94a3b8", // Slate-400
+  },
+});

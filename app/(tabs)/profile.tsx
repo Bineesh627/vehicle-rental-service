@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import {
@@ -9,16 +8,18 @@ import {
   HelpCircle,
   LogOut,
   MapPin,
-  Moon,
   Settings,
   Shield,
-  Star,
-  Sun,
   User,
 } from "lucide-react-native";
-import { useColorScheme } from "nativewind"; // Or manual theme handling
 import React from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
@@ -35,7 +36,6 @@ const menuItems = [
 
 export default function Profile() {
   const router = useRouter();
-  const { colorScheme, toggleColorScheme } = useColorScheme();
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
 
@@ -49,116 +49,241 @@ export default function Profile() {
   };
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* Header */}
-        <View className="bg-primary px-4 pb-20 pt-8 rounded-b-[2rem]">
-          <View className="flex-row items-center justify-between">
-            <Text className="text-2xl font-bold text-primary-foreground">
-              Profile
-            </Text>
-            <TouchableOpacity
-              onPress={toggleColorScheme}
-              className="rounded-xl bg-primary-foreground/20 p-3 backdrop-blur-sm"
-            >
-              {colorScheme === "dark" ? (
-                <Sun color="white" size={20} />
-              ) : (
-                <Moon color="white" size={20} />
-              )}
-            </TouchableOpacity>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* Header - Teal Background */}
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Profile</Text>
+            {/* Dark mode toggle removed */}
           </View>
         </View>
 
-        {/* Profile card */}
-        <View className="px-4 -mt-16">
-          <View className="rounded-2xl bg-card p-6 shadow-sm border border-border">
-            <View className="flex-row items-center gap-4">
-              <View className="flex h-20 w-20 items-center justify-center rounded-2xl bg-purple-500">
-                <Text className="text-3xl font-bold text-white">JD</Text>
+        {/* Profile Card - Overlapping */}
+        <View style={styles.profileCardContainer}>
+          <View style={styles.profileCard}>
+            <View style={styles.profileHeader}>
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>JD</Text>
               </View>
-              <View className="flex-1">
-                <Text className="text-xl font-bold text-foreground">
-                  John Doe
-                </Text>
-                <Text className="text-muted-foreground">
-                  john.doe@example.com
-                </Text>
-                <View className="mt-2 flex-row items-center gap-1">
-                  <Star color="#eab308" fill="#eab308" size={16} />
-                  <Text className="text-sm font-medium text-foreground">
-                    4.9 Rating
-                  </Text>
-                  <Text className="text-sm text-muted-foreground">
-                    • 12 trips
-                  </Text>
-                </View>
+              <View style={styles.profileInfo}>
+                <Text style={styles.profileName}>John Doe</Text>
+                <Text style={styles.profileEmail}>john.doe@example.com</Text>
+                {/* Rating container removed */}
               </View>
             </View>
 
             {/* Stats */}
-            <View className="mt-6 flex-row gap-4">
-              <View className="flex-1 rounded-xl bg-secondary p-4 items-center">
-                <Text className="text-2xl font-bold text-primary">12</Text>
-                <Text className="text-xs text-muted-foreground">
-                  Total Rides
-                </Text>
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>12</Text>
+                <Text style={styles.statLabel}>Total Booking</Text>
               </View>
-              <View className="flex-1 rounded-xl bg-secondary p-4 items-center">
-                <Text className="text-2xl font-bold text-primary">$456</Text>
-                <Text className="text-xs text-muted-foreground">
-                  Total Spent
-                </Text>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>$456</Text>
+                <Text style={styles.statLabel}>Total Spent</Text>
               </View>
-              <View className="flex-1 rounded-xl bg-secondary p-4 items-center">
-                <Text className="text-2xl font-bold text-primary">3</Text>
-                <Text className="text-xs text-muted-foreground">
-                  Saved Places
-                </Text>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>3</Text>
+                <Text style={styles.statLabel}>Saved Places</Text>
               </View>
             </View>
           </View>
         </View>
 
-        {/* Menu */}
-        <View className="px-4 py-6">
-          <View className="rounded-2xl bg-card shadow-sm border border-border overflow-hidden">
+        {/* Menu Items */}
+        <View style={styles.menuContainer}>
+          <View style={styles.menuList}>
             {menuItems.map((item, index) => (
               <TouchableOpacity
                 key={item.label}
                 onPress={() => router.push(`/user/${item.path}` as any)}
-                className="flex-row w-full items-center gap-4 border-b border-border p-4 bg-card"
+                style={[
+                  styles.menuItem,
+                  index === menuItems.length - 1 && styles.menuItemLast,
+                ]}
               >
-                <View className="rounded-xl bg-secondary p-3">
-                  <item.icon color="#6b7280" size={20} />
+                <View style={styles.menuIconContainer}>
+                  <item.icon color="#2dd4bf" size={20} />
                 </View>
-                <Text className="flex-1 text-left font-medium text-foreground">
-                  {item.label}
-                </Text>
-                <ChevronRight color="#6b7280" size={20} />
+                <Text style={styles.menuLabel}>{item.label}</Text>
+                <ChevronRight color="#64748b" size={20} />
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
         {/* Logout */}
-        <View className="px-4">
-          <Button
-            variant="outline"
-            className="w-full flex-row"
-            size="lg"
-            onPress={handleLogout}
-          >
-            <LogOut color="red" size={20} style={{ marginRight: 8 }} />
-            <Text className="text-red-500 font-semibold">Logout</Text>
-          </Button>
+        <View style={styles.logoutContainer}>
+          <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+            <LogOut color="#ef4444" size={20} />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Version */}
-        <Text className="mt-6 text-center text-sm text-muted-foreground mb-6">
-          Version 1.0.0
-        </Text>
+        <Text style={styles.versionText}>Version 1.0.0</Text>
       </ScrollView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  scrollContent: {
+    paddingBottom: 100,
+  },
+  header: {
+    backgroundColor: "#2dd4bf", // Teal Header
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 80, // Extra padding for overlap
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center", // Changed to center since button is gone
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#0f172a", // Dark text on Teal
+  },
+  profileCardContainer: {
+    paddingHorizontal: 16,
+    marginTop: -60, // Overlap effect
+  },
+  profileCard: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  profileHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  avatar: {
+    height: 80,
+    width: 80,
+    borderRadius: 20,
+    backgroundColor: "#f97316", // Orange-500
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  profileInfo: {
+    flex: 1,
+    justifyContent: "center", // Added to vertically center name/email
+  },
+  profileName: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  profileEmail: {
+    fontSize: 14,
+    color: "#94a3b8", // Slate-400
+    marginTop: 4,
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 24,
+  },
+  statItem: {
+    flex: 1,
+    backgroundColor: "#283445", // Slightly lighter/different slate for boxes
+    paddingVertical: 16,
+    paddingHorizontal: 8,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  statValue: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#2dd4bf", // Teal
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#94a3b8", // Slate-400
+  },
+  menuContainer: {
+    paddingHorizontal: 16,
+    marginTop: 24,
+  },
+  menuList: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#334155",
+    overflow: "hidden",
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#334155", // Slate-700
+  },
+  menuItemLast: {
+    borderBottomWidth: 0,
+  },
+  menuIconContainer: {
+    height: 40,
+    width: 40,
+    borderRadius: 12,
+    backgroundColor: "#334155", // Slate-700
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  menuLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#ffffff",
+  },
+  logoutContainer: {
+    paddingHorizontal: 16,
+    marginTop: 24,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#ef4444", // Red-500
+    gap: 8,
+  },
+  logoutText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ef4444",
+  },
+  versionText: {
+    textAlign: "center",
+    color: "#64748b", // Slate-500
+    marginTop: 24,
+    fontSize: 12,
+  },
+});

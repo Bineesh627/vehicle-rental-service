@@ -1,12 +1,18 @@
 import { bookings } from "@/data/mockData";
-import { cn } from "@/lib/utils";
 import { UserStackParamList } from "@/navigation/types";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { format } from "date-fns";
 import { Calendar, ChevronRight, Clock, MapPin } from "lucide-react-native";
 import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 type BookingsNavigationProp = NativeStackNavigationProp<
@@ -18,77 +24,72 @@ export default function Bookings() {
   const navigation = useNavigation<BookingsNavigationProp>();
   const upcomingBookings = bookings.filter((b) => b.status === "upcoming");
   const pastBookings = bookings.filter(
-    (b) => b.status === "completed" || b.status === "cancelled",
+    (b) => b.status === "completed" || b.status === "cancelled"
   );
   const insets = useSafeAreaInsets();
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
-      <View className="px-4 py-4 border-b border-border bg-card">
-        <Text className="text-2xl font-bold text-foreground">My Bookings</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>My Bookings</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Upcoming */}
-        <View className="mb-8">
-          <Text className="mb-4 text-lg font-semibold text-foreground">
-            Upcoming
-          </Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Upcoming</Text>
           {upcomingBookings.length > 0 ? (
             <View>
               {upcomingBookings.map((booking) => (
-                <View
-                  key={booking.id}
-                  className="mb-4 rounded-2xl bg-card p-4 shadow-sm border border-border"
-                >
-                  <View className="flex-row gap-4">
+                <View key={booking.id} style={styles.card}>
+                  <View style={styles.cardContent}>
                     <Image
                       source={{ uri: booking.vehicle.images[0] }}
-                      className="h-24 w-28 rounded-xl"
+                      style={styles.vehicleImage}
                       resizeMode="cover"
                     />
-                    <View className="flex-1">
-                      <View className="flex-row items-start justify-between">
-                        <View>
-                          <Text className="font-bold text-foreground">
+                    <View style={styles.cardBody}>
+                      <View style={styles.cardHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.vehicleName}>
                             {booking.vehicle.name}
                           </Text>
-                          <View className="mt-1 flex-row items-center gap-1">
-                            <MapPin color="#6b7280" size={14} />
-                            <Text className="text-sm text-muted-foreground">
+                          <View style={styles.locationContainer}>
+                            <MapPin color="#94a3b8" size={14} />
+                            <Text style={styles.locationText}>
                               {booking.shop.name}
                             </Text>
                           </View>
                         </View>
-                        <View className="rounded-full bg-primary/10 px-2.5 py-1">
-                          <Text className="text-xs font-semibold text-primary capitalize">
+                        <View
+                          style={[styles.statusBadge, styles.badgeUpcoming]}
+                        >
+                          <Text style={styles.textUpcoming}>
                             {booking.status}
                           </Text>
                         </View>
                       </View>
-                      <View className="mt-3 flex-row items-center gap-4">
-                        <View className="flex-row items-center gap-1">
-                          <Calendar color="#6b7280" size={14} />
-                          <Text className="text-sm text-muted-foreground">
+                      <View style={styles.dateRow}>
+                        <View style={styles.dateItem}>
+                          <Calendar color="#94a3b8" size={14} />
+                          <Text style={styles.dateText}>
                             {format(new Date(booking.startDate), "MMM d, yyyy")}
                           </Text>
                         </View>
-                        <View className="flex-row items-center gap-1">
-                          <Clock color="#6b7280" size={14} />
-                          <Text className="text-sm text-muted-foreground">
+                        <View style={styles.dateItem}>
+                          <Clock color="#94a3b8" size={14} />
+                          <Text style={styles.dateText}>
                             {format(new Date(booking.startDate), "h:mm a")}
                           </Text>
                         </View>
                       </View>
                     </View>
                   </View>
-                  <View className="mt-4 flex-row items-center justify-between border-t border-border pt-4">
+                  <View style={styles.cardFooter}>
                     <View>
-                      <Text className="text-sm text-muted-foreground">
-                        Total
-                      </Text>
-                      <Text className="text-lg font-bold text-primary">
+                      <Text style={styles.totalLabel}>Total</Text>
+                      <Text style={styles.totalPrice}>
                         ${booking.totalPrice}
                       </Text>
                     </View>
@@ -97,85 +98,76 @@ export default function Bookings() {
                         navigation.navigate("BookingDetails", {
                           id: booking.id,
                         })
-                      } // Assuming BookingDetails is a screen
-                      className="flex-row items-center gap-1"
+                      }
+                      style={styles.detailsButton}
                     >
-                      <Text className="text-sm font-semibold text-primary">
-                        View Details
-                      </Text>
-                      <ChevronRight color="#000" size={16} />
+                      <Text style={styles.detailsButtonText}>View Details</Text>
+                      <ChevronRight color="#2dd4bf" size={16} />
                     </TouchableOpacity>
                   </View>
                 </View>
               ))}
             </View>
           ) : (
-            <View className="rounded-2xl bg-card p-8 items-center border border-border">
+            <View style={styles.emptyState}>
               <Calendar
-                color="#6b7280"
+                color="#64748b"
                 size={48}
                 style={{ opacity: 0.5, marginBottom: 12 }}
               />
-              <Text className="text-muted-foreground">
-                No upcoming bookings
-              </Text>
+              <Text style={styles.emptyStateText}>No upcoming bookings</Text>
             </View>
           )}
         </View>
 
         {/* Past bookings */}
-        <View>
-          <Text className="mb-4 text-lg font-semibold text-foreground">
-            Past Bookings
-          </Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Past Bookings</Text>
           {pastBookings.length > 0 ? (
             <View>
               {pastBookings.map((booking) => (
-                <View
-                  key={booking.id}
-                  className="mb-4 rounded-2xl bg-card p-4 shadow-sm border border-border opacity-75"
-                >
-                  <View className="flex-row gap-4">
+                <View key={booking.id} style={styles.card}>
+                  <View style={styles.cardContent}>
                     <Image
                       source={{ uri: booking.vehicle.images[0] }}
-                      className="h-20 w-24 rounded-xl grayscale"
+                      style={[styles.vehicleImage, styles.grayscale]}
                       resizeMode="cover"
                     />
-                    <View className="flex-1">
-                      <View className="flex-row items-start justify-between">
+                    <View style={styles.cardBody}>
+                      <View style={styles.cardHeader}>
                         <View>
-                          <Text className="font-bold text-foreground">
+                          <Text style={styles.vehicleName}>
                             {booking.vehicle.name}
                           </Text>
-                          <Text className="text-sm text-muted-foreground">
+                          <Text style={styles.dateText}>
                             {format(new Date(booking.startDate), "MMM d, yyyy")}
                           </Text>
                         </View>
                         <View
-                          className={cn(
-                            "rounded-full px-2.5 py-1",
+                          style={[
+                            styles.statusBadge,
                             booking.status === "completed"
-                              ? "bg-green-100"
-                              : "bg-red-100",
-                          )}
+                              ? styles.badgeCompleted
+                              : styles.badgeCancelled,
+                          ]}
                         >
                           <Text
-                            className={cn(
-                              "text-xs font-semibold capitalize",
+                            style={[
+                              styles.statusText,
                               booking.status === "completed"
-                                ? "text-green-700"
-                                : "text-red-700",
-                            )}
+                                ? styles.textCompleted
+                                : styles.textCancelled,
+                            ]}
                           >
                             {booking.status}
                           </Text>
                         </View>
                       </View>
-                      <View className="mt-2 flex-row items-center justify-between">
-                        <Text className="font-semibold text-foreground">
+                      <View style={styles.pastBookingFooter}>
+                        <Text style={styles.pastPrice}>
                           ${booking.totalPrice}
                         </Text>
-                        <View className="flex-row gap-2">
+                        <View style={styles.pastActions}>
                           <TouchableOpacity
                             onPress={() =>
                               navigation.navigate("BookingDetails", {
@@ -183,9 +175,7 @@ export default function Bookings() {
                               })
                             }
                           >
-                            <Text className="text-sm font-medium text-muted-foreground">
-                              Details
-                            </Text>
+                            <Text style={styles.pastDetailsText}>Details</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             onPress={() =>
@@ -194,9 +184,7 @@ export default function Bookings() {
                               })
                             }
                           >
-                            <Text className="text-sm font-medium text-primary">
-                              Book Again
-                            </Text>
+                            <Text style={styles.bookAgainText}>Book Again</Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -206,8 +194,8 @@ export default function Bookings() {
               ))}
             </View>
           ) : (
-            <View className="rounded-2xl bg-card p-8 items-center border border-border">
-              <Text className="text-muted-foreground">No past bookings</Text>
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No past bookings</Text>
             </View>
           )}
         </View>
@@ -215,3 +203,190 @@ export default function Bookings() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#1e293b",
+    backgroundColor: "#0f172a",
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#ffffff",
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#ffffff",
+    marginBottom: 16,
+  },
+  card: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  cardContent: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  vehicleImage: {
+    height: 96,
+    width: 112,
+    borderRadius: 12,
+    backgroundColor: "#334155",
+  },
+  grayscale: {
+    opacity: 0.7,
+  },
+  cardBody: {
+    flex: 1,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+  },
+  vehicleName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#ffffff",
+    marginBottom: 4,
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 4,
+  },
+  locationText: {
+    fontSize: 12,
+    color: "#94a3b8", // Slate-400
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  badgeUpcoming: {
+    backgroundColor: "rgba(45, 212, 191, 0.1)", // Teal tint
+  },
+  textUpcoming: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#2dd4bf", // Teal-400
+    textTransform: "capitalize",
+  },
+  badgeCompleted: {
+    backgroundColor: "rgba(74, 222, 128, 0.1)", // Green tint
+  },
+  textCompleted: {
+    color: "#4ade80", // Green-400
+  },
+  badgeCancelled: {
+    backgroundColor: "rgba(248, 113, 113, 0.1)", // Red tint
+  },
+  textCancelled: {
+    color: "#f87171", // Red-400
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    textTransform: "capitalize",
+  },
+  dateRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  dateItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+  cardFooter: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#334155",
+    paddingTop: 16,
+  },
+  totalLabel: {
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+  totalPrice: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2dd4bf", // Teal-400
+  },
+  detailsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  detailsButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#2dd4bf",
+  },
+  emptyState: {
+    borderRadius: 16,
+    backgroundColor: "#1e293b",
+    padding: 32,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#334155",
+  },
+  emptyStateText: {
+    color: "#94a3b8",
+  },
+  pastBookingFooter: {
+    marginTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  pastPrice: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+  },
+  pastActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  pastDetailsText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#94a3b8",
+  },
+  bookAgainText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#2dd4bf",
+  },
+});
