@@ -126,11 +126,15 @@ export default function HelpSupport() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background pt-8">
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 bg-background">
         {/* Header */}
         <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center gap-3">
-          <Button variant="ghost" size="icon" onPress={() => router.back()}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onPress={() => router.navigate("profile" as never)}
+          >
             <ArrowLeft size={20} className="text-foreground" />
           </Button>
           <Text className="text-lg font-bold text-foreground">

@@ -28,7 +28,7 @@ export type UserStackParamList = {
   Bookings: undefined;
   ShopDetails: { id: string };
   VehicleDetails: { id: string };
-  Booking: { id: string };
+  Booking: { id: string; type: "hour" | "day" };
   BookingDetails: { id: string };
   EditProfile: undefined;
   Notifications: undefined;

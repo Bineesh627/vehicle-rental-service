@@ -1,95 +1,89 @@
-import { cn } from "@/lib/utils";
-import { Vehicle } from "@/types";
 import { Bike, Car, Fuel, Settings2, Users } from "lucide-react-native";
 import React from "react";
-import { Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+// You'll need to define your Vehicle type interface if not available globally
+// import { Vehicle } from "@/types";
+
+import { Vehicle } from "@/types";
 
 interface VehicleCardProps {
   vehicle: Vehicle;
-  onClick: () => void;
+  onPress: () => void;
 }
 
-export const VehicleCard = ({ vehicle, onClick }: VehicleCardProps) => {
+export const VehicleCard = ({ vehicle, onPress }: VehicleCardProps) => {
   return (
-    <TouchableOpacity
-      onPress={onClick}
-      className="overflow-hidden rounded-3xl bg-[#16202C] mb-4"
-    >
-      <View className="relative h-48">
+    <TouchableOpacity onPress={onPress} activeOpacity={0.9} style={styles.card}>
+      <View style={styles.imageContainer}>
         <Image
           source={{ uri: vehicle.images[0] }}
-          className="h-full w-full"
+          style={styles.image}
           resizeMode="cover"
         />
 
-        {/* Type Badge - Top Left */}
-        <View className="absolute left-4 top-4">
-          <View className="flex-row items-center gap-2 rounded-full bg-black/60 px-3 py-1.5 backdrop-blur-sm">
+        {/* Type Badge (Top Left) */}
+        <View style={styles.typeBadgeContainer}>
+          <View style={styles.typeBadge}>
             {vehicle.type === "car" ? (
-              <Car color="white" size={14} />
+              <Car size={16} color="#ffffff" />
             ) : (
-              <Bike color="white" size={14} />
+              <Bike size={16} color="#ffffff" />
             )}
-            <Text className="text-xs font-medium text-white capitalize">
-              {vehicle.type}
-            </Text>
+            <Text style={styles.typeText}>{vehicle.type}</Text>
           </View>
         </View>
 
-        {/* Status Badge - Top Right */}
-        <View className="absolute right-4 top-4">
+        {/* Availability Badge (Top Right) */}
+        <View style={styles.statusBadgeContainer}>
           <View
-            className={cn(
-              "rounded-full px-3 py-1.5",
-              vehicle.isAvailable ? "bg-[#22C55E]" : "bg-red-500",
-            )}
+            style={[
+              styles.statusBadge,
+              vehicle.isAvailable ? styles.bgSuccess : styles.bgDestructive,
+            ]}
           >
-            <Text className="text-xs font-bold text-white">
+            <Text
+              style={[
+                styles.statusText,
+                vehicle.isAvailable
+                  ? styles.textSuccess
+                  : styles.textDestructive,
+              ]}
+            >
               {vehicle.isAvailable ? "Available" : "Booked"}
             </Text>
           </View>
         </View>
       </View>
 
-      <View className="p-5">
-        <View className="flex-row items-start justify-between mb-4">
+      <View style={styles.content}>
+        <View style={styles.headerRow}>
           <View>
-            <Text className="text-xl font-bold text-white mb-1">
-              {vehicle.name}
-            </Text>
-            <Text className="text-sm text-slate-400">{vehicle.brand}</Text>
+            <Text style={styles.title}>{vehicle.name}</Text>
+            <Text style={styles.brand}>{vehicle.brand}</Text>
+            {vehicle.vehicleNumber && (
+              <Text style={styles.vehicleNumber}>{vehicle.vehicleNumber}</Text>
+            )}
           </View>
-          <View className="items-end">
-            <Text className="text-xl font-bold text-[#22D3EE]">
-              ${vehicle.pricePerHour}
-            </Text>
-            <Text className="text-xs text-slate-400">/hour</Text>
+          <View style={styles.priceContainer}>
+            <Text style={styles.price}>${vehicle.pricePerHour}</Text>
+            <Text style={styles.priceUnit}>/hour</Text>
           </View>
         </View>
 
-        <View className="flex-row gap-3">
-          {vehicle.fuelType && (
-            <View className="flex-row items-center gap-2 rounded-full bg-[#0F1C23] px-3 py-2 border border-slate-700/50">
-              <Fuel color="#94A3B8" size={14} />
-              <Text className="text-xs font-medium text-slate-300">
-                {vehicle.fuelType}
-              </Text>
-            </View>
-          )}
-          {vehicle.transmission && (
-            <View className="flex-row items-center gap-2 rounded-full bg-[#0F1C23] px-3 py-2 border border-slate-700/50">
-              <Settings2 color="#94A3B8" size={14} />
-              <Text className="text-xs font-medium text-slate-300">
-                {vehicle.transmission}
-              </Text>
-            </View>
-          )}
+        <View style={styles.specsRow}>
+          <View style={styles.specBadge}>
+            <Fuel size={14} color="#94a3b8" />
+            <Text style={styles.specText}>{vehicle.fuelType}</Text>
+          </View>
+          <View style={styles.specBadge}>
+            <Settings2 size={14} color="#94a3b8" />
+            <Text style={styles.specText}>{vehicle.transmission}</Text>
+          </View>
           {vehicle.seating && (
-            <View className="flex-row items-center gap-2 rounded-full bg-[#0F1C23] px-3 py-2 border border-slate-700/50">
-              <Users color="#94A3B8" size={14} />
-              <Text className="text-xs font-medium text-slate-300">
-                {vehicle.seating}
-              </Text>
+            <View style={styles.specBadge}>
+              <Users size={14} color="#94a3b8" />
+              <Text style={styles.specText}>{vehicle.seating}</Text>
             </View>
           )}
         </View>
@@ -97,3 +91,84 @@ export const VehicleCard = ({ vehicle, onClick }: VehicleCardProps) => {
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: "#191d24", // Requested dark bg
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 16, // Add spacing between cards
+  },
+  imageContainer: {
+    height: 180, // Slightly taller
+    position: "relative",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+  },
+  typeBadgeContainer: { position: "absolute", left: 12, top: 12 },
+  typeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(30, 41, 59, 0.8)", // Dark transparent (slate-800/80)
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20, // More rounded
+  },
+  typeText: {
+    fontSize: 12,
+    fontWeight: "500",
+    textTransform: "capitalize",
+    color: "#ffffff",
+  },
+
+  statusBadgeContainer: { position: "absolute", right: 12, top: 12 },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20, // More rounded
+  },
+  bgSuccess: { backgroundColor: "#10b981" }, // emerald-500
+  bgDestructive: { backgroundColor: "#ef4444" }, // red-500
+  statusText: { fontSize: 12, fontWeight: "600", color: "#ffffff" },
+  textSuccess: { color: "#ffffff" }, // Redundant but kept for safety
+  textDestructive: { color: "#ffffff" },
+
+  content: { padding: 16 },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  title: { fontSize: 20, fontWeight: "700", color: "#ffffff" }, // White title
+  brand: { fontSize: 14, color: "#94a3b8", marginBottom: 4 }, // Slate-400
+  vehicleNumber: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#94a3b8", // Slate-400
+  },
+
+  priceContainer: { alignItems: "flex-end" },
+  price: { fontSize: 20, fontWeight: "700", color: "#22d3ee" }, // Cyan-400
+  priceUnit: { fontSize: 12, color: "#94a3b8" }, // Slate-400
+
+  specsRow: { flexDirection: "row", gap: 8, marginTop: 16 },
+  specBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#2a323c", // Darker gray chip
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  specText: { fontSize: 12, fontWeight: "500", color: "#cbd5e1" }, // Slate-300
+});

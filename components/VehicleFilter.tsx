@@ -1,7 +1,6 @@
 import React from "react";
-import { ScrollView, TouchableOpacity, Text, View } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { Car, Bike } from "lucide-react-native";
-import { cn } from "@/lib/utils";
 
 type FilterType = "all" | "car" | "bike";
 
@@ -10,58 +9,72 @@ interface VehicleFilterProps {
   onFilterChange: (filter: FilterType) => void;
 }
 
-export const VehicleFilter = ({
-  activeFilter,
-  onFilterChange,
-}: VehicleFilterProps) => {
-  const filters: { type: FilterType; label: string; icon: React.ReactNode }[] =
-    [
-      { type: "all", label: "All", icon: null },
-      {
-        type: "car",
-        label: "Cars",
-        icon: (
-          <Car color={activeFilter === "car" ? "white" : "gray"} size={16} />
-        ),
-      },
-      {
-        type: "bike",
-        label: "Bikes",
-        icon: (
-          <Bike color={activeFilter === "bike" ? "white" : "gray"} size={16} />
-        ),
-      },
-    ];
+export const VehicleFilter = ({ activeFilter, onFilterChange }: VehicleFilterProps) => {
+  const filters: { type: FilterType; label: string; icon: React.ReactNode }[] = [
+    { type: "all", label: "All", icon: null },
+    { type: "car", label: "Cars", icon: <Car size={16} color={activeFilter === 'car' ? '#fff' : '#64748b'} /> },
+    { type: "bike", label: "Bikes", icon: <Bike size={16} color={activeFilter === 'bike' ? '#fff' : '#64748b'} /> },
+  ];
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8 }}
-    >
+    <View style={styles.container}>
       {filters.map((filter) => {
         const isActive = activeFilter === filter.type;
         return (
           <TouchableOpacity
             key={filter.type}
             onPress={() => onFilterChange(filter.type)}
-            className={cn(
-              "flex-row items-center gap-2 rounded-xl px-4 py-2.5",
-              isActive ? "bg-primary shadow-sm" : "bg-card shadow-sm",
-            )}
+            style={[
+              styles.button,
+              isActive ? styles.buttonActive : styles.buttonInactive
+            ]}
           >
-            {filter.icon && <View>{filter.icon}</View>}
-            <Text
-              className={cn(
-                "text-sm font-medium",
-                isActive ? "text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
+            {filter.icon && <View style={styles.iconContainer}>{filter.icon}</View>}
+            <Text style={[styles.label, isActive ? styles.labelActive : styles.labelInactive]}>
               {filter.label}
             </Text>
           </TouchableOpacity>
         );
       })}
-    </ScrollView>
+    </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  button: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+  buttonActive: {
+    backgroundColor: "#0f172a", // gradient-primary
+    shadowColor: "#0f172a",
+    shadowOpacity: 0.3,
+    elevation: 4,
+  },
+  buttonInactive: {
+    backgroundColor: "#ffffff", // bg-card
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    elevation: 1,
+  },
+  iconContainer: {
+    marginRight: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  labelActive: {
+    color: "#ffffff",
+  },
+  labelInactive: {
+    color: "#64748b",
+  },
+});

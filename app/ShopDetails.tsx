@@ -221,7 +221,7 @@ export default function ShopDetails() {
               <VehicleCard
                 key={vehicle.id}
                 vehicle={vehicle}
-                onClick={() =>
+                onPress={() =>
                   navigation.navigate("VehicleDetails", { id: vehicle.id })
                 }
               />

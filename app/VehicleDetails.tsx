@@ -1,44 +1,45 @@
+import { Button } from "@/components/ui/button";
 import { rentalShops, vehicles } from "@/data/mockData";
-import { cn } from "@/lib/utils";
 import { UserStackParamList } from "@/navigation/types";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  NavigationProp,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import {
   ArrowLeft,
+  Bike,
   Calendar,
+  Car,
   Check,
   Clock,
   Fuel,
   Heart,
-  MapPin,
   Settings2,
   Share2,
-  Star,
   Users,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import {
   Dimensions,
   Image,
+  Platform,
   ScrollView,
-  StatusBar,
+  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-type VehicleDetailsRouteProp = RouteProp<UserStackParamList, "VehicleDetails">;
-type VehicleDetailsNavigationProp = NativeStackNavigationProp<
-  UserStackParamList,
-  "VehicleDetails"
->;
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 export default function VehicleDetails() {
-  const route = useRoute<VehicleDetailsRouteProp>();
-  const navigation = useNavigation<VehicleDetailsNavigationProp>();
-  const { id } = route.params;
+  const route = useRoute();
+  const navigation = useNavigation<NavigationProp<UserStackParamList>>();
+  const { id } = (route.params as { id: string }) || {};
   const insets = useSafeAreaInsets();
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [pricingType, setPricingType] = useState<"hour" | "day">("hour");
@@ -50,297 +51,631 @@ export default function VehicleDetails() {
 
   if (!vehicle || !shop) {
     return (
-      <View className="flex-1 items-center justify-center bg-[#0F1C23]">
-        <Text className="text-slate-400">Vehicle not found</Text>
+      <View style={styles.notFoundContainer}>
+        <Text style={styles.notFoundText}>Vehicle not found</Text>
       </View>
     );
   }
 
-  const { width } = Dimensions.get("window");
-
   return (
-    <View className="flex-1 bg-[#0F1C23]">
-      <StatusBar barStyle="light-content" />
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+    <View style={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Image Gallery */}
-        <View className="relative h-[400px]">
+        <View style={styles.imageGalleryContainer}>
           <Image
             source={{ uri: vehicle.images[activeImageIndex] }}
-            className="h-full w-full"
+            style={styles.mainImage}
             resizeMode="cover"
           />
-          <View className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-[#0F1C23]" />
+          {/* Gradient Overlay Simulation */}
+          <View style={styles.gradientOverlay} />
 
           {/* Header actions */}
           <View
-            className="absolute left-0 right-0 flex-row items-center justify-between px-4"
-            style={{ top: insets.top + 10 }}
+            style={[styles.headerActionsContainer, { paddingTop: insets.top }]}
           >
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              className="rounded-full bg-black/40 p-3 backdrop-blur-md"
-            >
-              <ArrowLeft color="#fff" size={24} />
-            </TouchableOpacity>
-            <View className="flex-row gap-3">
+            <View style={styles.headerActionsContent}>
               <TouchableOpacity
-                onPress={() => setIsFavorite(!isFavorite)}
-                className="rounded-full bg-black/40 p-3 backdrop-blur-md"
+                onPress={() => navigation.goBack()}
+                style={styles.iconButton}
               >
-                <Heart
-                  color={isFavorite ? "#ef4444" : "#fff"}
-                  fill={isFavorite ? "#ef4444" : "transparent"}
-                  size={24}
-                />
+                <ArrowLeft size={20} color="#ffffff" />
               </TouchableOpacity>
-              <TouchableOpacity className="rounded-full bg-black/40 p-3 backdrop-blur-md">
-                <Share2 color="#fff" size={24} />
-              </TouchableOpacity>
+              <View style={styles.headerRightActions}>
+                <TouchableOpacity
+                  onPress={() => setIsFavorite(!isFavorite)}
+                  style={styles.iconButton}
+                >
+                  <Heart
+                    size={20}
+                    color={isFavorite ? "#ef4444" : "#ffffff"}
+                    fill={isFavorite ? "#ef4444" : "transparent"}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.iconButton}>
+                  <Share2 size={20} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
           {/* Image indicators */}
           {vehicle.images.length > 1 && (
-            <View className="absolute bottom-6 left-0 right-0 flex-row justify-center gap-2">
-              {vehicle.images.map((_, index: number) => (
+            <View style={styles.indicatorsContainer}>
+              {vehicle.images.map((_, index) => (
                 <TouchableOpacity
                   key={index}
                   onPress={() => setActiveImageIndex(index)}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all",
+                  style={[
+                    styles.indicator,
                     index === activeImageIndex
-                      ? "w-8 bg-[#22D3EE]"
-                      : "w-1.5 bg-white/40",
-                  )}
+                      ? styles.indicatorActive
+                      : styles.indicatorInactive,
+                  ]}
                 />
               ))}
             </View>
           )}
+
+          {/* Type badge */}
+          <View style={[styles.typeBadgeContainer, { top: insets.top + 60 }]}>
+            <View style={styles.typeBadge}>
+              {vehicle.type === "car" ? (
+                <Car size={16} color="#ffffff" />
+              ) : (
+                <Bike size={16} color="#ffffff" />
+              )}
+              <Text style={styles.typeBadgeText}>{vehicle.type}</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Content */}
-        <View className="px-5 -mt-8 relative z-10">
-          {/* Availability Badge */}
-          <View className="mb-4 self-start">
-            <View
-              className={cn(
-                "rounded-full px-3 py-1 border",
-                vehicle.isAvailable
-                  ? "bg-green-500/10 border-green-500/20"
-                  : "bg-red-500/10 border-red-500/20",
-              )}
-            >
-              <Text
-                className={cn(
-                  "text-xs font-bold uppercase tracking-wider",
-                  vehicle.isAvailable ? "text-green-500" : "text-red-500",
-                )}
+        {/* Vehicle Info */}
+        <View style={styles.infoSectionContainer}>
+          <View style={styles.card}>
+            <View style={styles.availabilityBadgeContainer}>
+              <View
+                style={[
+                  styles.availabilityBadge,
+                  vehicle.isAvailable
+                    ? styles.badgeSuccess
+                    : styles.badgeDestructive,
+                ]}
               >
-                {vehicle.isAvailable ? "Available" : "Booked"}
-              </Text>
-            </View>
-          </View>
-
-          {/* Title Section */}
-          <View className="mb-8">
-            <Text className="text-3xl font-bold text-white mb-1">
-              {vehicle.name}
-            </Text>
-            <Text className="text-lg text-slate-400">{vehicle.model} 2023</Text>
-          </View>
-
-          {/* Specs Grid */}
-          <View className="flex-row gap-3 mb-8">
-            <View className="flex-1 rounded-2xl bg-[#1E293B] p-4 items-center border border-slate-800">
-              <Fuel color="#22D3EE" size={24} style={{ marginBottom: 8 }} />
-              <Text className="text-sm font-bold text-white mb-0.5">
-                {vehicle.fuelType}
-              </Text>
-              <Text className="text-[10px] text-slate-400 uppercase tracking-widest">
-                Fuel
-              </Text>
-            </View>
-            <View className="flex-1 rounded-2xl bg-[#1E293B] p-4 items-center border border-slate-800">
-              <Settings2
-                color="#22D3EE"
-                size={24}
-                style={{ marginBottom: 8 }}
-              />
-              <Text className="text-sm font-bold text-white mb-0.5">
-                {vehicle.transmission}
-              </Text>
-              <Text className="text-[10px] text-slate-400 uppercase tracking-widest">
-                Transmission
-              </Text>
-            </View>
-            {vehicle.seating && (
-              <View className="flex-1 rounded-2xl bg-[#1E293B] p-4 items-center border border-slate-800">
-                <Users color="#22D3EE" size={24} style={{ marginBottom: 8 }} />
-                <Text className="text-sm font-bold text-white mb-0.5">
-                  {vehicle.seating} Seats
-                </Text>
-                <Text className="text-[10px] text-slate-400 uppercase tracking-widest">
-                  Capacity
+                <Text
+                  style={[
+                    styles.availabilityText,
+                    vehicle.isAvailable
+                      ? styles.textSuccess
+                      : styles.textDestructive,
+                  ]}
+                >
+                  {vehicle.isAvailable ? "Available" : "Currently Booked"}
                 </Text>
               </View>
-            )}
-          </View>
+              <Text style={styles.vehicleTitle}>{vehicle.name}</Text>
+              <Text style={styles.vehicleModel}>{vehicle.model}</Text>
+              {vehicle.vehicleNumber && (
+                <Text style={styles.vehicleNumber}>
+                  {vehicle.vehicleNumber}
+                </Text>
+              )}
+            </View>
 
-          {/* Features */}
-          <View className="mb-8">
-            <Text className="text-lg font-bold text-white mb-4">Features</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {vehicle.features.map((feature) => (
-                <View
-                  key={feature}
-                  className="flex-row items-center gap-2 rounded-full bg-[#1E293B] px-4 py-2.5 border border-slate-800"
+            {/* Specs */}
+            {/* Specs */}
+            <View style={styles.specsGrid}>
+              <View style={styles.specItem}>
+                <Fuel size={20} color="#22d3ee" style={styles.specIcon} />
+                <Text
+                  style={styles.specValue}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
                 >
-                  <Check color="#22D3EE" size={14} />
-                  <Text className="text-sm font-medium text-slate-300">
-                    {feature}
+                  {vehicle.fuelType}
+                </Text>
+                <Text
+                  style={styles.specLabel}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  Fuel
+                </Text>
+              </View>
+              <View style={styles.specItem}>
+                <Settings2 size={20} color="#22d3ee" style={styles.specIcon} />
+                <Text
+                  style={styles.specValue}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  {vehicle.transmission}
+                </Text>
+                <Text
+                  style={styles.specLabel}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                >
+                  Transmission
+                </Text>
+              </View>
+              {vehicle.seating && (
+                <View style={styles.specItem}>
+                  <Users size={20} color="#22d3ee" style={styles.specIcon} />
+                  <Text
+                    style={styles.specValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    {vehicle.seating} Seats
+                  </Text>
+                  <Text
+                    style={styles.specLabel}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                  >
+                    Capacity
                   </Text>
                 </View>
-              ))}
+              )}
+            </View>
+
+            {/* Features */}
+            <View style={styles.featuresContainer}>
+              <Text style={styles.sectionTitle}>Features</Text>
+              <View style={styles.featuresList}>
+                {vehicle.features.map((feature) => (
+                  <View key={feature} style={styles.featureBadge}>
+                    <Check size={14} color="#22d3ee" />
+                    <Text style={styles.featureText}>{feature}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Shop info */}
+            <View style={styles.shopInfoContainer}>
+              <Text style={styles.shopLabel}>Available at</Text>
+              <Text style={styles.shopName}>{shop.name}</Text>
+              <Text style={styles.shopAddress}>{shop.address}</Text>
             </View>
           </View>
+        </View>
 
-          {/* Shop/Location Info */}
-          <View className="mb-8">
-            <Text className="text-xs text-slate-400 uppercase tracking-widest mb-3">
-              Available at
-            </Text>
-            <TouchableOpacity
-              onPress={() =>
-                navigation.navigate("ShopDetails", { id: shop.id })
-              }
-              className="rounded-2xl bg-[#1E293B] p-4 border border-slate-800"
-            >
-              <View className="flex-row justify-between items-start mb-2">
-                <Text className="text-lg font-bold text-white">
-                  {shop.name}
-                </Text>
-                <View className="flex-row items-center gap-1">
-                  <Star color="#F59E0B" fill="#F59E0B" size={14} />
-                  <Text className="font-bold text-white">{shop.rating}</Text>
-                </View>
-              </View>
-              <View className="flex-row items-center gap-2">
-                <MapPin color="#64748B" size={16} />
-                <Text className="text-slate-400 flex-1">{shop.address}</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Pricing Selector */}
-          <View className="mb-4">
-            <Text className="text-lg font-bold text-white mb-4">Pricing</Text>
-            <View className="flex-row gap-4 p-1 bg-[#1E293B] rounded-2xl border border-slate-800">
+        {/* Pricing */}
+        <View style={styles.pricingSection}>
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>Pricing</Text>
+            <View style={styles.pricingOptionsContainer}>
               <TouchableOpacity
                 onPress={() => setPricingType("hour")}
-                className={cn(
-                  "flex-1 flex-row items-center justify-center gap-2 py-4 rounded-xl",
-                  pricingType === "hour" ? "bg-[#22D3EE]" : "bg-transparent",
-                )}
+                style={[
+                  styles.pricingOption,
+                  pricingType === "hour"
+                    ? styles.pricingOptionActive
+                    : styles.pricingOptionInactive,
+                ]}
               >
                 <Clock
-                  color={pricingType === "hour" ? "#0F1C23" : "#94A3B8"}
-                  size={18}
+                  size={20}
+                  color={pricingType === "hour" ? "#22d3ee" : "#94a3b8"}
+                  style={styles.pricingIcon}
                 />
-                <View>
-                  <Text
-                    className={cn(
-                      "text-xs font-medium",
-                      pricingType === "hour"
-                        ? "text-slate-800"
-                        : "text-slate-500",
-                    )}
-                  >
-                    Hourly
-                  </Text>
-                  <Text
-                    className={cn(
-                      "text-lg font-bold -mt-1",
-                      pricingType === "hour" ? "text-[#0F1C23]" : "text-white",
-                    )}
-                  >
-                    ${vehicle.pricePerHour}
-                  </Text>
-                </View>
+                <Text
+                  style={[
+                    styles.pricingPrice,
+                    pricingType === "hour"
+                      ? styles.textPrimary
+                      : styles.textForeground,
+                  ]}
+                >
+                  ${vehicle.pricePerHour}
+                </Text>
+                <Text style={styles.pricingPeriod}>per hour</Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 onPress={() => setPricingType("day")}
-                className={cn(
-                  "flex-1 flex-row items-center justify-center gap-2 py-4 rounded-xl",
-                  pricingType === "day" ? "bg-[#22D3EE]" : "bg-transparent",
-                )}
+                style={[
+                  styles.pricingOption,
+                  pricingType === "day"
+                    ? styles.pricingOptionActive
+                    : styles.pricingOptionInactive,
+                ]}
               >
                 <Calendar
-                  color={pricingType === "day" ? "#0F1C23" : "#94A3B8"}
-                  size={18}
+                  size={20}
+                  color={pricingType === "day" ? "#22d3ee" : "#94a3b8"}
+                  style={styles.pricingIcon}
                 />
-                <View>
-                  <Text
-                    className={cn(
-                      "text-xs font-medium",
-                      pricingType === "day"
-                        ? "text-slate-800"
-                        : "text-slate-500",
-                    )}
-                  >
-                    Daily
-                  </Text>
-                  <Text
-                    className={cn(
-                      "text-lg font-bold -mt-1",
-                      pricingType === "day" ? "text-[#0F1C23]" : "text-white",
-                    )}
-                  >
-                    ${vehicle.pricePerDay}
-                  </Text>
-                </View>
+                <Text
+                  style={[
+                    styles.pricingPrice,
+                    pricingType === "day"
+                      ? styles.textPrimary
+                      : styles.textForeground,
+                  ]}
+                >
+                  ${vehicle.pricePerDay}
+                </Text>
+                <Text style={styles.pricingPeriod}>per day</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </ScrollView>
 
-      {/* Sticky Bottom Footer */}
-      <View
-        className="absolute bottom-0 left-0 right-0 bg-[#0F1C23] border-t border-slate-800 px-5 pt-4"
-        style={{ paddingBottom: insets.bottom + 16 }}
-      >
-        <View className="flex-row items-center justify-between gap-6">
+      {/* Bottom action */}
+      <View style={styles.footer}>
+        <View style={styles.footerContent}>
           <View>
-            <Text className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">
-              Total Price
+            <Text style={styles.footerLabel}>
+              {pricingType === "hour" ? "Per hour" : "Per day"}
             </Text>
-            <View className="flex-row items-baseline gap-1">
-              <Text className="text-3xl font-bold text-[#22D3EE]">
+            <View style={styles.footerPriceContainer}>
+              <Text style={styles.footerPriceValue}>
                 $
                 {pricingType === "hour"
                   ? vehicle.pricePerHour
                   : vehicle.pricePerDay}
               </Text>
-              <Text className="text-sm font-medium text-slate-400">
-                /{pricingType === "hour" ? "hr" : "day"}
+              <Text style={styles.footerPriceValue}>
+                {pricingType === "hour" ? "/hr" : "/day"}
               </Text>
             </View>
           </View>
-
-          <TouchableOpacity
-            disabled={!vehicle.isAvailable}
-            onPress={() => navigation.navigate("Booking", { id: vehicle.id })}
-            className={cn(
-              "flex-1 bg-[#22D3EE] h-14 rounded-2xl items-center justify-center",
-              !vehicle.isAvailable && "opacity-50",
-            )}
-          >
-            <Text className="text-[#0F1C23] font-bold text-lg">
-              {vehicle.isAvailable ? "Book Now" : "Unavailable"}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.footerButtonContainer}>
+            <Button
+              size="lg"
+              disabled={!vehicle.isAvailable}
+              onPress={() =>
+                navigation.navigate("Booking", {
+                  id: vehicle.id,
+                  type: pricingType,
+                })
+              }
+              className="w-full"
+            >
+              <Text style={styles.buttonText}>
+                {vehicle.isAvailable ? "Book Now" : "Not Available"}
+              </Text>
+            </Button>
+          </View>
         </View>
       </View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Dark background
+  },
+  notFoundContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0f172a",
+  },
+  notFoundText: {
+    color: "#94a3b8", // Slate-400
+    fontSize: 16,
+  },
+  scrollContent: {
+    paddingBottom: 120,
+  },
+  imageGalleryContainer: {
+    height: 300,
+    position: "relative",
+  },
+  mainImage: {
+    width: "100%",
+    height: "100%",
+  },
+  gradientOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 120,
+    backgroundColor: "transparent",
+    // In a real app we'd use LinearGradient here to fade to #0f172a
+  },
+  headerActionsContainer: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 20,
+    // Top padding will be applied via inline style using insets
+  },
+  headerActionsContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+  },
+  iconButton: {
+    backgroundColor: "rgba(15, 23, 42, 0.6)", // Dark transparent
+    padding: 10,
+    borderRadius: 50, // Circular
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+  },
+  headerRightActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  indicatorsContainer: {
+    position: "absolute",
+    bottom: 20,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+  },
+  indicator: {
+    height: 6,
+    borderRadius: 9999,
+  },
+  indicatorActive: {
+    width: 24,
+    backgroundColor: "#22d3ee", // Cyan-400
+  },
+  indicatorInactive: {
+    width: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+  },
+  typeBadgeContainer: {
+    position: "absolute",
+    left: 16,
+    // Top position will be adjusted dynamically or relative to header
+    zIndex: 15,
+  },
+  typeBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "rgba(15, 23, 42, 0.8)", // Dark backdrop
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(148, 163, 184, 0.2)",
+  },
+  typeBadgeText: {
+    fontSize: 14,
+    fontWeight: "500",
+    textTransform: "capitalize",
+    color: "#ffffff",
+  },
+  infoSectionContainer: {
+    paddingHorizontal: 16,
+    marginTop: -30,
+    zIndex: 10,
+    position: "relative",
+  },
+  card: {
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  availabilityBadgeContainer: {
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  availabilityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 9999,
+    marginBottom: 8,
+  },
+  badgeSuccess: {
+    backgroundColor: "rgba(34, 211, 238, 0.15)", // Cyan tint
+  },
+  badgeDestructive: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+  },
+  availabilityText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  textSuccess: {
+    color: "#22d3ee", // Cyan-400
+  },
+  textDestructive: {
+    color: "#ef4444",
+  },
+  vehicleTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#ffffff",
+    marginBottom: 4,
+  },
+  vehicleModel: {
+    fontSize: 16,
+    color: "#94a3b8", // Slate-400
+  },
+  vehicleNumber: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#64748b",
+    marginTop: 4,
+  },
+  specsGrid: {
+    marginTop: 24,
+    flexDirection: "row",
+    gap: 12,
+  },
+  specItem: {
+    flex: 1,
+    backgroundColor: "#0f172a", // Darker slot
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#334155", // Slate-700
+  },
+  specIcon: {
+    marginBottom: 8,
+  },
+  specValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#ffffff",
+    textAlign: "center",
+    marginTop: 4,
+  },
+  specLabel: {
+    fontSize: 12,
+    color: "#94a3b8",
+    textAlign: "center",
+  },
+  featuresContainer: {
+    marginTop: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#ffffff",
+    marginBottom: 16,
+  },
+  featuresList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  featureBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#334155", // Slate-700
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 9999,
+  },
+  featureText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#22d3ee", // Cyan-400
+  },
+  shopInfoContainer: {
+    marginTop: 24,
+    backgroundColor: "#0f172a", // Dark details
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#334155",
+    padding: 16,
+  },
+  shopLabel: {
+    fontSize: 12,
+    color: "#94a3b8",
+  },
+  shopName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#ffffff",
+    marginTop: 4,
+  },
+  shopAddress: {
+    fontSize: 14,
+    color: "#94a3b8",
+    marginTop: 2,
+  },
+  pricingSection: {
+    paddingHorizontal: 16,
+    paddingVertical: 24,
+  },
+  pricingOptionsContainer: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  pricingOption: {
+    flex: 1,
+    backgroundColor: "#1e293b", // Slate-800
+    borderRadius: 16,
+    padding: 20,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#334155",
+  },
+  pricingOptionActive: {
+    borderColor: "#22d3ee", // Cyan-400
+    backgroundColor: "rgba(34, 211, 238, 0.05)",
+  },
+  pricingOptionInactive: {
+    borderColor: "#334155",
+    backgroundColor: "#1e293b",
+  },
+  pricingIcon: {
+    marginBottom: 8,
+  },
+  pricingPrice: {
+    fontSize: 24,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  textPrimary: {
+    color: "#22d3ee",
+  },
+  textForeground: {
+    color: "#ffffff",
+  },
+  pricingPeriod: {
+    fontSize: 14,
+    color: "#94a3b8",
+  },
+  footer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "#1e293b", // Slate-800
+    borderTopWidth: 1,
+    borderTopColor: "#334155",
+    padding: 16,
+    paddingBottom: Platform.OS === "ios" ? 32 : 16,
+  },
+  footerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 16,
+    maxWidth: 448,
+    alignSelf: "center",
+    width: "100%",
+  },
+  footerLabel: {
+    fontSize: 14,
+    color: "#94a3b8",
+  },
+  footerPriceContainer: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 2,
+  },
+  footerPriceValue: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#22d3ee", // Cyan-400
+    marginTop: 4,
+  },
+  footerButtonContainer: {
+    flex: 1,
+  },
+  buttonText: {
+    color: "#0f172a", // Dark text on Cyan button
+    fontSize: 16,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+});

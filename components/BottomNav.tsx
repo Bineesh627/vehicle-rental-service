@@ -1,47 +1,103 @@
 import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { CommonActions, useNavigation } from "@react-navigation/native";
+import { Calendar, Home, Search, User } from "lucide-react-native";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-export const BottomNav = ({
-  state,
-  descriptors,
-  navigation,
-}: BottomTabBarProps) => {
+export const BottomNav = (props: Partial<BottomTabBarProps>) => {
+  const nativeNavigation = useNavigation();
+  const { state, descriptors, insets, navigation } = props;
+
+  // Map route names to Icons and Labels
+  // Expo Router default routes: "index", "explore", "bookings", "profile" for (tabs)
+  const getRouteConfig = (routeName: string) => {
+    switch (routeName) {
+      case "index":
+      case "Home": // Fallback for manual nav
+        return { icon: Home, label: "Home" };
+      case "explore":
+      case "Explore":
+        return { icon: Search, label: "Explore" };
+      case "bookings":
+      case "Bookings":
+        return { icon: Calendar, label: "Bookings" };
+      case "profile":
+        return { icon: User, label: "profile" };
+      default:
+        return { icon: Home, label: "Home" };
+    }
+  };
+
+  // Standalone mode (when used in VehicleDetails)
+  if (!state) {
+    const navItems = [
+      { name: "index", label: "Home", icon: Home },
+      { name: "explore", label: "Explore", icon: Search },
+      { name: "bookings", label: "Bookings", icon: Calendar },
+      { name: "profile", label: "Profile", icon: User },
+    ];
+
+    return (
+      <View style={styles.navContainer}>
+        <View style={styles.navContent}>
+          {navItems.map((item) => (
+            <TouchableOpacity
+              key={item.name}
+              onPress={() => {
+                // Navigate to the tab screen
+                // We assume these are under the 'Tabs' group or accessible via root
+                // Using "navigate" with the hierarchical path might be safest if using global nav
+                // But simple strings often work if configured in strict typed stack
+                nativeNavigation.navigate(item.name as never);
+              }}
+              style={styles.navItem}
+              activeOpacity={0.8}
+            >
+              <View style={styles.iconWrapper}>
+                <item.icon size={24} color="#94a3b8" />
+              </View>
+              <Text style={[styles.label, styles.labelInactive]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+    );
+  }
+
+  // TabBar mode (inside Tabs)
   return (
-    <SafeAreaView edges={["bottom"]} style={styles.container}>
-      <View style={styles.navInner}>
+    <View style={styles.navContainer}>
+      <View style={styles.navContent}>
         {state.routes.map((route, index) => {
-          const { options } = descriptors[route.key];
-          const label =
-            options.tabBarLabel !== undefined
-              ? options.tabBarLabel
-              : options.title !== undefined
-                ? options.title
-                : route.name;
-
+          const { options } = descriptors![route.key];
+          const config = getRouteConfig(route.name);
           const isFocused = state.index === index;
 
           const onPress = () => {
-            const event = navigation.emit({
+            const event = navigation!.emit({
               type: "tabPress",
               target: route.key,
               canPreventDefault: true,
             });
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name, route.params);
+              navigation!.dispatch(
+                CommonActions.navigate({
+                  name: route.name,
+                  merge: true,
+                }),
+              );
             }
           };
 
           const onLongPress = () => {
-            navigation.emit({
+            navigation!.emit({
               type: "tabLongPress",
               target: route.key,
             });
           };
-
-          const Icon = options.tabBarIcon;
 
           return (
             <TouchableOpacity
@@ -52,69 +108,69 @@ export const BottomNav = ({
               onPress={onPress}
               onLongPress={onLongPress}
               style={styles.navItem}
-              activeOpacity={0.7}
+              activeOpacity={0.8}
             >
               <View
                 style={[
-                  styles.iconContainer,
-                  isFocused && styles.activeIconContainer,
+                  styles.iconWrapper,
+                  isFocused && styles.iconWrapperActive,
                 ]}
               >
-                {Icon &&
-                  Icon({
-                    focused: isFocused,
-                    color: isFocused ? "#22D3EE" : "#94A3B8",
-                    size: 20,
-                  })}
+                <config.icon
+                  size={24}
+                  color={isFocused ? "#0f172a" : "#94a3b8"}
+                  strokeWidth={isFocused ? 2.5 : 2}
+                />
               </View>
               <Text
                 style={[
                   styles.label,
-                  isFocused ? styles.activeLabel : styles.inactiveLabel,
+                  isFocused ? styles.labelActive : styles.labelInactive,
                 ]}
               >
-                {label as string}
+                {config.label}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#0F1C23", // Deep Slate/Teal
+  navContainer: {
+    backgroundColor: "#0f172a", // Dark background
     borderTopWidth: 1,
-    borderTopColor: "#1E293B", // border-slate-800
-    paddingBottom: 0,
+    borderTopColor: "#1e293b", // Slightly lighter border
+    paddingBottom: 20,
+    paddingTop: 12,
   },
-  navInner: {
+  navContent: {
     flexDirection: "row",
     justifyContent: "space-around",
     alignItems: "center",
-    paddingVertical: 12,
-    maxWidth: 500,
+    maxWidth: 400,
     alignSelf: "center",
     width: "100%",
   },
   navItem: {
     alignItems: "center",
     gap: 4,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
-  iconContainer: {
-    padding: 8,
-    borderRadius: 30, // rounded-full
+  iconWrapper: {
+    padding: 10,
+    borderRadius: 50, // Circular
+    backgroundColor: "transparent",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 44,
+    height: 44,
   },
-  activeIconContainer: {
-    backgroundColor: "rgba(34, 211, 238, 0.1)", // Cyan with opacity
-    shadowColor: "#22D3EE",
+  iconWrapperActive: {
+    backgroundColor: "#22d3ee", // Cyan-400
+    shadowColor: "#22d3ee",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
     shadowRadius: 8,
@@ -123,11 +179,8 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 12,
     fontWeight: "500",
+    marginTop: 4,
   },
-  activeLabel: {
-    color: "#22D3EE", // Cyan
-  },
-  inactiveLabel: {
-    color: "#94A3B8", // Slate-400
-  },
+  labelActive: { color: "#22d3ee" }, // Cyan-400
+  labelInactive: { color: "#94a3b8" }, // Slate-400
 });

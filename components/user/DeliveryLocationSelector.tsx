@@ -1,10 +1,21 @@
-import { useState } from "react";
-import { MapPin, Navigation, X, Check } from "lucide-react";
+import React, { useState } from "react";
+import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  Modal, 
+  TouchableOpacity, 
+  SafeAreaView, 
+  Alert 
+} from "react-native";
+import { MapPin, Navigation, X, Check } from "lucide-react-native";
+
+// Assuming you have RN-compatible versions of these
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input"; 
 
 interface DeliveryLocationSelectorProps {
+  visible: boolean; // Changed from conditional render to prop
   type: 'delivery' | 'pickup';
   currentAddress?: string;
   onSelect: (address: string) => void;
@@ -18,111 +29,173 @@ const savedLocations = [
 ];
 
 export const DeliveryLocationSelector = ({ 
+  visible,
   type, 
   currentAddress = "", 
   onSelect, 
   onClose 
 }: DeliveryLocationSelectorProps) => {
   const [address, setAddress] = useState(currentAddress);
-  const [useCurrentLocation, setUseCurrentLocation] = useState(false);
 
   const handleCurrentLocation = () => {
-    setUseCurrentLocation(true);
     setAddress("Current Location (GPS)");
-    toast.success("Using your current location");
+    Alert.alert("Location", "Using your current location");
   };
 
   const handleConfirm = () => {
     if (!address) {
-      toast.error("Please enter or select a location");
+      Alert.alert("Error", "Please enter or select a location");
       return;
     }
     onSelect(address);
-    toast.success(`${type === 'delivery' ? 'Delivery' : 'Pickup'} location set`);
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background">
-      {/* Header */}
-      <div className="sticky top-0 z-10 border-b border-border bg-card px-4 py-4">
-        <div className="flex items-center justify-between">
-          <button onClick={onClose} className="p-2 -ml-2 rounded-xl hover:bg-secondary">
-            <X className="h-5 w-5" />
-          </button>
-          <h1 className="text-lg font-bold">
+    <Modal 
+      visible={visible} 
+      animationType="slide" 
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}
+    >
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <X size={20} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>
             {type === 'delivery' ? 'Set Delivery Location' : 'Set Pickup Location'}
-          </h1>
-          <div className="w-9" />
-        </div>
-      </div>
+          </Text>
+          <View style={{ width: 32 }} /> 
+        </View>
 
-      {/* Mock Map */}
-      <div className="h-56 bg-gradient-to-br from-primary/20 to-primary/5 relative">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="relative">
-              <MapPin className="h-12 w-12 text-primary mx-auto animate-bounce" />
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-4 h-1 bg-black/20 rounded-full blur-sm" />
-            </div>
-            <p className="text-sm text-muted-foreground mt-2">Drag to set location</p>
-          </div>
-        </div>
-        
-        {/* Current Location Button */}
-        <button 
-          onClick={handleCurrentLocation}
-          className="absolute bottom-4 right-4 bg-card rounded-xl p-3 shadow-lg border border-border"
-        >
-          <Navigation className="h-5 w-5 text-primary" />
-        </button>
-      </div>
+        {/* Mock Map */}
+        <View style={styles.mapContainer}>
+          <View style={styles.mapContent}>
+            <MapPin size={48} color="#2563EB" />
+            <Text style={styles.mapText}>Drag to set location</Text>
+          </View>
+          
+          <TouchableOpacity 
+            onPress={handleCurrentLocation}
+            style={styles.gpsButton}
+          >
+            <Navigation size={20} color="#2563EB" />
+          </TouchableOpacity>
+        </View>
 
-      <div className="px-4 py-6 space-y-6">
-        {/* Search Input */}
-        <div className="relative">
-          <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Enter address..."
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className="pl-12 h-14 rounded-2xl"
-          />
-        </div>
+        <View style={styles.content}>
+          {/* Search Input */}
+          <View style={styles.inputWrapper}>
+            <MapPin size={20} color="#6B7280" style={styles.inputIcon} />
+            <Input
+              placeholder="Enter address..."
+              value={address}
+              onChangeText={setAddress} // Assuming your Input accepts onChangeText
+              style={styles.inputOverride}
+            />
+          </View>
 
-        {/* Saved Locations */}
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-3">Saved Locations</h3>
-          <div className="space-y-2">
+          {/* Saved Locations */}
+          <View style={styles.savedSection}>
+            <Text style={styles.sectionTitle}>Saved Locations</Text>
             {savedLocations.map((loc) => (
-              <button
+              <TouchableOpacity
                 key={loc.id}
-                onClick={() => setAddress(loc.address)}
-                className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all ${
-                  address === loc.address 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-border hover:border-primary/50'
-                }`}
+                onPress={() => setAddress(loc.address)}
+                style={[
+                  styles.locationItem,
+                  address === loc.address ? styles.locationItemActive : styles.locationItemInactive
+                ]}
               >
-                <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center">
-                  <MapPin className="h-4 w-4 text-primary" />
-                </div>
-                <div className="text-left flex-1">
-                  <p className="font-medium text-foreground">{loc.name}</p>
-                  <p className="text-sm text-muted-foreground">{loc.address}</p>
-                </div>
+                <View style={styles.locationIcon}>
+                  <MapPin size={16} color="#2563EB" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.locName}>{loc.name}</Text>
+                  <Text style={styles.locAddress}>{loc.address}</Text>
+                </View>
                 {address === loc.address && (
-                  <Check className="h-5 w-5 text-primary" />
+                  <Check size={20} color="#2563EB" />
                 )}
-              </button>
+              </TouchableOpacity>
             ))}
-          </div>
-        </div>
+          </View>
 
-        {/* Confirm Button */}
-        <Button onClick={handleConfirm} className="w-full" size="lg">
-          Confirm {type === 'delivery' ? 'Delivery' : 'Pickup'} Location
-        </Button>
-      </div>
-    </div>
+          {/* Confirm Button */}
+          <Button 
+            className="w-full mt-auto" 
+            onPress={handleConfirm}
+          >
+            <Text style={{color: 'white', fontWeight: 'bold'}}>
+              Confirm {type === 'delivery' ? 'Delivery' : 'Pickup'} Location
+            </Text>
+          </Button>
+        </View>
+      </SafeAreaView>
+    </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#FFF" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  headerTitle: { fontSize: 18, fontWeight: "bold", color: "#111827" },
+  closeBtn: { padding: 8, backgroundColor: "#F3F4F6", borderRadius: 8 },
+  mapContainer: {
+    height: 224,
+    backgroundColor: "#EFF6FF",
+    position: "relative",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  mapContent: { alignItems: "center" },
+  mapText: { fontSize: 14, color: "#6B7280", marginTop: 8 },
+  gpsButton: {
+    position: "absolute",
+    bottom: 16,
+    right: 16,
+    backgroundColor: "#FFF",
+    padding: 12,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  content: { padding: 16, flex: 1 },
+  inputWrapper: { position: "relative", marginBottom: 24 },
+  inputIcon: { position: "absolute", left: 12, top: 12, zIndex: 10 },
+  inputOverride: { paddingLeft: 40 }, // Style prop to push text for icon
+  savedSection: { marginBottom: 24 },
+  sectionTitle: { fontSize: 14, fontWeight: "500", color: "#6B7280", marginBottom: 12 },
+  locationItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 8,
+    gap: 12,
+  },
+  locationItemActive: { borderColor: "#2563EB", backgroundColor: "#EFF6FF" },
+  locationItemInactive: { borderColor: "#E5E7EB", backgroundColor: "#FFF" },
+  locationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  locName: { fontWeight: "500", color: "#111827" },
+  locAddress: { fontSize: 12, color: "#6B7280" },
+});
