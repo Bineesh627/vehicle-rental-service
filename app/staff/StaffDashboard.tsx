@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import {
@@ -19,15 +17,36 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+// Theme Colors derived from the screenshot
+const COLORS = {
+  background: "#111318", // Very dark background
+  card: "#1A1F26", // Slightly lighter card bg
+  primary: "#2DD4BF", // Teal/Aqua color for actions
+  secondary: "#FB923C", // Orange for pending/pickup
+  text: "#FFFFFF",
+  textMuted: "#9CA3AF",
+  border: "#2C3340",
+};
+
 const stats = [
-  { label: "Assigned Today", value: "5", icon: Package, color: "text-primary" },
+  {
+    label: "Assigned Today",
+    value: "5",
+    icon: Package,
+    color: COLORS.primary,
+  },
   {
     label: "Completed",
     value: "3",
     icon: CheckCircle,
-    color: "text-green-500",
+    color: "#22C55E", // Green
   },
-  { label: "Pending", value: "2", icon: Clock, color: "text-orange-500" },
+  {
+    label: "Pending",
+    value: "2",
+    icon: Clock,
+    color: COLORS.secondary,
+  },
 ];
 
 const initialDeliveryTasks = [
@@ -118,219 +137,226 @@ export default function StaffDashboard() {
     task: (typeof initialDeliveryTasks)[0];
     isDelivery: boolean;
   }) => (
-    <View className="p-4 rounded-xl bg-secondary/50 gap-3">
-      <View className="flex-row items-center justify-between">
+    <View
+      className="p-5 rounded-2xl mb-4"
+      style={{ backgroundColor: COLORS.card }}
+    >
+      {/* Header: Icon/Badge + Time */}
+      <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center gap-2">
-          {isDelivery ? (
-            <Truck size={16} className="text-primary" />
-          ) : (
-            <Package size={16} className="text-orange-500" />
-          )}
+          {/* Badge */}
           <View
-            className={`px-2 py-0.5 rounded-full ${
-              isDelivery ? "bg-primary/10" : "bg-orange-500/10"
+            className={`flex-row items-center px-3 py-1 rounded-full ${
+              isDelivery ? "bg-[#2DD4BF]/10" : "bg-orange-500/10"
             }`}
           >
+            {isDelivery ? (
+              <Truck size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
+            ) : (
+              <Package size={14} color={COLORS.secondary} style={{ marginRight: 6 }} />
+            )}
             <Text
-              className={`text-xs font-medium ${
-                isDelivery ? "text-primary" : "text-orange-500"
+              className={`text-xs font-semibold ${
+                isDelivery ? "text-[#2DD4BF]" : "text-orange-500"
               }`}
             >
               {isDelivery ? "Delivery" : "Pickup"}
             </Text>
           </View>
         </View>
-        <Text className="text-xs text-muted-foreground">{task.time}</Text>
+        <Text className="text-xs text-gray-400">{task.time}</Text>
       </View>
 
-      <View>
-        <Text className="font-semibold text-foreground text-base">
+      {/* Main Content */}
+      <View className="mb-4">
+        <Text className="text-xl font-bold text-white mb-1">
           {task.vehicle}
         </Text>
-        <Text className="text-sm text-muted-foreground">{task.customer}</Text>
+        <Text className="text-sm text-gray-400">{task.customer}</Text>
       </View>
 
-      <View className="flex-row items-start gap-2">
-        <MapPin size={16} className="text-muted-foreground mt-0.5" />
-        <Text className="text-sm text-muted-foreground flex-1">
-          {task.address}
-        </Text>
+      {/* Address */}
+      <View className="flex-row items-start gap-2 mb-5">
+        <MapPin size={16} color="#6B7280" style={{ marginTop: 2 }} />
+        <Text className="text-sm text-gray-400 flex-1">{task.address}</Text>
       </View>
 
-      <View className="flex-row gap-2 mt-1">
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1 flex-row gap-1"
+      {/* Action Buttons - Styled exactly like the screenshot */}
+      <View className="flex-row gap-3">
+        {/* Call Button (Outlined) */}
+        <TouchableOpacity
+          className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
+          style={{ borderColor: COLORS.primary }}
           onPress={() => handleCall(task.phone, task.customer)}
         >
-          <Phone size={12} className="text-foreground" />
-          <Text className="text-foreground text-xs">Call</Text>
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="flex-1 flex-row gap-1"
+          <Phone size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+          <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Call</Text>
+        </TouchableOpacity>
+
+        {/* Navigate Button (Outlined) */}
+        <TouchableOpacity
+          className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
+          style={{ borderColor: COLORS.primary }}
           onPress={() => handleNavigate(task.address)}
         >
-          <Navigation size={12} className="text-foreground" />
-          <Text className="text-foreground text-xs">Navigate</Text>
-        </Button>
-        <Button
-          size="sm"
-          className="flex-1"
+          <Navigation size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+          <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Navigate</Text>
+        </TouchableOpacity>
+
+        {/* Complete Button (Solid) */}
+        <TouchableOpacity
+          className="flex-1 items-center justify-center py-3 rounded-full"
+          style={{ backgroundColor: COLORS.primary }}
           onPress={() =>
             isDelivery ? markAsDelivered(task.id) : markAsPickedUp(task.id)
           }
         >
-          <Text className="text-primary-foreground text-xs font-semibold">
+          <Text className="text-black font-bold">
             {isDelivery ? "Delivered" : "Picked Up"}
           </Text>
-        </Button>
+        </TouchableOpacity>
       </View>
     </View>
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background pt-8">
-      <View className="flex-1 bg-background">
+    <SafeAreaView
+      className="flex-1"
+      style={{ backgroundColor: COLORS.background }}
+    >
+      <View className="flex-1">
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center justify-between">
+        <View className="flex-row items-center justify-between px-5 pt-2 pb-6">
           <View className="flex-row items-center gap-3">
-            <View className="flex h-10 w-10 items-center justify-center rounded-xl bg-green-500">
-              <Wrench size={20} className="text-white" />
+            <View className="h-12 w-12 items-center justify-center rounded-full bg-green-500">
+              <Wrench size={24} color="white" />
             </View>
             <View>
-              <Text className="text-lg font-bold text-foreground">
+              <Text className="text-xl font-bold text-white">
                 Staff Dashboard
               </Text>
-              <Text className="text-xs text-muted-foreground">
-                {user?.name}
-              </Text>
+              <Text className="text-sm text-gray-400">{user?.name || "Mike Staff"}</Text>
             </View>
           </View>
-          <View className="flex-row items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => router.push("/staff/StaffProfile")}
-            >
-              <User size={20} className="text-foreground" />
-            </Button>
-            <Button variant="ghost" size="sm" onPress={handleLogout}>
-              <Text className="text-foreground">Logout</Text>
-            </Button>
+          <View className="flex-row items-center gap-1">
+            <TouchableOpacity onPress={() => router.push("/staff/StaffProfile")}>
+              <User size={24} color="white" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleLogout} className="ml-4">
+              <Text className="text-white font-semibold">Logout</Text>
+            </TouchableOpacity>
           </View>
         </View>
 
         <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ gap: 24, paddingBottom: 40 }}
+          className="flex-1 px-5"
+          contentContainerStyle={{ paddingBottom: 40 }}
         >
-          {/* Stats */}
-          <View className="flex-row gap-3">
-            {stats.map((stat) => (
-              <Card key={stat.label} className="border-border flex-1">
-                <CardContent className="p-3 items-center">
-                  <stat.icon size={20} className={`mb-1 ${stat.color}`} />
-                  <Text className="text-xl font-bold text-foreground">
+          {/* Stats Row */}
+          <View className="flex-row gap-3 mb-8">
+            {stats.map((stat, index) => (
+              <View
+                key={index}
+                className="flex-1 pt-6 pb-4 items-center justify-between rounded-2xl border"
+                style={{
+                  backgroundColor: COLORS.card,
+                  borderColor: COLORS.border,
+                }}
+              >
+                <stat.icon size={24} color={stat.color} style={{ marginBottom: 8 }} />
+                <View className="items-center">
+                  <Text className="text-2xl font-bold text-white">
                     {stat.value}
                   </Text>
-                  <Text className="text-xs text-muted-foreground">
+                  <Text className="text-xs text-gray-400 mt-1">
                     {stat.label}
                   </Text>
-                </CardContent>
-              </Card>
+                </View>
+              </View>
             ))}
           </View>
 
-          {/* Delivery Tasks */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-2">
-                  <Truck size={16} className="text-primary" />
-                  <CardTitle className="text-base text-foreground">
-                    Delivery Tasks
-                  </CardTitle>
-                </View>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onPress={() => router.push("/staff/AssignedTasks")}
-                  className="flex-row items-center"
-                >
-                  <Text className="text-primary text-xs mr-1">View All</Text>
-                  <ChevronRight size={16} className="text-primary" />
-                </Button>
-              </View>
-            </CardHeader>
-            <CardContent className="gap-3">
-              {deliveryTasks.length === 0 ? (
-                <Text className="text-sm text-muted-foreground text-center py-4">
-                  No pending deliveries
+          {/* Delivery Tasks Section */}
+          <View className="mb-6">
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center gap-2">
+                <Truck size={18} color={COLORS.primary} />
+                <Text className="text-lg font-bold text-white">
+                  Delivery Tasks
                 </Text>
-              ) : (
-                deliveryTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} isDelivery={true} />
-                ))
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Pickup Tasks */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center gap-2">
-                  <Package size={16} className="text-orange-500" />
-                  <CardTitle className="text-base text-foreground">
-                    Pickup Tasks
-                  </CardTitle>
-                </View>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onPress={() => router.push("/staff/AssignedTasks")}
-                  className="flex-row items-center"
-                >
-                  <Text className="text-primary text-xs mr-1">View All</Text>
-                  <ChevronRight size={16} className="text-primary" />
-                </Button>
               </View>
-            </CardHeader>
-            <CardContent className="gap-3">
-              {pickupTasks.length === 0 ? (
-                <Text className="text-sm text-muted-foreground text-center py-4">
-                  No pending pickups
+              <TouchableOpacity
+                onPress={() => router.push("/staff/AssignedTasks")}
+                className="flex-row items-center"
+              >
+                <Text style={{ color: COLORS.primary }} className="mr-1">
+                  View All
                 </Text>
-              ) : (
-                pickupTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} isDelivery={false} />
-                ))
-              )}
-            </CardContent>
-          </Card>
+                <ChevronRight size={16} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
 
-          {/* Mock Map Preview */}
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => router.push("/staff/AssignedTasks")}
+            {deliveryTasks.length === 0 ? (
+              <Text className="text-gray-500 text-center py-4">
+                No pending deliveries
+              </Text>
+            ) : (
+              deliveryTasks.map((task) => (
+                <TaskCard key={task.id} task={task} isDelivery={true} />
+              ))
+            )}
+          </View>
+
+          {/* Pickup Tasks Section */}
+          <View className="mb-6">
+            <View className="flex-row items-center justify-between mb-4">
+              <View className="flex-row items-center gap-2">
+                <Package size={18} color={COLORS.secondary} />
+                <Text className="text-lg font-bold text-white">
+                  Pickup Tasks
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => router.push("/staff/AssignedTasks")}
+                className="flex-row items-center"
+              >
+                <Text style={{ color: COLORS.primary }} className="mr-1">
+                  View All
+                </Text>
+                <ChevronRight size={16} color={COLORS.primary} />
+              </TouchableOpacity>
+            </View>
+
+            {pickupTasks.length === 0 ? (
+              <Text className="text-gray-500 text-center py-4">
+                No pending pickups
+              </Text>
+            ) : (
+              pickupTasks.map((task) => (
+                <TaskCard key={task.id} task={task} isDelivery={false} />
+              ))
+            )}
+          </View>
+
+          {/* Map Section */}
+          <View
+            className="rounded-3xl overflow-hidden"
+            style={{ backgroundColor: "#153d38" }} // Dark greenish map bg from screenshot
           >
-            <Card className="border-border overflow-hidden">
-              <View className="h-48 bg-primary/10 items-center justify-center">
-                <View className="items-center">
-                  <MapPin size={32} className="text-primary mb-2" />
-                  <Text className="text-sm font-medium text-foreground">
-                    Task Locations Map
-                  </Text>
-                  <Text className="text-xs text-muted-foreground">
-                    Tap to view full map
-                  </Text>
-                </View>
-              </View>
-            </Card>
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              className="h-48 items-center justify-center"
+              onPress={() => router.push("/staff/AssignedTasks")}
+            >
+              <MapPin size={32} color={COLORS.primary} style={{ marginBottom: 10 }} />
+              <Text className="text-base font-bold text-white">
+                Task Locations Map
+              </Text>
+              <Text className="text-xs text-gray-400 mt-1">
+                Tap to view full map
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </View>
     </SafeAreaView>
