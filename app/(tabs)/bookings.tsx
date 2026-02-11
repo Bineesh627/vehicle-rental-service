@@ -23,8 +23,9 @@ type BookingsNavigationProp = NativeStackNavigationProp<
 export default function Bookings() {
   const navigation = useNavigation<BookingsNavigationProp>();
   const upcomingBookings = bookings.filter((b) => b.status === "upcoming");
+  const activeBookings = bookings.filter((b) => b.status === "active");
   const pastBookings = bookings.filter(
-    (b) => b.status === "completed" || b.status === "cancelled"
+    (b) => b.status === "completed" || b.status === "cancelled",
   );
   const insets = useSafeAreaInsets();
 
@@ -119,6 +120,72 @@ export default function Bookings() {
             </View>
           )}
         </View>
+
+        {/* Active Bookings */}
+        {activeBookings.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Active Bookings</Text>
+            <View>
+              {activeBookings.map((booking) => (
+                <View key={booking.id} style={[styles.card, styles.activeCard]}>
+                  <View style={styles.cardContent}>
+                    <Image
+                      source={{ uri: booking.vehicle.images[0] }}
+                      style={styles.vehicleImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.cardBody}>
+                      <View style={styles.cardHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.vehicleName}>
+                            {booking.vehicle.name}
+                          </Text>
+                          <View style={styles.locationContainer}>
+                            <MapPin color="#94a3b8" size={14} />
+                            <Text style={styles.locationText}>
+                              {booking.shop.name}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={[styles.statusBadge, styles.badgeActive]}>
+                          <Text style={styles.textActive}>Active</Text>
+                        </View>
+                      </View>
+                      <View style={styles.dateRow}>
+                        <View style={styles.dateItem}>
+                          <Calendar color="#94a3b8" size={14} />
+                          <Text style={styles.dateText}>
+                            Ends: {format(new Date(booking.endDate), "MMM d")}
+                          </Text>
+                        </View>
+                        <View style={styles.dateItem}>
+                          <Clock color="#94a3b8" size={14} />
+                          <Text style={styles.dateText}>
+                            {format(new Date(booking.endDate), "h:mm a")}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.activeFooter}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        navigation.navigate("BookingDetails", {
+                          id: booking.id,
+                        })
+                      }
+                      style={styles.detailsButton}
+                    >
+                      <Text style={styles.detailsButtonText}>View Details</Text>
+                      <ChevronRight color="#2dd4bf" size={16} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Past bookings */}
         <View style={styles.section}>
@@ -388,5 +455,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
     color: "#2dd4bf",
+  },
+  activeCard: {
+    borderColor: "#2dd4bf",
+    borderWidth: 1,
+  },
+  badgeActive: {
+    backgroundColor: "rgba(45, 212, 191, 0.2)",
+  },
+  textActive: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#2dd4bf",
+    textTransform: "capitalize",
+  },
+  activeFooter: {
+    marginTop: 12,
+    alignItems: "flex-end",
   },
 });

@@ -11,6 +11,7 @@ import {
   ScrollView,
   Text,
   View,
+  TouchableOpacity,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -20,9 +21,9 @@ export default function OwnerProfile() {
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
+    name: user?.name || "John Owner",
+    email: user?.email || "owner@rental.com",
+    phone: user?.phone || "+1 555-0200",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
@@ -52,14 +53,6 @@ export default function OwnerProfile() {
       });
       return;
     }
-    if (!formData.currentPassword) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Please enter your current password.",
-      });
-      return;
-    }
     Toast.show({
       type: "success",
       text1: "Password Changed",
@@ -79,63 +72,60 @@ export default function OwnerProfile() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background pt-8">
+    // Main Background Color: Dark Navy/Black (#13131A)
+    <SafeAreaView className="flex-1 bg-[#13131A]">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView className="flex-1">
+        <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 40 }}>
+          
           {/* Header */}
-          <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center gap-3">
+          <View className="px-4 py-4 flex-row items-center gap-3">
             <Button
               variant="ghost"
               size="icon"
+              className="h-10 w-10 -ml-2"
               onPress={() => router.push("/owner/OwnerDashboard")}
             >
-              <ArrowLeft size={20} className="text-foreground" />
+              <ArrowLeft size={24} className="text-white" />
             </Button>
-            <Text className="text-lg font-bold text-foreground">
-              Owner Profile
-            </Text>
+            <Text className="text-xl font-bold text-white">Owner Profile</Text>
           </View>
 
-          <View className="px-4 py-6 gap-6 pb-12">
+          <View className="px-4 gap-6">
             {/* Avatar Section */}
-            <View className="items-center gap-4">
-              <View className="h-24 w-24 rounded-full bg-purple-500/10 items-center justify-center">
-                <Store size={48} className="text-purple-500" />
+            <View className="items-center gap-3 mt-4 mb-2">
+              <View className="h-24 w-24 rounded-full bg-[#251F30] items-center justify-center border-2 border-[#251F30]">
+                <Store size={40} color="#A855F7" /> 
               </View>
               <View className="items-center">
-                <Text className="text-xl font-bold text-foreground">
-                  {user?.name}
+                <Text className="text-2xl font-bold text-white mb-1">
+                  {formData.name}
                 </Text>
-                <Text className="text-sm text-muted-foreground">
-                  Shop Owner
-                </Text>
+                <Text className="text-base text-slate-400">Shop Owner</Text>
               </View>
             </View>
 
-            {/* Profile Information */}
-            <Card className="border-border">
-              <CardHeader className="pb-3 border-b border-border mb-3">
-                <View className="flex-row items-center justify-between">
-                  <CardTitle className="text-base text-foreground">
+            {/* Profile Information Card */}
+            {/* Card BG: #1E2330 (Lighter than main bg) */}
+            <Card className="bg-[#1E2330] border-0 rounded-2xl shadow-sm">
+              <CardHeader className="pb-2 border-b-0 mb-0">
+                <View className="flex-row items-center justify-between w-full">
+                  <Text className="text-lg font-bold text-white">
                     Profile Information
-                  </CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onPress={() => setIsEditing(!isEditing)}
-                  >
-                    <Text className="text-primary">
+                  </Text>
+                  <TouchableOpacity onPress={() => setIsEditing(!isEditing)}>
+                    <Text className="text-white font-medium text-sm">
                       {isEditing ? "Cancel" : "Edit"}
                     </Text>
-                  </Button>
+                  </TouchableOpacity>
                 </View>
               </CardHeader>
-              <CardContent className="gap-4">
+              
+              <CardContent className="gap-5 pt-0">
                 <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
+                  <Text className="text-sm font-normal text-slate-300 ml-1">
                     Full Name
                   </Text>
                   <Input
@@ -143,11 +133,14 @@ export default function OwnerProfile() {
                     onChangeText={(text) => handleInputChange("name", text)}
                     editable={isEditing}
                     placeholder="Full Name"
-                    className={!isEditing ? "opacity-50" : ""}
+                    placeholderTextColor="#64748b"
+                    // Input BG: #13131A (Matches main bg for cutout effect)
+                    className={`bg-[#13131A] border-[#2D3345] text-white rounded-xl h-12 px-4 ${!isEditing ? "opacity-90" : ""}`}
                   />
                 </View>
+                
                 <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
+                  <Text className="text-sm font-normal text-slate-300 ml-1">
                     Email Address
                   </Text>
                   <Input
@@ -156,12 +149,13 @@ export default function OwnerProfile() {
                     editable={isEditing}
                     keyboardType="email-address"
                     placeholder="Email Address"
-                    autoCapitalize="none"
-                    className={!isEditing ? "opacity-50" : ""}
+                    placeholderTextColor="#64748b"
+                    className={`bg-[#13131A] border-[#2D3345] text-white rounded-xl h-12 px-4 ${!isEditing ? "opacity-90" : ""}`}
                   />
                 </View>
+
                 <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
+                  <Text className="text-sm font-normal text-slate-300 ml-1">
                     Phone Number
                   </Text>
                   <Input
@@ -170,90 +164,96 @@ export default function OwnerProfile() {
                     editable={isEditing}
                     keyboardType="phone-pad"
                     placeholder="Phone Number"
-                    className={!isEditing ? "opacity-50" : ""}
+                    placeholderTextColor="#64748b"
+                    className={`bg-[#13131A] border-[#2D3345] text-white rounded-xl h-12 px-4 ${!isEditing ? "opacity-90" : ""}`}
                   />
                 </View>
+
                 {isEditing && (
-                  <Button className="w-full mt-2" onPress={handleSaveProfile}>
-                    <Text className="text-primary-foreground font-semibold">
-                      Save Changes
-                    </Text>
+                  <Button className="w-full mt-2 bg-[#A855F7]" onPress={handleSaveProfile}>
+                    <Text className="text-white font-semibold">Save Changes</Text>
                   </Button>
                 )}
               </CardContent>
             </Card>
 
-            {/* Change Password */}
-            <Card className="border-border">
-              <CardHeader className="pb-3 border-b border-border mb-3">
+            {/* Change Password Card */}
+            <Card className="bg-[#1E2330] border-0 rounded-2xl shadow-sm">
+              <CardHeader className="pb-2 border-b-0 mb-0">
                 <View className="flex-row items-center gap-2">
-                  <Lock size={16} className="text-foreground" />
-                  <CardTitle className="text-base text-foreground">
+                  <Lock size={18} className="text-white" />
+                  <Text className="text-lg font-bold text-white">
                     Change Password
-                  </CardTitle>
+                  </Text>
                 </View>
               </CardHeader>
-              <CardContent className="gap-4">
+              
+              <CardContent className="gap-5 pt-0">
                 <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
+                  <Text className="text-sm font-normal text-slate-300 ml-1">
                     Current Password
                   </Text>
                   <Input
                     secureTextEntry
                     value={formData.currentPassword}
-                    onChangeText={(text) =>
-                      handleInputChange("currentPassword", text)
-                    }
+                    onChangeText={(text) => handleInputChange("currentPassword", text)}
                     placeholder="Enter current password"
+                    placeholderTextColor="#64748b"
+                    className="bg-[#13131A] border-[#2D3345] text-white rounded-xl h-12 px-4"
                   />
                 </View>
+
                 <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
+                  <Text className="text-sm font-normal text-slate-300 ml-1">
                     New Password
                   </Text>
                   <Input
                     secureTextEntry
                     value={formData.newPassword}
-                    onChangeText={(text) =>
-                      handleInputChange("newPassword", text)
-                    }
+                    onChangeText={(text) => handleInputChange("newPassword", text)}
                     placeholder="Enter new password"
+                    placeholderTextColor="#64748b"
+                    className="bg-[#13131A] border-[#2D3345] text-white rounded-xl h-12 px-4"
                   />
                 </View>
+
                 <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
+                  <Text className="text-sm font-normal text-slate-300 ml-1">
                     Confirm New Password
                   </Text>
                   <Input
                     secureTextEntry
                     value={formData.confirmPassword}
-                    onChangeText={(text) =>
-                      handleInputChange("confirmPassword", text)
-                    }
+                    onChangeText={(text) => handleInputChange("confirmPassword", text)}
                     placeholder="Confirm new password"
+                    placeholderTextColor="#64748b"
+                    className="bg-[#13131A] border-[#2D3345] text-white rounded-xl h-12 px-4"
                   />
                 </View>
-                <Button
-                  variant="outline"
-                  className="w-full mt-2"
+
+                {/* Custom Styled Update Button (Teal Outline) */}
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  className="w-full mt-4 border border-[#2DD4BF] rounded-full h-12 items-center justify-center bg-transparent"
                   onPress={handleChangePassword}
                 >
-                  <Text className="text-foreground">Update Password</Text>
-                </Button>
+                  <Text className="text-[#2DD4BF] font-bold text-base">
+                    Update Password
+                  </Text>
+                </TouchableOpacity>
               </CardContent>
             </Card>
 
-            {/* Logout */}
-            <Button
-              variant="destructive"
-              className="w-full"
+            {/* Logout Button */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              className="w-full bg-[#DC2626] rounded-full h-14 flex-row items-center justify-center mt-2 mb-8"
               onPress={handleLogout}
             >
-              <LogOut size={16} className="text-destructive-foreground mr-2" />
-              <Text className="text-destructive-foreground font-semibold">
-                Logout
-              </Text>
-            </Button>
+              <LogOut size={20} className="text-white mr-2" />
+              <Text className="text-white font-bold text-lg">Logout</Text>
+            </TouchableOpacity>
+
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

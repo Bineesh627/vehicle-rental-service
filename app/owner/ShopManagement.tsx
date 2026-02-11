@@ -1,7 +1,5 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { mockOwnerShops, OwnerShop } from "@/data/ownerMockData";
+import React, { useState } from "react";
+
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -16,18 +14,100 @@ import {
   Trash2,
   X,
 } from "lucide-react-native";
-import { useState } from "react";
-import { Modal, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+// --- MOCK IMPLEMENTATIONS REMOVED ---
+
+// --- MOCK IMPLEMENTATIONS END ---
+
+// =====================================================================
+// 📱 COMPONENT CODE
+// =====================================================================
+
+// Mock Data
+interface Shop {
+  id: string;
+  name: string;
+  address: string;
+  operatingHours: string;
+  status: string;
+  vehicleCount: number;
+  totalBookings: number;
+  rating: number;
+  revenue: number;
+}
+
+const mockOwnerShops: Shop[] = [
+  {
+    id: "1",
+    name: "SpeedWheels Downtown",
+    address: "123 Main Street, Downtown",
+    operatingHours: "8:00 AM - 10:00 PM",
+    status: "active",
+    vehicleCount: 15,
+    totalBookings: 234,
+    rating: 4.8,
+    revenue: 18500,
+  },
+  {
+    id: "2",
+    name: "SpeedWheels Midtown",
+    address: "456 Oak Avenue, Midtown",
+    operatingHours: "7:00 AM - 9:00 PM",
+    status: "active",
+    vehicleCount: 20,
+    totalBookings: 189,
+    rating: 4.6,
+    revenue: 15200,
+  },
+  {
+    id: "3",
+    name: "SpeedWheels Airport",
+    address: "789 Airport Road, Terminal 2",
+    operatingHours: "6:00 AM - 11:00 PM",
+    status: "active",
+    vehicleCount: 13,
+    totalBookings: 156,
+    rating: 4.9,
+    revenue: 12100,
+  },
+];
+
+// Theme Colors
+const theme = {
+  background: "#121214",
+  card: "#1c1c1e",
+  cardBorder: "#27272a",
+  text: "#FFFFFF",
+  textMuted: "#a1a1aa",
+  primary: "#2dd4bf", // Teal/Cyan for buttons
+  primaryForeground: "#000000", // Dark text on teal button
+  secondary: "#27272a",
+  destructive: "#ef4444",
+  success: "#4ade80",
+  rating: "#eab308",
+  iconBg: "#581c87", // Darker purple for bg
+  iconColor: "#a855f7", // Lighter purple for icon
+};
+
 export default function ShopManagement() {
   const router = useRouter();
-  const [shops, setShops] = useState<OwnerShop[]>(mockOwnerShops);
+  const [shops, setShops] = useState<Shop[]>(mockOwnerShops);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showActionsDialog, setShowActionsDialog] = useState(false);
-  const [selectedShop, setSelectedShop] = useState<OwnerShop | null>(null);
+  const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
@@ -52,7 +132,7 @@ export default function ShopManagement() {
       return;
     }
 
-    const newShop: OwnerShop = {
+    const newShop = {
       id: `os${Date.now()}`,
       name: formData.name,
       address: formData.address,
@@ -92,7 +172,7 @@ export default function ShopManagement() {
     resetForm();
   };
 
-  const openEditDialog = (shop: OwnerShop) => {
+  const openEditDialog = (shop: Shop) => {
     setSelectedShop(shop);
     setFormData({
       name: shop.name,
@@ -136,157 +216,147 @@ export default function ShopManagement() {
     setShowActionsDialog(false);
   };
 
-  const openActions = (shop: OwnerShop) => {
+  const openActions = (shop: Shop) => {
     setSelectedShop(shop);
     setShowActionsDialog(true);
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background pt-8">
-      <View className="flex-1 bg-background">
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+      <View style={styles.container}>
         {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => router.push("/owner/OwnerDashboard")}
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.back()}
             >
-              <ArrowLeft size={20} className="text-foreground" />
-            </Button>
-            <Text className="text-lg font-bold text-foreground">
-              Shop Management
-            </Text>
+              <ArrowLeft size={24} color={theme.text} />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Shop Management</Text>
           </View>
-          <Button size="sm" onPress={() => setShowAddDialog(true)}>
-            <Plus size={16} className="text-primary-foreground mr-1" />
-            <Text className="text-primary-foreground text-xs">Add Shop</Text>
-          </Button>
+          <TouchableOpacity
+            style={styles.addShopButton}
+            onPress={() => setShowAddDialog(true)}
+          >
+            <Plus size={16} color={theme.primaryForeground} />
+            <Text style={styles.addShopButtonText}>Add Shop</Text>
+          </TouchableOpacity>
         </View>
 
-        <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
           {shops.length === 0 ? (
-            <Card className="border-border">
-              <CardContent className="p-8 items-center">
-                <Store size={48} className="text-muted-foreground mb-3" />
-                <Text className="text-muted-foreground mb-4">No shops yet</Text>
-                <Button onPress={() => setShowAddDialog(true)}>
-                  <Plus size={16} className="text-primary-foreground mr-1" />
-                  <Text className="text-primary-foreground">
+            <View style={styles.emptyStateCard}>
+              <View style={styles.emptyStateContent}>
+                <Store
+                  size={48}
+                  color={theme.textMuted}
+                  style={styles.emptyStateIcon}
+                />
+                <Text style={styles.emptyStateText}>No shops yet</Text>
+                <TouchableOpacity
+                  style={styles.addShopButton}
+                  onPress={() => setShowAddDialog(true)}
+                >
+                  <Plus size={16} color={theme.primaryForeground} />
+                  <Text style={styles.addShopButtonText}>
                     Add Your First Shop
                   </Text>
-                </Button>
-              </CardContent>
-            </Card>
+                </TouchableOpacity>
+              </View>
+            </View>
           ) : (
-            <View className="gap-4">
+            <View style={styles.shopList}>
               {shops.map((shop) => (
-                <Card key={shop.id} className="border-border">
-                  <CardContent className="p-4">
-                    <View className="flex-row items-start justify-between">
-                      <View className="flex-row items-center gap-3 flex-1">
-                        <View className="h-12 w-12 rounded-xl bg-purple-500/10 items-center justify-center">
-                          <Store size={24} className="text-purple-500" />
+                <View key={shop.id} style={styles.shopCard}>
+                  <View style={styles.shopCardContent}>
+                    <View style={styles.shopHeader}>
+                      <View style={styles.shopHeaderLeft}>
+                        <View style={styles.shopIconContainer}>
+                          <Store size={24} color={theme.iconColor} />
                         </View>
-                        <View className="flex-1">
-                          <View className="flex-row items-center gap-2">
-                            <Text className="font-medium text-foreground">
-                              {shop.name}
-                            </Text>
+                        <View style={styles.shopHeaderText}>
+                          <View style={styles.shopNameRow}>
+                            <Text style={styles.shopName}>{shop.name}</Text>
                             <View
-                              className={`px-2 py-0.5 rounded-full ${
+                              style={[
+                                styles.statusBadge,
                                 shop.status === "active"
-                                  ? "bg-green-500/10"
-                                  : "bg-destructive/10"
-                              }`}
+                                  ? styles.statusBadgeActive
+                                  : styles.statusBadgeInactive,
+                              ]}
                             >
                               <Text
-                                className={`text-xs ${
+                                style={[
+                                  styles.statusText,
                                   shop.status === "active"
-                                    ? "text-green-500"
-                                    : "text-destructive"
-                                }`}
+                                    ? styles.statusTextActive
+                                    : styles.statusTextInactive,
+                                ]}
                               >
                                 {shop.status}
                               </Text>
                             </View>
                           </View>
-                          <View className="flex-row items-center gap-1 mt-1">
-                            <MapPin
-                              size={12}
-                              className="text-muted-foreground"
-                            />
-                            <Text className="text-xs text-muted-foreground">
+                          <View style={styles.shopDetailRow}>
+                            <MapPin size={12} color={theme.textMuted} />
+                            <Text style={styles.shopDetailText}>
                               {shop.address}
                             </Text>
                           </View>
-                          <View className="flex-row items-center gap-1 mt-1">
-                            <Clock
-                              size={12}
-                              className="text-muted-foreground"
-                            />
-                            <Text className="text-xs text-muted-foreground">
+                          <View style={styles.shopDetailRow}>
+                            <Clock size={12} color={theme.textMuted} />
+                            <Text style={styles.shopDetailText}>
                               {shop.operatingHours}
                             </Text>
                           </View>
                         </View>
                       </View>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
+                      <TouchableOpacity
+                        style={styles.iconButtonSm}
                         onPress={() => openActions(shop)}
                       >
-                        <MoreVertical size={16} className="text-foreground" />
-                      </Button>
+                        <MoreVertical size={20} color={theme.text} />
+                      </TouchableOpacity>
                     </View>
 
                     {/* Stats */}
-                    <View className="flex-row justify-between mt-4 pt-4 border-t border-border">
-                      <View className="items-center">
-                        <Text className="text-lg font-bold text-foreground">
+                    <View style={styles.statsRow}>
+                      <View style={styles.statItem}>
+                        <Text style={styles.statValue}>
                           {shop.vehicleCount}
                         </Text>
-                        <Text className="text-xs text-muted-foreground">
-                          Vehicles
-                        </Text>
+                        <Text style={styles.statLabel}>Vehicles</Text>
                       </View>
-                      <View className="items-center">
-                        <Text className="text-lg font-bold text-foreground">
+                      <View style={styles.statItem}>
+                        <Text style={styles.statValue}>
                           {shop.totalBookings}
                         </Text>
-                        <Text className="text-xs text-muted-foreground">
-                          Bookings
-                        </Text>
+                        <Text style={styles.statLabel}>Bookings</Text>
                       </View>
-                      <View className="items-center">
-                        <View className="flex-row items-center gap-1">
+                      <View style={styles.statItem}>
+                        <View style={styles.ratingRow}>
                           <Star
-                            size={12}
-                            className="text-yellow-500 fill-yellow-500"
+                            size={14}
+                            color={theme.rating}
+                            fill={theme.rating}
                           />
-                          <Text className="text-lg font-bold text-foreground">
+                          <Text style={styles.statValue}>
                             {shop.rating || "-"}
                           </Text>
                         </View>
-                        <Text className="text-xs text-muted-foreground">
-                          Rating
-                        </Text>
+                        <Text style={styles.statLabel}>Rating</Text>
                       </View>
-                      <View className="items-center">
-                        <Text className="text-lg font-bold text-green-500">
+                      <View style={styles.statItem}>
+                        <Text style={styles.revenueValue}>
                           ${shop.revenue.toLocaleString()}
                         </Text>
-                        <Text className="text-xs text-muted-foreground">
-                          Revenue
-                        </Text>
+                        <Text style={styles.statLabel}>Revenue</Text>
                       </View>
                     </View>
-                  </CardContent>
-                </Card>
+                  </View>
+                </View>
               ))}
             </View>
           )}
@@ -299,68 +369,66 @@ export default function ShopManagement() {
           animationType="fade"
           onRequestClose={() => setShowAddDialog(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
-                  Add New Shop
-                </Text>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Add New Shop</Text>
                 <TouchableOpacity onPress={() => setShowAddDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+                  <X size={24} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-4">
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Shop Name *
-                  </Text>
-                  <Input
+              <View style={styles.formContainer}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Shop Name *</Text>
+                  <TextInput
+                    style={styles.input}
                     value={formData.name}
                     onChangeText={(text) => handleInputChange("name", text)}
                     placeholder="Enter shop name"
+                    placeholderTextColor={theme.textMuted}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Address *
-                  </Text>
-                  <Input
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Address *</Text>
+                  <TextInput
+                    style={styles.input}
                     value={formData.address}
                     onChangeText={(text) => handleInputChange("address", text)}
                     placeholder="Enter address"
+                    placeholderTextColor={theme.textMuted}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Operating Hours
-                  </Text>
-                  <Input
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Operating Hours</Text>
+                  <TextInput
+                    style={styles.input}
                     value={formData.operatingHours}
                     onChangeText={(text) =>
                       handleInputChange("operatingHours", text)
                     }
                     placeholder="e.g., 9:00 AM - 6:00 PM"
+                    placeholderTextColor={theme.textMuted}
                   />
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.buttonOutline}
                   onPress={() => {
                     setShowAddDialog(false);
                     resetForm();
                   }}
                 >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button className="flex-1" onPress={handleAddShop}>
-                  <Text className="text-primary-foreground font-medium">
-                    Add Shop
-                  </Text>
-                </Button>
+                  <Text style={styles.buttonOutlineText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.buttonPrimary}
+                  onPress={handleAddShop}
+                >
+                  <Text style={styles.buttonPrimaryText}>Add Shop</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -373,68 +441,66 @@ export default function ShopManagement() {
           animationType="fade"
           onRequestClose={() => setShowEditDialog(false)}
         >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
-                  Edit Shop
-                </Text>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Edit Shop</Text>
                 <TouchableOpacity onPress={() => setShowEditDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+                  <X size={24} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-4">
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Shop Name *
-                  </Text>
-                  <Input
+              <View style={styles.formContainer}>
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Shop Name *</Text>
+                  <TextInput
+                    style={styles.input}
                     value={formData.name}
                     onChangeText={(text) => handleInputChange("name", text)}
                     placeholder="Enter shop name"
+                    placeholderTextColor={theme.textMuted}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Address *
-                  </Text>
-                  <Input
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Address *</Text>
+                  <TextInput
+                    style={styles.input}
                     value={formData.address}
                     onChangeText={(text) => handleInputChange("address", text)}
                     placeholder="Enter address"
+                    placeholderTextColor={theme.textMuted}
                   />
                 </View>
-                <View className="gap-2">
-                  <Text className="text-sm font-medium text-foreground">
-                    Operating Hours
-                  </Text>
-                  <Input
+                <View style={styles.formGroup}>
+                  <Text style={styles.label}>Operating Hours</Text>
+                  <TextInput
+                    style={styles.input}
                     value={formData.operatingHours}
                     onChangeText={(text) =>
                       handleInputChange("operatingHours", text)
                     }
                     placeholder="e.g., 9:00 AM - 6:00 PM"
+                    placeholderTextColor={theme.textMuted}
                   />
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.buttonOutline}
                   onPress={() => {
                     setShowEditDialog(false);
                     resetForm();
                   }}
                 >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button className="flex-1" onPress={handleEditShop}>
-                  <Text className="text-primary-foreground font-medium">
-                    Save Changes
-                  </Text>
-                </Button>
+                  <Text style={styles.buttonOutlineText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.buttonPrimary}
+                  onPress={handleEditShop}
+                >
+                  <Text style={styles.buttonPrimaryText}>Save Changes</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </View>
@@ -448,31 +514,29 @@ export default function ShopManagement() {
           onRequestClose={() => setShowActionsDialog(false)}
         >
           <TouchableOpacity
-            className="flex-1 bg-black/50 justify-end"
+            style={styles.modalOverlayBottom}
             activeOpacity={1}
             onPress={() => setShowActionsDialog(false)}
           >
-            <View className="bg-background rounded-t-xl p-6 gap-4">
-              <Text className="text-lg font-bold text-foreground text-center">
-                {selectedShop?.name}
-              </Text>
+            <View style={styles.actionSheetContent}>
+              <Text style={styles.actionSheetTitle}>{selectedShop?.name}</Text>
 
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 bg-secondary rounded-xl"
+                style={styles.actionButton}
                 onPress={() => selectedShop && openEditDialog(selectedShop)}
               >
-                <Edit size={20} className="text-foreground" />
-                <Text className="text-foreground font-medium">Edit Shop</Text>
+                <Edit size={20} color={theme.text} />
+                <Text style={styles.actionButtonText}>Edit Shop</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 bg-secondary rounded-xl"
+                style={styles.actionButton}
                 onPress={() =>
                   selectedShop && toggleShopStatus(selectedShop.id)
                 }
               >
-                <Power size={20} className="text-foreground" />
-                <Text className="text-foreground font-medium">
+                <Power size={20} color={theme.text} />
+                <Text style={styles.actionButtonText}>
                   {selectedShop?.status === "active"
                     ? "Disable Shop"
                     : "Enable Shop"}
@@ -480,22 +544,21 @@ export default function ShopManagement() {
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 bg-destructive/10 rounded-xl"
+                style={styles.actionButtonDestructive}
                 onPress={() => selectedShop && deleteShop(selectedShop.id)}
               >
-                <Trash2 size={20} className="text-destructive" />
-                <Text className="text-destructive font-medium">
+                <Trash2 size={20} color={theme.destructive} />
+                <Text style={styles.actionButtonTextDestructive}>
                   Delete Shop
                 </Text>
               </TouchableOpacity>
 
-              <Button
-                variant="outline"
-                className="mt-2"
+              <TouchableOpacity
+                style={styles.buttonOutline}
                 onPress={() => setShowActionsDialog(false)}
               >
-                <Text className="text-foreground">Cancel</Text>
-              </Button>
+                <Text style={styles.buttonOutlineText}>Cancel</Text>
+              </TouchableOpacity>
             </View>
           </TouchableOpacity>
         </Modal>
@@ -503,3 +566,313 @@ export default function ShopManagement() {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.cardBorder,
+    backgroundColor: theme.background,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+  },
+  iconButton: {
+    padding: 8,
+  },
+  addShopButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: theme.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  addShopButtonText: {
+    color: theme.primaryForeground,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
+  },
+  shopList: {
+    gap: 16,
+  },
+  shopCard: {
+    backgroundColor: theme.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+    overflow: "hidden",
+  },
+  shopCardContent: {
+    padding: 16,
+  },
+  shopHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  shopHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    flex: 1,
+  },
+  shopIconContainer: {
+    height: 48,
+    width: 48,
+    borderRadius: 12,
+    backgroundColor: "rgba(168, 85, 247, 0.1)", // Purple with opacity
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(168, 85, 247, 0.2)",
+  },
+  shopHeaderText: {
+    flex: 1,
+    gap: 4,
+  },
+  shopNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  shopName: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: theme.text,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 12,
+  },
+  statusBadgeActive: {
+    backgroundColor: "rgba(74, 222, 128, 0.1)", // Green opacity
+  },
+  statusBadgeInactive: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)", // Red opacity
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "capitalize",
+  },
+  statusTextActive: {
+    color: theme.success,
+  },
+  statusTextInactive: {
+    color: theme.destructive,
+  },
+  shopDetailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  shopDetailText: {
+    fontSize: 12,
+    color: theme.textMuted,
+  },
+  iconButtonSm: {
+    padding: 4,
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.cardBorder,
+  },
+  statItem: {
+    alignItems: "center",
+    flex: 1,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: theme.text,
+    marginBottom: 2,
+  },
+  revenueValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: theme.success,
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: theme.textMuted,
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 2,
+  },
+  emptyStateCard: {
+    backgroundColor: theme.card,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+    padding: 32,
+    alignItems: "center",
+  },
+  emptyStateContent: {
+    alignItems: "center",
+    gap: 16,
+  },
+  emptyStateText: {
+    color: theme.textMuted,
+    fontSize: 16,
+  },
+  emptyStateIcon: {
+    marginBottom: 16,
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalOverlayBottom: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: theme.background,
+    width: "100%",
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: 24,
+    gap: 20,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+  },
+  formContainer: {
+    gap: 16,
+  },
+  formGroup: {
+    gap: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: theme.text,
+  },
+  input: {
+    backgroundColor: theme.secondary,
+    borderRadius: 8,
+    padding: 12,
+    color: theme.text,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+  },
+  modalActions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 8,
+  },
+  buttonOutline: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonOutlineText: {
+    color: theme.text,
+    fontWeight: "500",
+  },
+  buttonPrimary: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: theme.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  buttonPrimaryText: {
+    color: theme.primaryForeground,
+    fontWeight: "600",
+  },
+  actionSheetContent: {
+    backgroundColor: theme.background,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    gap: 16,
+    borderTopWidth: 1,
+    borderTopColor: theme.cardBorder,
+  },
+  actionSheetTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: theme.text,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: theme.secondary,
+  },
+  actionButtonDestructive: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+  },
+  actionButtonText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: theme.text,
+  },
+  actionButtonTextDestructive: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: theme.destructive,
+  },
+});

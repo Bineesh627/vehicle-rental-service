@@ -187,4 +187,14 @@ export const bookings: Booking[] = [
     totalPrice: 199,
     status: "upcoming",
   },
+  {
+    id: "b3",
+    vehicleId: "v3",
+    vehicle: vehicles[2],
+    shop: rentalShops[0],
+    startDate: "2024-02-10T10:00:00", // Started today
+    endDate: "2024-02-12T10:00:00", // Ends in 2 days
+    totalPrice: 90,
+    status: "active",
+  },
 ];

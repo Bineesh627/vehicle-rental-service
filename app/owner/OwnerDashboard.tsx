@@ -1,99 +1,73 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "expo-router";
-import {
-  Calendar,
-  Car,
-  ChevronRight,
-  DollarSign,
-  Plus,
-  Star,
-  Store,
-  TrendingUp,
-  User,
-  Users,
-} from "lucide-react-native";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity, 
+  Platform,
+  StatusBar
+} from 'react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
+import { 
+  Store, 
+  Car, 
+  Users, 
+  Calendar, 
+  TrendingUp, 
+  DollarSign, 
+  Plus, 
+  ChevronRight, 
+  Star, 
+  User 
+} from 'lucide-react-native';
+import { useRouter } from "expo-router";
+
+// --- Mocks for missing external dependencies to ensure self-contained file ---
+
+// Mock Auth Context
+const useAuth = () => ({
+  user: { name: "John Owner" },
+  logout: () => console.log("Logout"),
+});
+
+// --- End Mocks ---
+
+// Theme Colors derived from screenshots
+const theme = {
+  background: '#121214', // Very dark background
+  card: '#1c1c1e',       // Dark grey card
+  cardBorder: '#2c2c2e', // Subtle border
+  text: '#FFFFFF',
+  textMuted: '#A1A1AA',
+  primary: '#2dd4bf',    // Teal accent for buttons/active text
+  secondary: '#27272a',  // List item background
+  border: '#27272a',
+  
+  // Stat specific colors
+  revenue: '#4ade80',    // Green
+  bookings: '#22d3ee',   // Cyan
+  vehicles: '#c084fc',   // Purple
+  staff: '#fb923c',      // Orange
+};
 
 const stats = [
-  {
-    label: "Total Revenue",
-    value: "$12,847",
-    change: "+18%",
-    icon: DollarSign,
-    color: "text-green-500",
-  },
-  {
-    label: "Active Bookings",
-    value: "34",
-    change: "+5%",
-    icon: Calendar,
-    color: "text-primary",
-  },
-  {
-    label: "Total Vehicles",
-    value: "48",
-    change: "+2",
-    icon: Car,
-    color: "text-purple-500",
-  },
-  {
-    label: "Staff Members",
-    value: "8",
-    change: "-",
-    icon: Users,
-    color: "text-orange-500",
-  },
+  { label: "Total Revenue", value: "$12,847", change: "+18%", icon: DollarSign, color: theme.revenue },
+  { label: "Active Bookings", value: "34", change: "+5%", icon: Calendar, color: theme.bookings },
+  { label: "Total Vehicles", value: "48", change: "+2", icon: Car, color: theme.vehicles },
+  { label: "Staff Members", value: "8", change: "-", icon: Users, color: theme.staff },
 ];
 
 const shops = [
-  {
-    id: "1",
-    name: "SpeedWheels Downtown",
-    vehicles: 15,
-    bookings: 12,
-    rating: 4.8,
-  },
-  {
-    id: "2",
-    name: "SpeedWheels Midtown",
-    vehicles: 20,
-    bookings: 18,
-    rating: 4.6,
-  },
-  {
-    id: "3",
-    name: "SpeedWheels Airport",
-    vehicles: 13,
-    bookings: 4,
-    rating: 4.9,
-  },
+  { id: "1", name: "SpeedWheels Downtown", vehicles: 15, bookings: 12, rating: 4.8 },
+  { id: "2", name: "SpeedWheels Midtown", vehicles: 20, bookings: 18, rating: 4.6 },
+  { id: "3", name: "SpeedWheels Airport", vehicles: 13, bookings: 4, rating: 4.9 },
 ];
 
 const recentBookings = [
-  {
-    id: "1",
-    vehicle: "Toyota Camry",
-    customer: "John D.",
-    status: "Active",
-    amount: "$89",
-  },
-  {
-    id: "2",
-    vehicle: "Honda Activa",
-    customer: "Sarah M.",
-    status: "Pending Pickup",
-    amount: "$30",
-  },
-  {
-    id: "3",
-    vehicle: "BMW 3 Series",
-    customer: "Mike R.",
-    status: "Completed",
-    amount: "$199",
-  },
+  { id: "1", vehicle: "Toyota Camry", customer: "John D.", status: "Active", amount: "$89" },
+  { id: "2", vehicle: "Honda Activa", customer: "Sarah M.", status: "Pending Pickup", amount: "$30" },
+  { id: "3", vehicle: "BMW 3 Series", customer: "Mike R.", status: "Completed", amount: "$199" },
 ];
 
 export default function OwnerDashboard() {
@@ -102,200 +76,426 @@ export default function OwnerDashboard() {
 
   const handleLogout = () => {
     logout();
-    router.replace("/Login");
+    // navigation.navigate('Login'); 
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background pt-8">
-      <View className="flex-1 bg-background">
-        {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <View className="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-500">
-              <Store size={20} className="text-white" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={theme.background} />
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerLeft}>
+            <View style={styles.storeIconContainer}>
+              <Store size={24} color="#FFFFFF" />
             </View>
             <View>
-              <Text className="text-lg font-bold text-foreground">
-                Owner Dashboard
-              </Text>
-              <Text className="text-xs text-muted-foreground">
-                {user?.name}
-              </Text>
+              <Text style={styles.headerTitle}>Owner Dashboard</Text>
+              <Text style={styles.headerSubtitle}>{user?.name}</Text>
             </View>
           </View>
-          <View className="flex-row items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => router.push("/owner/OwnerProfile")}
+          <View style={styles.headerRight}>
+            <TouchableOpacity 
+              style={styles.ghostButtonSm} 
+              onPress={handleLogout}
             >
-              <User size={24} className="text-foreground" />
-            </Button>
-            <Button variant="ghost" size="sm" onPress={handleLogout}>
-              <Text className="text-foreground">Logout</Text>
-            </Button>
+              <Text style={styles.logoutText}>Logout</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.ghostButtonIcon} 
+              onPress={() =>  router.push("/owner/OwnerProfile")}
+            >
+              <User size={20} color={theme.text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      <ScrollView contentContainerStyle={styles.main}>
+        {/* Stats Grid */}
+        <View style={styles.statsGrid}>
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <View key={stat.label} style={styles.statCardWrapper}>
+                <View style={[styles.card, styles.statCard]}>
+                  <View style={styles.statContent}>
+                    <View style={styles.statHeader}>
+                      <Icon size={22} color={stat.color} />
+                      {stat.change !== "-" && (
+                        <View style={styles.trendContainer}>
+                          <TrendingUp size={14} color={stat.color} />
+                          <Text style={[styles.trendText, { color: stat.color }]}>{stat.change}</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.statValue}>{stat.value}</Text>
+                    <Text style={styles.statLabel}>{stat.label}</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* My Shops */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderContent}>
+              <Text style={styles.cardTitle}>My Rental Shops</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => router.push("/owner/ShopManagement")}
+              >
+                <Plus size={16} color={theme.primary} />
+                <Text style={styles.addButtonText}>Add</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.shopList}>
+            {shops.map((shop) => (
+              <TouchableOpacity
+                key={shop.id}
+                style={styles.shopItem}
+                onPress={() => router.push("/owner/ShopManagement")}
+              >
+                <View style={styles.shopInfo}>
+                  <Text style={styles.shopName}>{shop.name}</Text>
+                  <View style={styles.shopStats}>
+                    <Text style={styles.shopStatText}>{shop.vehicles} vehicles</Text>
+                    <Text style={styles.shopStatText}>{shop.bookings} bookings</Text>
+                    <View style={styles.ratingContainer}>
+                      <Star size={12} color="#eab308" fill="#eab308" />
+                      <Text style={styles.shopStatText}>{shop.rating}</Text>
+                    </View>
+                  </View>
+                </View>
+                <ChevronRight size={16} color={theme.textMuted} />
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
-        <ScrollView
-          className="px-4 py-6"
-          contentContainerStyle={{ gap: 24, paddingBottom: 40 }}
-        >
-          {/* Stats Grid */}
-          <View className="flex-row flex-wrap gap-4">
-            {stats.map((stat) => (
-              <Card
-                key={stat.label}
-                className="border-border min-w-[45%] flex-1"
+        {/* Recent Bookings */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View style={styles.cardHeaderContent}>
+              <Text style={styles.cardTitle}>Recent Bookings</Text>
+              <TouchableOpacity
+                style={styles.viewAllButton}
+                onPress={() =>  router.push("/owner/BookingOverview")}
               >
-                <CardContent className="p-4">
-                  <View className="flex-row items-center justify-between mb-2">
-                    <stat.icon size={20} className={stat.color} />
-                    {stat.change !== "-" && (
-                      <View className="flex-row items-center gap-1">
-                        <TrendingUp size={12} className="text-green-500" />
-                        <Text className="text-xs font-medium text-green-500">
-                          {stat.change}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text className="text-2xl font-bold text-foreground">
-                    {stat.value}
+                <Text style={styles.viewAllText}>View All</Text>
+                <ChevronRight size={16} color={theme.primary} style={styles.viewAllIcon} />
+              </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.bookingList}>
+            {recentBookings.map((booking) => (
+              <View key={booking.id} style={styles.bookingItem}>
+                <View>
+                  <Text style={styles.bookingVehicle}>{booking.vehicle}</Text>
+                  <Text style={styles.bookingCustomer}>{booking.customer}</Text>
+                </View>
+                <View style={styles.bookingRight}>
+                  <Text style={styles.bookingAmount}>{booking.amount}</Text>
+                  <Text style={[
+                    styles.bookingStatus,
+                    booking.status === 'Active' ? styles.statusActive :
+                    booking.status === 'Pending Pickup' ? styles.statusPending :
+                    styles.statusMuted
+                  ]}>
+                    {booking.status}
                   </Text>
-                  <Text className="text-xs text-muted-foreground">
-                    {stat.label}
-                  </Text>
-                </CardContent>
-              </Card>
+                </View>
+              </View>
             ))}
           </View>
+        </View>
 
-          {/* My Shops */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center justify-between">
-                <CardTitle className="text-base text-foreground">
-                  My Rental Shops
-                </CardTitle>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 gap-1"
-                  onPress={() => router.push("/owner/ShopManagement")}
-                >
-                  <Plus size={16} className="text-primary" />
-                  <Text className="text-primary text-xs">Add</Text>
-                </Button>
-              </View>
-            </CardHeader>
-            <CardContent className="gap-3">
-              {shops.map((shop) => (
-                <TouchableOpacity
-                  key={shop.id}
-                  className="flex-row items-center justify-between p-3 rounded-xl bg-secondary/50"
-                  onPress={() => router.push("/owner/ShopManagement")}
-                >
-                  <View className="flex-1">
-                    <Text className="font-medium text-foreground text-sm">
-                      {shop.name}
-                    </Text>
-                    <View className="flex-row items-center gap-3 mt-1">
-                      <Text className="text-xs text-muted-foreground">
-                        {shop.vehicles} vehicles
-                      </Text>
-                      <Text className="text-xs text-muted-foreground">
-                        {shop.bookings} bookings
-                      </Text>
-                      <View className="flex-row items-center gap-1">
-                        <Star
-                          size={12}
-                          className="text-yellow-500 fill-yellow-500"
-                        />
-                        <Text className="text-xs text-muted-foreground">
-                          {shop.rating}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <ChevronRight size={16} className="text-muted-foreground" />
-                </TouchableOpacity>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Recent Bookings */}
-          <Card className="border-border">
-            <CardHeader className="pb-3 border-b border-border mb-3">
-              <View className="flex-row items-center justify-between">
-                <CardTitle className="text-base text-foreground">
-                  Recent Bookings
-                </CardTitle>
-                <TouchableOpacity
-                  onPress={() => router.push("/owner/BookingOverview")}
-                  className="flex-row items-center"
-                >
-                  <Text className="text-primary text-sm mr-1">View All</Text>
-                  <ChevronRight size={16} className="text-primary" />
-                </TouchableOpacity>
-              </View>
-            </CardHeader>
-            <CardContent className="gap-3">
-              {recentBookings.map((booking) => (
-                <View
-                  key={booking.id}
-                  className="flex-row items-center justify-between p-3 rounded-xl bg-secondary/50"
-                >
-                  <View>
-                    <Text className="font-medium text-foreground text-sm">
-                      {booking.vehicle}
-                    </Text>
-                    <Text className="text-xs text-muted-foreground">
-                      {booking.customer}
-                    </Text>
-                  </View>
-                  <View className="items-end">
-                    <Text className="font-semibold text-foreground text-sm">
-                      {booking.amount}
-                    </Text>
-                    <Text
-                      className={`text-xs ${
-                        booking.status === "Active"
-                          ? "text-green-500"
-                          : booking.status === "Pending Pickup"
-                            ? "text-orange-500"
-                            : "text-muted-foreground"
-                      }`}
-                    >
-                      {booking.status}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Quick Actions */}
-          <View className="flex-row gap-4">
-            <Button
-              variant="outline"
-              className="flex-1 h-auto py-4 flex-col gap-2 items-center"
+        {/* Quick Actions */}
+        <View style={styles.quickActionsGrid}>
+          <View style={styles.actionButtonWrapper}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.buttonOutline]}
               onPress={() => router.push("/owner/VehicleManagement")}
             >
-              <Car size={24} className="text-foreground" />
-              <Text className="text-sm text-foreground">Manage Vehicles</Text>
-            </Button>
-            <Button
-              variant="outline"
-              className="flex-1 h-auto py-4 flex-col gap-2 items-center"
+              <Car size={20} color={theme.primary} />
+              <Text style={styles.actionButtonText}>Manage Vehicles</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.actionButtonWrapper}>
+            <TouchableOpacity
+              style={[styles.actionButton, styles.buttonOutline]}
               onPress={() => router.push("/owner/StaffManagement")}
             >
-              <Users size={24} className="text-foreground" />
-              <Text className="text-sm text-foreground">Manage Staff</Text>
-            </Button>
+              <Users size={20} color={theme.primary} />
+              <Text style={styles.actionButtonText}>Manage Staff</Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </View>
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.background,
+  },
+  header: {
+    backgroundColor: theme.background,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.cardBorder,
+    zIndex: 40,
+    paddingTop: Platform.OS === 'android' ? 10 : 0,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  storeIconContainer: {
+    height: 48,
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 24, // Circle
+    backgroundColor: '#a855f7', // Keep the purple brand color
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.text,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: theme.textMuted,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  ghostButtonIcon: {
+    padding: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  ghostButtonSm: {
+    paddingHorizontal: 0,
+    paddingVertical: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoutText: {
+    fontSize: 14,
+    color: theme.text,
+    fontWeight: '600',
+  },
+  main: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    gap: 24,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -8,
+  },
+  statCardWrapper: {
+    width: '50%',
+    padding: 8,
+  },
+  card: {
+    backgroundColor: theme.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.cardBorder,
+    overflow: 'hidden',
+  },
+  statCard: {
+    height: 120, // Fixed height for uniformity
+  },
+  statContent: {
+    padding: 16,
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  statHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  trendContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  trendText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  statValue: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: theme.text,
+    marginTop: 8,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: theme.textMuted,
+  },
+  cardHeader: {
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  cardHeaderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: theme.text,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  addButtonText: {
+    color: theme.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  shopList: {
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  shopItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: theme.secondary,
+  },
+  shopInfo: {
+    flex: 1,
+  },
+  shopName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text,
+    marginBottom: 4,
+  },
+  shopStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  shopStatText: {
+    fontSize: 13,
+    color: theme.textMuted,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  viewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  viewAllText: {
+    color: theme.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  viewAllIcon: {
+    marginLeft: 2,
+  },
+  bookingList: {
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  bookingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: theme.secondary,
+  },
+  bookingVehicle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.text,
+  },
+  bookingCustomer: {
+    fontSize: 13,
+    color: theme.textMuted,
+    marginTop: 2,
+  },
+  bookingRight: {
+    alignItems: 'flex-end',
+  },
+  bookingAmount: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: theme.text,
+  },
+  bookingStatus: {
+    fontSize: 12,
+    marginTop: 2,
+    fontWeight: '500',
+  },
+  statusActive: {
+    color: theme.revenue,
+  },
+  statusPending: {
+    color: theme.staff,
+  },
+  statusMuted: {
+    color: theme.textMuted,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 20,
+  },
+  actionButtonWrapper: {
+    flex: 1,
+  },
+  actionButton: {
+    paddingVertical: 20,
+    flexDirection: 'column',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 20,
+    backgroundColor: theme.background,
+  },
+  buttonOutline: {
+    borderWidth: 1.5,
+    borderColor: theme.primary,
+  },
+  actionButtonText: {
+    fontSize: 15,
+    color: theme.primary,
+    fontWeight: '600',
+  },
+});

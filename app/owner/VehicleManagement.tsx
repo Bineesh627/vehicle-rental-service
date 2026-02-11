@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   mockOwnerShops,
@@ -9,15 +8,12 @@ import {
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
-  Bike,
   Car,
-  DollarSign,
+  ChevronDown,
   Edit,
-  Fuel,
   MoreVertical,
   Plus,
   Power,
-  Settings2,
   Trash2,
   X,
 } from "lucide-react-native";
@@ -34,6 +30,22 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
+// --- Colors ---
+const COLORS = {
+  bg: "#0F1115",
+  card: "#181B21",
+  inputBg: "#121418",
+  border: "#2A2E36",
+  primary: "#00C9A7",
+  text: "#FFFFFF",
+  textMuted: "#9CA3AF",
+  success: "#10B981",
+  successBg: "rgba(16, 185, 129, 0.15)",
+  error: "#F97316",
+  errorBg: "rgba(249, 115, 22, 0.15)",
+  tabBg: "#181B21",
+};
+
 const TabItem = ({
   tab,
   isActive,
@@ -49,24 +61,20 @@ const TabItem = ({
     onPress={onPress}
     style={{
       flex: 1,
-      paddingVertical: 8,
+      paddingVertical: 10,
       alignItems: "center",
-      borderRadius: 8,
-      backgroundColor: isActive ? "hsl(var(--background))" : "transparent",
-      shadowColor: isActive ? "#000" : undefined,
-      shadowOffset: isActive ? { width: 0, height: 1 } : undefined,
-      shadowOpacity: isActive ? 0.05 : undefined,
-      shadowRadius: isActive ? 2 : undefined,
-      elevation: isActive ? 2 : undefined,
+      borderRadius: 25,
+      backgroundColor: isActive ? "#000000" : "transparent",
+      borderWidth: isActive ? 1 : 0,
+      borderColor: isActive ? "#2A2E36" : "transparent",
     }}
   >
     <Text
       style={{
         textTransform: "capitalize",
-        fontWeight: "500",
-        color: isActive
-          ? "hsl(var(--foreground))"
-          : "hsl(var(--muted-foreground))",
+        fontWeight: isActive ? "600" : "500",
+        color: isActive ? "#FFFFFF" : "#6B7280",
+        fontSize: 14,
       }}
     >
       {tab} ({count})
@@ -77,9 +85,11 @@ const TabItem = ({
 export default function VehicleManagement() {
   const router = useRouter();
   const [vehicles, setVehicles] = useState<OwnerVehicle[]>(mockOwnerVehicles);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+
+  // Modals
+  const [showFormDialog, setShowFormDialog] = useState(false);
   const [showActionsDialog, setShowActionsDialog] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Pickers state
   const [showShopPicker, setShowShopPicker] = useState(false);
@@ -87,10 +97,9 @@ export default function VehicleManagement() {
   const [showFuelPicker, setShowFuelPicker] = useState(false);
   const [showTransPicker, setShowTransPicker] = useState(false);
 
-  const [selectedVehicle, setSelectedVehicle] = useState<OwnerVehicle | null>(
-    null,
-  );
+  const [selectedVehicle, setSelectedVehicle] = useState<OwnerVehicle | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+
   const [formData, setFormData] = useState({
     shopId: "",
     type: "car" as "car" | "bike",
@@ -132,86 +141,17 @@ export default function VehicleManagement() {
       color: "",
       year: "",
     });
-  };
-
-  const handleAddVehicle = () => {
-    if (
-      !formData.name ||
-      !formData.brand ||
-      !formData.pricePerDay ||
-      !formData.vehicleNumber
-    ) {
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2:
-          "Please fill in all required fields per day price and vehicle number.",
-      });
-      return;
-    }
-
-    const newVehicle: OwnerVehicle = {
-      id: `ov${Date.now()}`,
-      shopId: formData.shopId || mockOwnerShops[0].id,
-      type: formData.type,
-      name: formData.name,
-      brand: formData.brand,
-      model: formData.model,
-      vehicleNumber: formData.vehicleNumber,
-      image:
-        "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&q=80",
-      pricePerHour: parseInt(formData.pricePerHour) || 0,
-      pricePerDay: parseInt(formData.pricePerDay) || 0,
-      fuelType: formData.fuelType,
-      transmission: formData.transmission,
-      seating: formData.type === "car" ? parseInt(formData.seating) : undefined,
-      isAvailable: true,
-      features: [],
-      color: formData.color || undefined,
-      year: formData.year || undefined,
-    };
-
-    setVehicles((prev) => [...prev, newVehicle]);
-    Toast.show({
-      type: "success",
-      text1: "Vehicle Added",
-      text2: `${formData.name} has been added successfully.`,
-    });
-    setShowAddDialog(false);
-    resetForm();
-  };
-
-  const handleEditVehicle = () => {
-    if (!selectedVehicle) return;
-
-    setVehicles((prev) =>
-      prev.map((v) =>
-        v.id === selectedVehicle.id
-          ? {
-              ...v,
-              name: formData.name,
-              brand: formData.brand,
-              model: formData.model,
-              pricePerHour: parseInt(formData.pricePerHour) || 0,
-              pricePerDay: parseInt(formData.pricePerDay) || 0,
-              fuelType: formData.fuelType,
-              transmission: formData.transmission,
-            }
-          : v,
-      ),
-    );
-    Toast.show({
-      type: "success",
-      text1: "Vehicle Updated",
-      text2: `${formData.name} has been updated successfully.`,
-    });
-    setShowEditDialog(false);
+    setIsEditing(false);
     setSelectedVehicle(null);
-    resetForm();
   };
 
-  const openEditDialog = (vehicle: OwnerVehicle) => {
-    setSelectedVehicle(vehicle);
+  const openAddModal = () => {
+    resetForm();
+    setIsEditing(false);
+    setShowFormDialog(true);
+  };
+
+  const openEditModal = (vehicle: OwnerVehicle) => {
     setFormData({
       shopId: vehicle.shopId,
       type: vehicle.type,
@@ -227,36 +167,87 @@ export default function VehicleManagement() {
       color: vehicle.color || "",
       year: vehicle.year || "",
     });
-    setShowEditDialog(true);
+    setSelectedVehicle(vehicle);
+    setIsEditing(true);
+    setShowFormDialog(true);
     setShowActionsDialog(false);
   };
 
-  const toggleAvailability = (vehicleId: string) => {
-    setVehicles((prev) =>
-      prev.map((v) =>
-        v.id === vehicleId ? { ...v, isAvailable: !v.isAvailable } : v,
-      ),
-    );
-    const vehicle = vehicles.find((v) => v.id === vehicleId);
-    Toast.show({
-      type: "success",
-      text1: vehicle?.isAvailable ? "Vehicle Unavailable" : "Vehicle Available",
-      text2: `${vehicle?.name} is now ${
-        vehicle?.isAvailable ? "unavailable" : "available"
-      }.`,
-    });
-    setShowActionsDialog(false);
+  const handleSaveVehicle = () => {
+    if (!formData.name || !formData.brand || !formData.pricePerDay || !formData.vehicleNumber) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please fill in all required fields.",
+      });
+      return;
+    }
+
+    if (isEditing && selectedVehicle) {
+      setVehicles((prev) =>
+        prev.map((v) =>
+          v.id === selectedVehicle.id
+            ? {
+                ...v,
+                shopId: formData.shopId || v.shopId,
+                type: formData.type,
+                name: formData.name,
+                brand: formData.brand,
+                model: formData.model,
+                vehicleNumber: formData.vehicleNumber,
+                pricePerHour: parseInt(formData.pricePerHour) || 0,
+                pricePerDay: parseInt(formData.pricePerDay) || 0,
+                fuelType: formData.fuelType,
+                transmission: formData.transmission,
+                color: formData.color,
+                year: formData.year,
+              }
+            : v
+        )
+      );
+      Toast.show({ type: "success", text1: "Vehicle Updated" });
+    } else {
+      const newVehicle: OwnerVehicle = {
+        id: `ov${Date.now()}`,
+        shopId: formData.shopId || mockOwnerShops[0].id,
+        type: formData.type,
+        name: formData.name,
+        brand: formData.brand,
+        model: formData.model,
+        vehicleNumber: formData.vehicleNumber,
+        image: "https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?w=800&q=80",
+        pricePerHour: parseInt(formData.pricePerHour) || 0,
+        pricePerDay: parseInt(formData.pricePerDay) || 0,
+        fuelType: formData.fuelType,
+        transmission: formData.transmission,
+        seating: formData.type === "car" ? parseInt(formData.seating) : undefined,
+        isAvailable: true,
+        features: [],
+        color: formData.color || undefined,
+        year: formData.year || undefined,
+      };
+      setVehicles((prev) => [...prev, newVehicle]);
+      Toast.show({ type: "success", text1: "Vehicle Added" });
+    }
+
+    setShowFormDialog(false);
+    resetForm();
   };
 
-  const deleteVehicle = (vehicleId: string) => {
-    const vehicle = vehicles.find((v) => v.id === vehicleId);
-    setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
-    Toast.show({
-      type: "success",
-      text1: "Vehicle Deleted",
-      text2: `${vehicle?.name} has been deleted.`,
-    });
+  const toggleAvailability = (id: string) => {
+    setVehicles((prev) => prev.map((v) => (v.id === id ? { ...v, isAvailable: !v.isAvailable } : v)));
     setShowActionsDialog(false);
+    const vehicle = vehicles.find(v => v.id === id);
+    Toast.show({
+        type: "success",
+        text1: !vehicle?.isAvailable ? "Marked Available" : "Marked Unavailable"
+    });
+  };
+
+  const deleteVehicle = (id: string) => {
+    setVehicles((prev) => prev.filter((v) => v.id !== id));
+    setShowActionsDialog(false);
+    Toast.show({ type: "success", text1: "Vehicle Deleted" });
   };
 
   const openActions = (vehicle: OwnerVehicle) => {
@@ -269,414 +260,324 @@ export default function VehicleManagement() {
     options: { label: string; value: string }[],
     visible: boolean,
     onClose: () => void,
-    onSelect: (value: string) => void,
+    onSelect: (value: string) => void
   ) =>
     visible && (
-      <View className="absolute inset-0 bg-black/50 justify-center items-center p-4 z-50">
-        <View className="bg-background w-full max-w-sm rounded-xl p-4 gap-2">
-          <Text className="text-lg font-bold mb-2 text-foreground">
-            {title}
-          </Text>
+      <View className="absolute inset-0 bg-black/80 justify-center items-center p-4 z-50">
+        <View className="bg-[#1E2025] w-full max-w-sm rounded-xl p-4 gap-2 border border-[#2A2E36]">
+          <Text className="text-lg font-bold mb-2 text-white">{title}</Text>
           <ScrollView className="max-h-60">
             {options.map((option) => (
               <TouchableOpacity
                 key={option.value}
-                className="p-3 border-b border-border"
+                className="p-3 border-b border-[#2A2E36]"
                 onPress={() => {
                   onSelect(option.value);
                   onClose();
                 }}
               >
-                <Text className="text-foreground">{option.label}</Text>
+                <Text className="text-gray-300">{option.label}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
           <Button variant="ghost" onPress={onClose}>
-            <Text className="text-foreground">Close</Text>
+            <Text className="text-white">Close</Text>
           </Button>
         </View>
       </View>
     );
 
+  // Helper Label with fixed margin (removed bottom margin to keep label close to input)
+  const FormLabel = ({ text }: { text: string }) => (
+    <Text className="text-sm font-semibold text-gray-200 ml-1">{text}</Text>
+  );
+
   return (
-    <SafeAreaView className="flex-1 bg-background pt-8">
-      <View className="flex-1 bg-background">
-        {/* Header */}
-        <View className="border-b border-border bg-card/95 px-4 py-3 flex-row items-center justify-between">
-          <View className="flex-row items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              onPress={() => router.push("/owner/OwnerDashboard")}
-            >
-              <ArrowLeft size={20} className="text-foreground" />
-            </Button>
-            <Text className="text-lg font-bold text-foreground">
-              Vehicle Management
-            </Text>
+    <SafeAreaView className="flex-1" style={{ backgroundColor: COLORS.bg }} edges={["top"]}>
+      <View className="flex-1" style={{ backgroundColor: COLORS.bg }}>
+        {/* --- Header --- */}
+        <View className="px-4 py-4 flex-row items-center justify-between">
+          <View className="flex-row items-center gap-4">
+            <TouchableOpacity onPress={() => router.back()}>
+              <ArrowLeft size={24} color="#FFF" />
+            </TouchableOpacity>
+            <Text className="text-xl font-bold text-white">Vehicle Management</Text>
           </View>
-          <Button size="sm" onPress={() => setShowAddDialog(true)}>
-            <Plus size={16} className="text-primary-foreground mr-1" />
-            <Text className="text-primary-foreground text-xs">Add Vehicle</Text>
-          </Button>
+          <TouchableOpacity
+            onPress={openAddModal}
+            style={{ backgroundColor: COLORS.primary }}
+            className="flex-row items-center gap-1 px-4 py-2 rounded-full"
+          >
+            <Plus size={18} color="#000" strokeWidth={2.5} />
+            <Text className="text-black font-bold text-sm">Add Vehicle</Text>
+          </TouchableOpacity>
         </View>
 
-        <ScrollView
-          className="flex-1 px-4 py-6"
-          contentContainerStyle={{ paddingBottom: 40 }}
-        >
-          {/* Tabs */}
-          <View className="flex-row mb-4 bg-secondary/50 p-1 rounded-xl">
+        <ScrollView className="flex-1 px-4 pt-2" contentContainerStyle={{ paddingBottom: 40 }}>
+          {/* --- Tabs --- */}
+          <View style={{ backgroundColor: COLORS.tabBg }} className="flex-row mb-6 p-1 rounded-full border border-[#2A2E36]">
             {["all", "car", "bike"].map((tab) => (
               <TabItem
                 key={tab}
                 tab={tab}
                 isActive={activeTab === tab}
-                count={
-                  tab === "all"
-                    ? vehicles.length
-                    : vehicles.filter((v) => v.type === tab).length
-                }
+                count={tab === "all" ? vehicles.length : vehicles.filter((v) => v.type === tab).length}
                 onPress={() => setActiveTab(tab)}
               />
             ))}
           </View>
 
-          {/* Vehicle List */}
+          {/* --- List --- */}
           {filteredVehicles.length === 0 ? (
-            <Card className="border-border">
-              <CardContent className="p-8 items-center">
-                <Car size={48} className="text-muted-foreground mb-3" />
-                <Text className="text-muted-foreground mb-4">
-                  No vehicles yet
-                </Text>
-                <Button onPress={() => setShowAddDialog(true)}>
-                  <Plus size={16} className="text-primary-foreground mr-1" />
-                  <Text className="text-primary-foreground">
-                    Add Your First Vehicle
-                  </Text>
-                </Button>
-              </CardContent>
-            </Card>
+            <View className="items-center justify-center py-20 rounded-2xl border border-dashed" style={{ borderColor: COLORS.border }}>
+              <Car size={48} color={COLORS.textMuted} className="mb-4" />
+              <Text style={{ color: COLORS.textMuted }}>No vehicles found</Text>
+            </View>
           ) : (
             <View className="gap-4">
               {filteredVehicles.map((vehicle) => (
-                <Card
-                  key={vehicle.id}
-                  className="border-border overflow-hidden"
-                >
-                  <CardContent className="p-0">
-                    <View className="flex-row">
-                      <Image
-                        source={{ uri: vehicle.image }}
-                        className="w-28 h-32"
-                        resizeMode="cover"
-                      />
-                      <View className="flex-1 p-3">
-                        <View className="flex-row items-start justify-between">
-                          <View className="flex-1">
-                            <View className="flex-row items-center gap-2">
-                              {vehicle.type === "car" ? (
-                                <Car size={16} className="text-primary" />
-                              ) : (
-                                <Bike size={16} className="text-primary" />
-                              )}
-                              <Text className="font-medium text-foreground">
-                                {vehicle.name}
-                              </Text>
-                            </View>
-                            <Text className="text-xs text-muted-foreground mt-1">
-                              {vehicle.brand} • {vehicle.model}
-                            </Text>
-                            <Text className="text-xs font-medium text-primary mt-1">
-                              {vehicle.vehicleNumber}
-                            </Text>
-                          </View>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onPress={() => openActions(vehicle)}
-                          >
-                            <MoreVertical
-                              size={16}
-                              className="text-foreground"
-                            />
-                          </Button>
+                <View key={vehicle.id} style={{ backgroundColor: COLORS.card, borderColor: COLORS.border }} className="rounded-3xl border p-3">
+                  <View className="flex-row gap-4">
+                    <Image source={{ uri: vehicle.image }} className="w-24 h-24 rounded-xl bg-gray-800" resizeMode="cover" />
+                    <View className="flex-1 justify-between py-0.5">
+                      <View className="flex-row justify-between items-start">
+                        <View>
+                          <Text className="text-lg font-bold text-white">{vehicle.name}</Text>
+                          <Text className="text-xs text-blue-300/70 mt-0.5 font-medium">
+                            {vehicle.brand} • {vehicle.model}
+                          </Text>
                         </View>
-
-                        <View className="flex-row items-center gap-3 mt-2">
-                          <View className="flex-row items-center gap-1">
-                            <Fuel size={12} className="text-muted-foreground" />
-                            <Text className="text-xs text-muted-foreground">
-                              {vehicle.fuelType}
-                            </Text>
-                          </View>
-                          <View className="flex-row items-center gap-1">
-                            <Settings2
-                              size={12}
-                              className="text-muted-foreground"
-                            />
-                            <Text className="text-xs text-muted-foreground">
-                              {vehicle.transmission}
-                            </Text>
-                          </View>
-                        </View>
-
-                        <View className="flex-row items-center justify-between mt-2">
-                          <View className="flex-row items-center gap-1">
-                            <DollarSign size={12} className="text-green-500" />
-                            <Text className="text-sm font-bold text-foreground">
-                              ${vehicle.pricePerDay}
-                            </Text>
-                            <Text className="text-xs text-muted-foreground">
-                              /day
-                            </Text>
-                          </View>
-                          <View
-                            className={`px-2 py-0.5 rounded-full ${
-                              vehicle.isAvailable
-                                ? "bg-green-500/10"
-                                : "bg-orange-500/10"
-                            }`}
-                          >
-                            <Text
-                              className={`text-xs ${
-                                vehicle.isAvailable
-                                  ? "text-green-500"
-                                  : "text-orange-500"
-                              }`}
-                            >
-                              {vehicle.isAvailable
-                                ? "Available"
-                                : "Unavailable"}
-                            </Text>
-                          </View>
+                        <TouchableOpacity onPress={() => openActions(vehicle)} className="p-1">
+                          <MoreVertical size={20} color="#6B7280" />
+                        </TouchableOpacity>
+                      </View>
+                      <View className="flex-row items-center justify-between mt-2">
+                        <Text className="text-lg font-bold text-white">
+                          ${vehicle.pricePerDay}
+                          <Text className="text-xs text-gray-500">/day</Text>
+                        </Text>
+                        <View
+                          style={{ backgroundColor: vehicle.isAvailable ? COLORS.successBg : COLORS.errorBg }}
+                          className="px-3 py-1 rounded-full"
+                        >
+                          <Text style={{ color: vehicle.isAvailable ? COLORS.success : COLORS.error }} className="text-xs font-medium">
+                            {vehicle.isAvailable ? "Available" : "Unavailable"}
+                          </Text>
                         </View>
                       </View>
                     </View>
-                  </CardContent>
-                </Card>
+                  </View>
+                </View>
               ))}
             </View>
           )}
         </ScrollView>
 
-        {/* Add Vehicle Modal */}
-        <Modal
-          visible={showAddDialog}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowAddDialog(false)}
-        >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4 max-h-[80%]">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
-                  Add New Vehicle
+        {/* --- ADD/EDIT VEHICLE MODAL --- */}
+        <Modal visible={showFormDialog} transparent animationType="fade" onRequestClose={() => setShowFormDialog(false)}>
+          <View className="flex-1 bg-black/80 justify-center items-center p-4">
+            <View
+              style={{ backgroundColor: COLORS.card, borderColor: COLORS.border }}
+              className="w-full max-w-sm rounded-2xl p-5 border max-h-[90%]"
+            >
+              <View className="flex-row justify-between items-center mb-4">
+                <Text className="text-lg font-bold text-white">
+                    {isEditing ? "Edit Vehicle" : "Add New Vehicle"}
                 </Text>
-                <TouchableOpacity onPress={() => setShowAddDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
+                <TouchableOpacity onPress={() => setShowFormDialog(false)}>
+                  <X size={20} color="#9CA3AF" />
                 </TouchableOpacity>
               </View>
 
-              <ScrollView className="gap-4">
-                <View className="gap-2 mb-4">
-                  <Text className="text-sm font-medium text-foreground">
-                    Vehicle Type *
-                  </Text>
+              <ScrollView 
+                contentContainerStyle={{ gap: 24 }} 
+                showsVerticalScrollIndicator={false}
+              >
+                {/* Vehicle Type - gap-1.5 keeps label close to input */}
+                <View className="gap-1.5">
+                  <FormLabel text="Vehicle Type *" />
                   <TouchableOpacity
-                    className="flex h-12 w-full flex-row items-center justify-between rounded-xl border border-input bg-background px-3 py-2"
+                    style={{ backgroundColor: COLORS.inputBg, borderColor: COLORS.primary, borderWidth: 1 }}
+                    className="flex-row items-center justify-between px-4 py-3 rounded-xl"
                     onPress={() => setShowTypePicker(true)}
                   >
-                    <Text className="text-foreground capitalize">
-                      {formData.type}
-                    </Text>
-                    <Settings2 size={16} className="text-muted-foreground" />
+                    <Text className="text-white capitalize font-medium">{formData.type}</Text>
+                    <ChevronDown size={16} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
 
-                {/* Other Inputs */}
-                <View className="gap-2 mb-4">
-                  <Text className="text-sm font-medium text-foreground">
-                    Vehicle Name *
-                  </Text>
-                  <Input
-                    value={formData.name}
-                    onChangeText={(text) => handleInputChange("name", text)}
-                    placeholder="e.g., Toyota Camry"
-                  />
-                </View>
-
-                {/* More inputs simplified for brevity, assuming standard inputs */}
-                <View className="gap-2 mb-4">
-                  <Text className="text-sm font-medium text-foreground">
-                    Vehicle Number *
-                  </Text>
-                  <Input
-                    value={formData.vehicleNumber}
-                    onChangeText={(text) =>
-                      handleInputChange("vehicleNumber", text)
-                    }
-                    placeholder="e.g., TN-01-AB-1234"
-                  />
-                </View>
-
-                <View className="flex-row gap-3 mb-4">
-                  <View className="flex-1 gap-2">
-                    <Text className="text-sm font-medium text-foreground">
-                      Brand *
-                    </Text>
-                    <Input
-                      value={formData.brand}
-                      onChangeText={(t) => handleInputChange("brand", t)}
-                    />
-                  </View>
-                  <View className="flex-1 gap-2">
-                    <Text className="text-sm font-medium text-foreground">
-                      Model
-                    </Text>
-                    <Input
-                      value={formData.model}
-                      onChangeText={(t) => handleInputChange("model", t)}
-                    />
-                  </View>
-                </View>
-
-                <View className="flex-row gap-3 mb-4">
-                  <View className="flex-1 gap-2">
-                    <Text className="text-sm font-medium text-foreground">
-                      Price/Day *
-                    </Text>
-                    <Input
-                      value={formData.pricePerDay}
-                      onChangeText={(t) => handleInputChange("pricePerDay", t)}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                  <View className="flex-1 gap-2">
-                    <Text className="text-sm font-medium text-foreground">
-                      Price/Hour
-                    </Text>
-                    <Input
-                      value={formData.pricePerHour}
-                      onChangeText={(t) => handleInputChange("pricePerHour", t)}
-                      keyboardType="numeric"
-                    />
-                  </View>
-                </View>
-
-                <View className="gap-2 mb-4">
-                  <Text className="text-sm font-medium text-foreground">
-                    Shop *
-                  </Text>
+                {/* Shop */}
+                <View className="gap-1.5">
+                  <FormLabel text="Shop *" />
                   <TouchableOpacity
-                    className="flex h-12 w-full flex-row items-center justify-between rounded-xl border border-input bg-background px-3 py-2"
+                    style={{ backgroundColor: COLORS.inputBg, borderColor: COLORS.border }}
+                    className="flex-row items-center justify-between px-4 py-3 rounded-xl border"
                     onPress={() => setShowShopPicker(true)}
                   >
-                    <Text
-                      className={
-                        formData.shopId
-                          ? "text-foreground"
-                          : "text-muted-foreground"
-                      }
-                    >
-                      {mockOwnerShops.find((s) => s.id === formData.shopId)
-                        ?.name || "Select shop"}
+                    <Text className={formData.shopId ? "text-white" : "text-gray-500"}>
+                      {mockOwnerShops.find((s) => s.id === formData.shopId)?.name || "Select shop"}
                     </Text>
-                    <Settings2 size={16} className="text-muted-foreground" />
+                    <ChevronDown size={16} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
-              </ScrollView>
 
-              <View className="flex-row gap-2 mt-2 pt-2 border-t border-border">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onPress={() => {
-                    setShowAddDialog(false);
-                    resetForm();
-                  }}
-                >
-                  <Text className="text-foreground">Cancel</Text>
-                </Button>
-                <Button className="flex-1" onPress={handleAddVehicle}>
-                  <Text className="text-primary-foreground font-medium">
-                    Add Vehicle
-                  </Text>
-                </Button>
-              </View>
-            </View>
-          </View>
-          {/* Pickers */}
-          {renderPicker(
-            "Select Type",
-            [
-              { label: "Car", value: "car" },
-              { label: "Bike", value: "bike" },
-            ],
-            showTypePicker,
-            () => setShowTypePicker(false),
-            (v) => handleInputChange("type", v),
-          )}
-
-          {renderPicker(
-            "Select Shop",
-            mockOwnerShops.map((s) => ({ label: s.name, value: s.id })),
-            showShopPicker,
-            () => setShowShopPicker(false),
-            (v) => handleInputChange("shopId", v),
-          )}
-        </Modal>
-
-        {/* Edit Vehicle Modal (Simplified, similar structure to Add) */}
-        <Modal
-          visible={showEditDialog}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowEditDialog(false)}
-        >
-          <View className="flex-1 bg-black/50 justify-center items-center p-4">
-            <View className="bg-background w-full max-w-sm rounded-xl p-6 gap-4 max-h-[80%]">
-              <View className="flex-row justify-between items-center">
-                <Text className="text-lg font-bold text-foreground">
-                  Edit Vehicle
-                </Text>
-                <TouchableOpacity onPress={() => setShowEditDialog(false)}>
-                  <X size={24} className="text-muted-foreground" />
-                </TouchableOpacity>
-              </View>
-              <ScrollView className="gap-4">
-                <View className="gap-2 mb-4">
-                  <Text className="text-sm font-medium text-foreground">
-                    Vehicle Name
-                  </Text>
+                {/* Vehicle Name */}
+                <View className="gap-1.5">
+                  <FormLabel text="Vehicle Name *" />
                   <Input
                     value={formData.name}
                     onChangeText={(t) => handleInputChange("name", t)}
+                    placeholder="e.g., Toyota Camry"
+                    placeholderTextColor="#4B5563"
+                    className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
                   />
                 </View>
-                {/* ... other inputs ... */}
+
+                {/* Vehicle Number */}
+                <View className="gap-1.5">
+                  <FormLabel text="Vehicle Number *" />
+                  <Input
+                    value={formData.vehicleNumber}
+                    onChangeText={(t) => handleInputChange("vehicleNumber", t)}
+                    placeholder="e.g., TN-01-AB-1234"
+                    placeholderTextColor="#4B5563"
+                    className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
+                  />
+                </View>
+
+                {/* Brand & Model */}
+                <View className="flex-row gap-3">
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Brand *" />
+                    <Input
+                      value={formData.brand}
+                      onChangeText={(t) => handleInputChange("brand", t)}
+                      placeholder="e.g., Toyota"
+                      placeholderTextColor="#4B5563"
+                      className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
+                    />
+                  </View>
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Model" />
+                    <Input
+                      value={formData.model}
+                      onChangeText={(t) => handleInputChange("model", t)}
+                      placeholder="e.g., Camry"
+                      placeholderTextColor="#4B5563"
+                      className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
+                    />
+                  </View>
+                </View>
+
+                {/* Year & Color */}
+                <View className="flex-row gap-3">
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Year" />
+                    <Input
+                      value={formData.year}
+                      onChangeText={(t) => handleInputChange("year", t)}
+                      placeholder="e.g., 2024"
+                      placeholderTextColor="#4B5563"
+                      keyboardType="numeric"
+                      className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
+                    />
+                  </View>
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Color" />
+                    <Input
+                      value={formData.color}
+                      onChangeText={(t) => handleInputChange("color", t)}
+                      placeholder="e.g., White"
+                      placeholderTextColor="#4B5563"
+                      className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
+                    />
+                  </View>
+                </View>
+
+                {/* Prices */}
+                <View className="flex-row gap-3">
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Price/Hour ($)" />
+                    <Input
+                      value={formData.pricePerHour}
+                      onChangeText={(t) => handleInputChange("pricePerHour", t)}
+                      placeholder="15"
+                      placeholderTextColor="#4B5563"
+                      keyboardType="numeric"
+                      className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
+                    />
+                  </View>
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Price/Day ($) *" />
+                    <Input
+                      value={formData.pricePerDay}
+                      onChangeText={(t) => handleInputChange("pricePerDay", t)}
+                      placeholder="89"
+                      placeholderTextColor="#4B5563"
+                      keyboardType="numeric"
+                      className="bg-[#121418] border-[#2A2E36] text-white rounded-xl h-12"
+                    />
+                  </View>
+                </View>
+
+                {/* Fuel & Transmission */}
+                <View className="flex-row gap-3">
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Fuel Type" />
+                    <TouchableOpacity
+                      style={{ backgroundColor: COLORS.inputBg, borderColor: COLORS.border }}
+                      className="flex-row items-center justify-between px-3 py-3 rounded-xl border h-12"
+                      onPress={() => setShowFuelPicker(true)}
+                    >
+                      <Text className="text-white text-xs">{formData.fuelType}</Text>
+                      <ChevronDown size={14} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  </View>
+                  <View className="flex-1 gap-1.5">
+                    <FormLabel text="Transmission" />
+                    <TouchableOpacity
+                      style={{ backgroundColor: COLORS.inputBg, borderColor: COLORS.border }}
+                      className="flex-row items-center justify-between px-3 py-3 rounded-xl border h-12"
+                      onPress={() => setShowTransPicker(true)}
+                    >
+                      <Text className="text-white text-xs">{formData.transmission}</Text>
+                      <ChevronDown size={14} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </ScrollView>
-              <View className="flex-row gap-2 mt-2 pt-2 border-t border-border">
+
+              <View className="flex-row gap-3 mt-6 pt-2">
                 <Button
                   variant="outline"
-                  className="flex-1"
-                  onPress={() => setShowEditDialog(false)}
+                  className="flex-1 border-[#00C9A7] bg-transparent h-12"
+                  onPress={() => setShowFormDialog(false)}
                 >
-                  <Text className="text-foreground">Cancel</Text>
+                  <Text style={{ color: COLORS.primary }} className="font-semibold">
+                    Cancel
+                  </Text>
                 </Button>
-                <Button className="flex-1" onPress={handleEditVehicle}>
-                  <Text className="text-primary-foreground font-medium">
-                    Save Changes
+                <Button
+                  className="flex-1 h-12"
+                  style={{ backgroundColor: COLORS.primary }}
+                  onPress={handleSaveVehicle}
+                >
+                  <Text className="text-[#0F1115] font-bold">
+                    {isEditing ? "Save Changes" : "Add Vehicle"}
                   </Text>
                 </Button>
               </View>
             </View>
           </View>
+
+          {/* Pickers */}
+          {renderPicker("Select Type", [{ label: "Car", value: "car" }, { label: "Bike", value: "bike" }], showTypePicker, () => setShowTypePicker(false), (v) => handleInputChange("type", v))}
+          {renderPicker("Select Shop", mockOwnerShops.map((s) => ({ label: s.name, value: s.id })), showShopPicker, () => setShowShopPicker(false), (v) => handleInputChange("shopId", v))}
+          {renderPicker("Fuel Type", [{ label: "Petrol", value: "Petrol" }, { label: "Diesel", value: "Diesel" }, { label: "Electric", value: "Electric" }], showFuelPicker, () => setShowFuelPicker(false), (v) => handleInputChange("fuelType", v))}
+          {renderPicker("Transmission", [{ label: "Automatic", value: "Automatic" }, { label: "Manual", value: "Manual" }], showTransPicker, () => setShowTransPicker(false), (v) => handleInputChange("transmission", v))}
         </Modal>
 
-        {/* Actions Modal */}
+        {/* --- ACTIONS MODAL --- */}
         <Modal
           visible={showActionsDialog}
           transparent
@@ -684,59 +585,53 @@ export default function VehicleManagement() {
           onRequestClose={() => setShowActionsDialog(false)}
         >
           <TouchableOpacity
-            className="flex-1 bg-black/50 justify-end"
+            className="flex-1 bg-black/80 justify-end"
             activeOpacity={1}
             onPress={() => setShowActionsDialog(false)}
           >
-            <View className="bg-background rounded-t-xl p-6 gap-4">
-              <Text className="text-lg font-bold text-foreground text-center">
+            <View
+              style={{ backgroundColor: COLORS.card }}
+              className="rounded-t-3xl p-6 gap-4 border-t border-gray-800"
+            >
+              <Text className="text-xl font-bold text-white text-center mb-2">
                 {selectedVehicle?.name}
               </Text>
 
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 bg-secondary rounded-xl"
-                onPress={() =>
-                  selectedVehicle && openEditDialog(selectedVehicle)
-                }
+                className="flex-row items-center gap-4 p-4 bg-gray-800/50 rounded-2xl"
+                onPress={() => selectedVehicle && openEditModal(selectedVehicle)}
               >
-                <Edit size={20} className="text-foreground" />
-                <Text className="text-foreground font-medium">
-                  Edit Vehicle
+                <Edit size={22} color={COLORS.text} />
+                <Text className="text-white font-medium text-lg">Edit Vehicle</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                className="flex-row items-center gap-4 p-4 bg-gray-800/50 rounded-2xl"
+                onPress={() => selectedVehicle && toggleAvailability(selectedVehicle.id)}
+              >
+                <Power
+                  size={22}
+                  color={selectedVehicle?.isAvailable ? COLORS.error : COLORS.success}
+                />
+                <Text className="text-white font-medium text-lg">
+                  {selectedVehicle?.isAvailable ? "Mark Unavailable" : "Mark Available"}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 bg-secondary rounded-xl"
-                onPress={() =>
-                  selectedVehicle && toggleAvailability(selectedVehicle.id)
-                }
+                className="flex-row items-center gap-4 p-4 bg-red-500/10 rounded-2xl"
+                onPress={() => selectedVehicle && deleteVehicle(selectedVehicle.id)}
               >
-                <Power size={20} className="text-foreground" />
-                <Text className="text-foreground font-medium">
-                  {selectedVehicle?.isAvailable
-                    ? "Mark Unavailable"
-                    : "Mark Available"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                className="flex-row items-center gap-3 p-3 bg-destructive/10 rounded-xl"
-                onPress={() =>
-                  selectedVehicle && deleteVehicle(selectedVehicle.id)
-                }
-              >
-                <Trash2 size={20} className="text-destructive" />
-                <Text className="text-destructive font-medium">
-                  Delete Vehicle
-                </Text>
+                <Trash2 size={22} color="#EF4444" />
+                <Text className="text-red-500 font-medium text-lg">Delete Vehicle</Text>
               </TouchableOpacity>
 
               <Button
-                variant="outline"
+                variant="ghost"
                 className="mt-2"
                 onPress={() => setShowActionsDialog(false)}
               >
-                <Text className="text-foreground">Cancel</Text>
+                <Text className="text-gray-400">Cancel</Text>
               </Button>
             </View>
           </TouchableOpacity>

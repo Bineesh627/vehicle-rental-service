@@ -1,4 +1,5 @@
 import { bookings } from "@/data/mockData";
+import { UserStackParamList } from "@/navigation/types";
 import {
   NavigationProp,
   useNavigation,
@@ -27,7 +28,6 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { UserStackParamList } from "@/navigation/types";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -53,15 +53,35 @@ export default function BookingDetails() {
   const getStatusStyles = (status: string) => {
     switch (status) {
       case "upcoming":
-        return { bg: styles.statusBgUpcoming, text: styles.statusTextUpcoming, label: "Upcoming Booking" };
+        return {
+          bg: styles.statusBgUpcoming,
+          text: styles.statusTextUpcoming,
+          label: "Upcoming Booking",
+        };
       case "completed":
-        return { bg: styles.statusBgCompleted, text: styles.statusTextCompleted, label: "Completed" };
+        return {
+          bg: styles.statusBgCompleted,
+          text: styles.statusTextCompleted,
+          label: "Completed",
+        };
       case "cancelled":
-        return { bg: styles.statusBgCancelled, text: styles.statusTextCancelled, label: "Cancelled" };
+        return {
+          bg: styles.statusBgCancelled,
+          text: styles.statusTextCancelled,
+          label: "Cancelled",
+        };
       case "active":
-        return { bg: styles.statusBgActive, text: styles.statusTextActive, label: "Active Rental" };
+        return {
+          bg: styles.statusBgActive,
+          text: styles.statusTextActive,
+          label: "Active Rental",
+        };
       default:
-        return { bg: styles.statusBgUpcoming, text: styles.statusTextUpcoming, label: "Upcoming" };
+        return {
+          bg: styles.statusBgUpcoming,
+          text: styles.statusTextUpcoming,
+          label: "Upcoming",
+        };
     }
   };
 
@@ -89,7 +109,11 @@ export default function BookingDetails() {
         <View style={styles.mainContent}>
           {/* Status banner */}
           <View style={[styles.statusBanner, statusStyle.bg]}>
-            <Calendar size={18} color={statusStyle.text.color} style={{ marginRight: 8 }} />
+            <Calendar
+              size={18}
+              color={statusStyle.text.color}
+              style={{ marginRight: 8 }}
+            />
             <Text style={[styles.statusText, statusStyle.text]}>
               {statusStyle.label}
             </Text>
@@ -157,9 +181,9 @@ export default function BookingDetails() {
                   </Text>
                 </View>
               </View>
-              
+
               <View style={styles.divider} />
-              
+
               <View style={styles.scheduleRow}>
                 <View style={styles.iconBoxSecondary}>
                   <Calendar size={20} color="#94a3b8" />
@@ -206,9 +230,13 @@ export default function BookingDetails() {
                 <Phone size={16} color="#2dd4bf" style={{ marginRight: 8 }} />
                 <Text style={styles.outlineButtonText}>Call Shop</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.solidButtonSmall}>
-                <Navigation size={16} color="#0f172a" style={{ marginRight: 8 }} />
+                <Navigation
+                  size={16}
+                  color="#0f172a"
+                  style={{ marginRight: 8 }}
+                />
                 <Text style={styles.solidButtonTextSmall}>Directions</Text>
               </TouchableOpacity>
             </View>
@@ -246,26 +274,48 @@ export default function BookingDetails() {
               <TouchableOpacity style={styles.footerCancelButton}>
                 <Text style={styles.footerCancelText}>Cancel Booking</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity style={styles.footerModifyButton}>
                 <Text style={styles.footerModifyText}>Modify Booking</Text>
               </TouchableOpacity>
             </>
           )}
-          
+
+          {booking.status === "active" && (
+            <View style={styles.activeFooterContent}>
+              <TouchableOpacity
+                style={styles.footerOutlineButton}
+                onPress={() => console.log("Schedule pickup")}
+              >
+                <Text style={styles.footerOutlineText}>Schedule Pickup</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.footerPrimaryButton}
+                onPress={() => console.log("Return to shop")}
+              >
+                <Text style={styles.footerPrimaryText}>Return to Shop</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {booking.status === "completed" && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.footerModifyButtonFull}
-              onPress={() => navigation.navigate("VehicleDetails", { id: booking.vehicleId })}
+              onPress={() =>
+                navigation.navigate("VehicleDetails", { id: booking.vehicleId })
+              }
             >
               <Text style={styles.footerModifyText}>Book Again</Text>
             </TouchableOpacity>
           )}
-          
+
           {booking.status === "cancelled" && (
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.footerModifyButtonFull}
-              onPress={() => navigation.navigate("VehicleDetails", { id: booking.vehicleId })}
+              onPress={() =>
+                navigation.navigate("VehicleDetails", { id: booking.vehicleId })
+              }
             >
               <Text style={styles.footerModifyText}>Rebook Vehicle</Text>
             </TouchableOpacity>
@@ -582,7 +632,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   footerModifyButtonFull: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 16,
     borderRadius: 9999,
     backgroundColor: "#2dd4bf",
@@ -590,6 +640,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   footerModifyText: {
+    color: "#0f172a",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  activeFooterContent: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 12,
+  },
+  footerOutlineButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerOutlineText: {
+    color: "#2dd4bf",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  footerPrimaryButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 9999,
+    backgroundColor: "#2dd4bf",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  footerPrimaryText: {
     color: "#0f172a",
     fontWeight: "700",
     fontSize: 16,
