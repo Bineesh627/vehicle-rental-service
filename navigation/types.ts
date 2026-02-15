@@ -37,4 +37,6 @@ export type UserStackParamList = {
   SavedLocations: undefined;
   KYCVerification: undefined;
   PrivacySecurity: undefined;
+  CustomerComplaint: { bookingId: string };
+  StaffComplaint: undefined;
 };

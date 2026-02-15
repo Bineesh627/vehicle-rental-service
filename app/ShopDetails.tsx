@@ -3,12 +3,14 @@ import { rentalShops, vehicles } from "@/data/mockData";
 import { UserStackParamList } from "@/navigation/types";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { useRouter } from "expo-router";
 import {
   ArrowLeft,
   Bike,
   Car,
   Clock,
   MapPin,
+  MessageCircle,
   Phone,
   Share2,
   Star,
@@ -31,6 +33,7 @@ type ShopDetailsNavigationProp = NativeStackNavigationProp<
 >;
 
 export default function ShopDetails() {
+  const router = useRouter();
   const route = useRoute<ShopDetailsRouteProp>();
   const navigation = useNavigation<ShopDetailsNavigationProp>();
   const { id } = route.params;
@@ -140,23 +143,37 @@ export default function ShopDetails() {
           </View>
 
           {/* Action Buttons */}
-          <View className="flex-row gap-4 mb-8">
-            <TouchableOpacity
-              onPress={handleCall}
-              className="flex-1 flex-row items-center justify-center gap-2 bg-[#22D3EE] py-4 rounded-2xl"
-            >
-              <Phone color="#0F1C23" size={20} />
-              <Text className="font-bold text-[#0F1C23] text-base">
-                Call Shop
-              </Text>
-            </TouchableOpacity>
+          <View className="mb-8">
+            <View className="flex-row gap-4 mb-3">
+              <TouchableOpacity
+                onPress={handleCall}
+                className="flex-1 flex-row items-center justify-center gap-2 bg-[#22D3EE] py-4 rounded-2xl"
+              >
+                <Phone color="#0F1C23" size={20} />
+                <Text className="font-bold text-[#0F1C23] text-base">
+                  Call Shop
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={handleDirections}
+                className="flex-1 flex-row items-center justify-center gap-2 border border-[#22D3EE] py-4 rounded-2xl"
+              >
+                <Text className="font-bold text-[#22D3EE] text-base">
+                  Get Directions
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
-              onPress={handleDirections}
-              className="flex-1 flex-row items-center justify-center gap-2 border border-[#22D3EE] py-4 rounded-2xl"
+              className="flex-row items-center justify-center gap-2 bg-[#1E293B] py-4 rounded-2xl border border-slate-700"
+              onPress={() =>
+                router.push({ pathname: "/chat/[id]", params: { id: shop.id } })
+              }
             >
-              <Text className="font-bold text-[#22D3EE] text-base">
-                Get Directions
+              <MessageCircle color="#FFFFFF" size={20} />
+              <Text className="font-bold text-white text-base">
+                Message Shop
               </Text>
             </TouchableOpacity>
           </View>

@@ -285,9 +285,13 @@ export default function BookingDetails() {
             <View style={styles.activeFooterContent}>
               <TouchableOpacity
                 style={styles.footerOutlineButton}
-                onPress={() => console.log("Schedule pickup")}
+                onPress={() =>
+                  navigation.navigate("CustomerComplaint", {
+                    bookingId: booking.id,
+                  })
+                }
               >
-                <Text style={styles.footerOutlineText}>Schedule Pickup</Text>
+                <Text style={styles.footerOutlineText}>Complaint</Text>
               </TouchableOpacity>
 
               <TouchableOpacity

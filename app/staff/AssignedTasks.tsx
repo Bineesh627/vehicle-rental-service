@@ -4,6 +4,7 @@ import {
   CheckCircle,
   Clock,
   MapPin,
+  MessageSquare,
   Navigation,
   Package,
   Phone,
@@ -104,7 +105,7 @@ export default function AssignedTasks() {
 
   const startTask = (taskId: string) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: "in_progress" } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, status: "in_progress" } : t)),
     );
     Toast.show({
       type: "success",
@@ -115,7 +116,7 @@ export default function AssignedTasks() {
 
   const completeTask = (taskId: string) => {
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: "completed" } : t))
+      prev.map((t) => (t.id === taskId ? { ...t, status: "completed" } : t)),
     );
     Toast.show({
       type: "success",
@@ -178,7 +179,15 @@ export default function AssignedTasks() {
           >
             <ArrowLeft size={24} color="white" />
           </TouchableOpacity>
-          <Text className="text-xl font-bold text-white">Assigned Tasks</Text>
+          <Text className="text-xl font-bold text-white flex-1">
+            Assigned Tasks
+          </Text>
+          <TouchableOpacity
+            onPress={() => router.push("/staff/StaffComplaint")}
+            className="px-3 py-1.5 bg-[#1E293B] rounded-full border border-gray-700"
+          >
+            <Text className="text-gray-300 text-xs font-medium">Report</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -219,7 +228,9 @@ export default function AssignedTasks() {
                   onPress={() => setActiveTab(tab)}
                   className="flex-1 items-center justify-center py-2.5 rounded-lg"
                   style={{
-                    backgroundColor: isActive ? COLORS.background : "transparent",
+                    backgroundColor: isActive
+                      ? COLORS.background
+                      : "transparent",
                   }}
                 >
                   <Text
@@ -332,6 +343,22 @@ export default function AssignedTasks() {
                     </View>
                   </View>
 
+                  {/* Chat Button */}
+                  <TouchableOpacity
+                    className="flex-row items-center justify-center py-3 mb-4 rounded-full border"
+                    style={{ borderColor: COLORS.primary }}
+                    onPress={() => router.push("/chat/1")}
+                  >
+                    <MessageSquare
+                      size={16}
+                      color={COLORS.primary}
+                      style={{ marginRight: 6 }}
+                    />
+                    <Text style={{ color: COLORS.primary, fontWeight: "600" }}>
+                      Chat with Customer
+                    </Text>
+                  </TouchableOpacity>
+
                   {/* Action Buttons */}
                   {!isCompleted && (
                     <View className="flex-row gap-3">
@@ -373,17 +400,15 @@ export default function AssignedTasks() {
                         className="flex-1 items-center justify-center py-3 rounded-full"
                         style={{ backgroundColor: COLORS.primary }}
                         onPress={() =>
-                          isPending
-                            ? startTask(task.id)
-                            : completeTask(task.id)
+                          isPending ? startTask(task.id) : completeTask(task.id)
                         }
                       >
                         <Text className="text-black font-bold">
                           {isPending
                             ? "Start"
                             : isDelivery
-                            ? "Delivered"
-                            : "Picked Up"}
+                              ? "Delivered"
+                              : "Picked Up"}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -396,7 +421,9 @@ export default function AssignedTasks() {
                         color={COLORS.success}
                         style={{ marginRight: 8 }}
                       />
-                      <Text style={{ color: COLORS.success, fontWeight: "600" }}>
+                      <Text
+                        style={{ color: COLORS.success, fontWeight: "600" }}
+                      >
                         Task Completed
                       </Text>
                     </View>

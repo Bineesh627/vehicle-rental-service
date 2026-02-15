@@ -5,12 +5,12 @@ import {
   ChevronRight,
   Clock,
   MapPin,
+  MessageSquare,
   Navigation,
   Package,
   Phone,
   Truck,
   User,
-  Wrench,
 } from "lucide-react-native";
 import { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
@@ -151,9 +151,17 @@ export default function StaffDashboard() {
             }`}
           >
             {isDelivery ? (
-              <Truck size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
+              <Truck
+                size={14}
+                color={COLORS.primary}
+                style={{ marginRight: 6 }}
+              />
             ) : (
-              <Package size={14} color={COLORS.secondary} style={{ marginRight: 6 }} />
+              <Package
+                size={14}
+                color={COLORS.secondary}
+                style={{ marginRight: 6 }}
+              />
             )}
             <Text
               className={`text-xs font-semibold ${
@@ -181,6 +189,22 @@ export default function StaffDashboard() {
         <Text className="text-sm text-gray-400 flex-1">{task.address}</Text>
       </View>
 
+      {/* Chat Button */}
+      <TouchableOpacity
+        className="flex-row items-center justify-center py-3 mb-4 rounded-full border"
+        style={{ borderColor: COLORS.primary }}
+        onPress={() => router.push("/chat/1")}
+      >
+        <MessageSquare
+          size={16}
+          color={COLORS.primary}
+          style={{ marginRight: 6 }}
+        />
+        <Text style={{ color: COLORS.primary, fontWeight: "600" }}>
+          Chat with Customer
+        </Text>
+      </TouchableOpacity>
+
       {/* Action Buttons - Styled exactly like the screenshot */}
       <View className="flex-row gap-3">
         {/* Call Button (Outlined) */}
@@ -199,8 +223,14 @@ export default function StaffDashboard() {
           style={{ borderColor: COLORS.primary }}
           onPress={() => handleNavigate(task.address)}
         >
-          <Navigation size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
-          <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Navigate</Text>
+          <Navigation
+            size={16}
+            color={COLORS.primary}
+            style={{ marginRight: 6 }}
+          />
+          <Text style={{ color: COLORS.primary, fontWeight: "600" }}>
+            Navigate
+          </Text>
         </TouchableOpacity>
 
         {/* Complete Button (Solid) */}
@@ -228,18 +258,28 @@ export default function StaffDashboard() {
         {/* Header */}
         <View className="flex-row items-center justify-between px-5 pt-2 pb-6">
           <View className="flex-row items-center gap-3">
-            <View className="h-12 w-12 items-center justify-center rounded-full bg-green-500">
-              <Wrench size={24} color="white" />
-            </View>
             <View>
               <Text className="text-xl font-bold text-white">
                 Staff Dashboard
               </Text>
-              <Text className="text-sm text-gray-400">{user?.name || "Mike Staff"}</Text>
+              <Text className="text-sm text-gray-400">
+                {user?.name || "Mike Staff"}
+              </Text>
             </View>
           </View>
           <View className="flex-row items-center gap-1">
-            <TouchableOpacity onPress={() => router.push("/staff/StaffProfile")}>
+            <TouchableOpacity
+              onPress={() => router.push("/staff/StaffComplaint")}
+            >
+              <View className="mr-4 px-3 py-1.5 bg-[#1E293B] rounded-full border border-gray-700">
+                <Text className="text-gray-300 text-xs font-medium">
+                  Report Issue
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/staff/StaffProfile")}
+            >
               <User size={24} color="white" />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleLogout} className="ml-4">
@@ -263,7 +303,11 @@ export default function StaffDashboard() {
                   borderColor: COLORS.border,
                 }}
               >
-                <stat.icon size={24} color={stat.color} style={{ marginBottom: 8 }} />
+                <stat.icon
+                  size={24}
+                  color={stat.color}
+                  style={{ marginBottom: 8 }}
+                />
                 <View className="items-center">
                   <Text className="text-2xl font-bold text-white">
                     {stat.value}
@@ -348,7 +392,11 @@ export default function StaffDashboard() {
               className="h-48 items-center justify-center"
               onPress={() => router.push("/staff/AssignedTasks")}
             >
-              <MapPin size={32} color={COLORS.primary} style={{ marginBottom: 10 }} />
+              <MapPin
+                size={32}
+                color={COLORS.primary}
+                style={{ marginBottom: 10 }}
+              />
               <Text className="text-base font-bold text-white">
                 Task Locations Map
               </Text>

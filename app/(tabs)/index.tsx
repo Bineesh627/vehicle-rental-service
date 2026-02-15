@@ -4,9 +4,9 @@ import { rentalShops } from "@/data/mockData";
 import { UserStackParamList } from "@/navigation/types";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Bell, MapPin, Send } from "lucide-react-native";
-import React, { useState } from "react";
 import { useRouter } from "expo-router";
+import { Bell, MapPin, MessageCircle, Send } from "lucide-react-native";
+import React, { useState } from "react";
 import {
   ScrollView,
   Text,
@@ -61,13 +61,21 @@ export default function Home() {
           </View>
           <Text className="text-xl font-bold text-white">{location}</Text>
         </View>
-        <TouchableOpacity
-          className="relative rounded-full bg-[#1E293B] p-3 border border-slate-700"
-          onPress={() => router.push(`/user/Notifications` as any)}
-        >
-          <Bell color="#FFFFFF" size={20} />
-          <View className="absolute right-3 top-2 h-2.5 w-2.5 rounded-full bg-[#F97316] border border-[#1E293B]" />
-        </TouchableOpacity>
+        <View className="flex-row gap-3">
+          <TouchableOpacity
+            className="relative rounded-full bg-[#1E293B] p-3 border border-slate-700"
+            onPress={() => router.push("/chat" as any)}
+          >
+            <MessageCircle color="#FFFFFF" size={20} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="relative rounded-full bg-[#1E293B] p-3 border border-slate-700"
+            onPress={() => router.push(`/user/Notifications` as any)}
+          >
+            <Bell color="#FFFFFF" size={20} />
+            <View className="absolute right-3 top-2 h-2.5 w-2.5 rounded-full bg-[#F97316] border border-[#1E293B]" />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
