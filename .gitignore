@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# custom remove
+.vscode/
+
 # Expo
 .expo/
 dist/

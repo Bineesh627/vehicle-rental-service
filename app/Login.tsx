@@ -11,8 +11,6 @@ import {
   EyeOff,
   Lock,
   Mail,
-  Shield,
-  Store,
   User,
   Wrench,
 } from "lucide-react-native";
@@ -31,23 +29,11 @@ const roleInfo: Record<
     color: "bg-blue-500/20 border-blue-500/50",
     iconColor: "#3b82f6",
   },
-  owner: {
-    icon: Store,
-    label: "Shop Owner",
-    color: "bg-purple-500/20 border-purple-500/50",
-    iconColor: "#a855f7",
-  },
   staff: {
     icon: Wrench,
     label: "Staff",
     color: "bg-green-500/20 border-green-500/50",
     iconColor: "#22c55e",
-  },
-  admin: {
-    icon: Shield,
-    label: "Admin",
-    color: "bg-red-500/20 border-red-500/50",
-    iconColor: "#ef4444",
   },
 };
 
@@ -95,9 +81,7 @@ export const Login = () => {
     setSelectedRole(role);
     const credentials: Record<UserRole, { email: string; password: string }> = {
       user: { email: "user@rental.com", password: "user123" },
-      owner: { email: "owner@rental.com", password: "owner123" },
       staff: { email: "staff@rental.com", password: "staff123" },
-      admin: { email: "admin@rental.com", password: "admin123" },
     };
 
     const cred = credentials[role];
@@ -144,13 +128,7 @@ export const Login = () => {
                 >
                   <View
                     className={`h-8 w-8 items-center justify-center rounded-full bg-${
-                      role === "user"
-                        ? "blue"
-                        : role === "owner"
-                          ? "purple"
-                          : role === "staff"
-                            ? "green"
-                            : "red"
+                      role === "user" ? "blue" : "green"
                     }-500/20`}
                   >
                     <Icon color={info.iconColor} size={16} />
@@ -225,18 +203,6 @@ export const Login = () => {
           <Text className="text-slate-400">Don't have an account? </Text>
           <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
             <Text className="font-bold text-[#22D3EE]">Sign up</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Shop owner signup link */}
-        <View className="mt-4 flex-row justify-center items-center">
-          <Text className="text-slate-400">Own a rental shop? </Text>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("ShopOwnerSignup")}
-          >
-            <Text className="font-bold text-[#A855F7]">
-              Register as partner
-            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

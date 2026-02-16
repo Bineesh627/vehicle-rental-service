@@ -3,8 +3,7 @@ import { NavigatorScreenParams } from "@react-navigation/native";
 export type RootStackParamList = {
   Auth: undefined;
   UserApp: undefined;
-  AdminApp: undefined;
-  OwnerApp: undefined;
+
   StaffApp: undefined;
   NotFound: undefined;
 };
@@ -12,7 +11,6 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
   Login: undefined;
   Signup: undefined;
-  ShopOwnerSignup: undefined;
 };
 
 export type UserTabParamList = {

@@ -1,6 +1,6 @@
-import { Shield, Store, Users, Wrench } from "lucide-react-native";
+import { Users, Wrench } from "lucide-react-native";
 
-export type UserRole = "admin" | "owner" | "staff" | "user";
+export type UserRole = "staff" | "user";
 
 export interface AuthUser {
   id: string;
@@ -12,28 +12,6 @@ export interface AuthUser {
 }
 
 export const mockUsers = [
-  {
-    email: "admin@rental.com",
-    password: "admin123",
-    user: {
-      id: "admin-1",
-      name: "System Admin",
-      email: "admin@rental.com",
-      phone: "+1 555-0100",
-      role: "admin" as UserRole,
-    },
-  },
-  {
-    email: "owner@rental.com",
-    password: "owner123",
-    user: {
-      id: "owner-1",
-      name: "John Owner",
-      email: "owner@rental.com",
-      phone: "+1 555-0200",
-      role: "owner" as UserRole,
-    },
-  },
   {
     email: "staff@rental.com",
     password: "staff123",
@@ -68,22 +46,10 @@ export const roleInfo: Record<
     color: "#3b82f6",
     bgColor: "rgba(59, 130, 246, 0.1)",
   },
-  owner: {
-    icon: Store,
-    label: "Shop Owner",
-    color: "#a855f7",
-    bgColor: "rgba(168, 85, 247, 0.1)",
-  },
   staff: {
     icon: Wrench,
     label: "Staff",
     color: "#22c55e",
     bgColor: "rgba(34, 197, 94, 0.1)",
-  },
-  admin: {
-    icon: Shield,
-    label: "Admin",
-    color: "#ef4444",
-    bgColor: "rgba(239, 68, 68, 0.1)",
   },
 };

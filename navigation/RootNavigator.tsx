@@ -26,18 +26,12 @@ export const RootNavigator = () => {
           <Stack.Screen name="Auth" component={AuthNavigator} />
         ) : (
           <>
-            {user?.role === "admin" && (
-              <Stack.Screen name="AdminApp" component={UserNavigator} /> // Placeholder for Admin
-            )}
-            {user?.role === "owner" && (
-              <Stack.Screen name="OwnerApp" component={UserNavigator} /> // Placeholder for Owner
-            )}
             {user?.role === "staff" && (
               <Stack.Screen name="StaffApp" component={UserNavigator} /> // Placeholder for Staff
             )}
             {/* Default to User App for now if role not matched or is 'user' */}
             {(user?.role === "user" ||
-              !["admin", "owner", "staff"].includes(user?.role as string)) && (
+              !["staff"].includes(user?.role as string)) && (
               <Stack.Screen name="UserApp" component={UserNavigator} />
             )}
           </>
