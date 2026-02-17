@@ -1,4 +1,5 @@
-import { rentalShops, vehicles } from "@/data/mockData";
+import { api } from "@/services/api";
+import { Vehicle, RentalShop } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
 import {
   NavigationProp,
@@ -18,7 +19,7 @@ import {
   Share2,
   Users,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dimensions,
   Image,
@@ -28,8 +29,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -39,19 +42,61 @@ export default function VehicleDetails() {
   const { id } = (route.params as { id: string }) || {};
   const insets = useSafeAreaInsets();
 
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [shop, setShop] = useState<RentalShop | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [pricingType, setPricingType] = useState<"hour" | "day">("hour");
 
-  const vehicle = vehicles.find((v) => v.id === id);
-  const shop = vehicle
-    ? rentalShops.find((s) => s.id === vehicle.shopId)
-    : null;
+  useEffect(() => {
+    const fetchDetails = async () => {
+      try {
+        if (!id) throw new Error("No vehicle ID provided");
 
-  if (!vehicle || !shop) {
+        const vehicleData = await api.getVehicle(id);
+        setVehicle(vehicleData);
+
+        if (vehicleData.shopId) {
+          const shopData = await api.getRentalShop(vehicleData.shopId);
+          setShop(shopData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch vehicle details:", err);
+        setError("Failed to load vehicle details");
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Could not load vehicle details",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDetails();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#22d3ee" />
+      </View>
+    );
+  }
+
+  if (error || !vehicle || !shop) {
     return (
       <View style={styles.notFoundContainer}>
-        <Text style={styles.notFoundText}>Vehicle not found</Text>
+        <Text style={styles.notFoundText}>{error || "Vehicle not found"}</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+        >
+          <Text style={styles.backButtonText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -364,6 +409,23 @@ const styles = StyleSheet.create({
   notFoundText: {
     color: "#94a3b8", // Slate-400
     fontSize: 16,
+    marginBottom: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#0f172a",
+  },
+  backButton: {
+    backgroundColor: "#22d3ee",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  backButtonText: {
+    color: "#0f172a",
+    fontWeight: "600",
   },
   scrollContent: {
     paddingBottom: 120,

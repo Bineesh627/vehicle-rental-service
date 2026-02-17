@@ -7,6 +7,10 @@ router.register(r'shops', RentalShopViewSet)
 router.register(r'vehicles', VehicleViewSet)
 router.register(r'bookings', BookingViewSet)
 
+# Using DefaultRouter automatically generates the API Root and CRUD routes:
+# /api/shops/ -> List/Create Rental Shops
+# /api/vehicles/ -> List/Create Vehicles
+# /api/bookings/ -> List/Create Bookings
 urlpatterns = [
     path('', include(router.urls)),
     path('register/', register, name='register'),

@@ -1,18 +1,20 @@
 import { MapView } from "@/components/MapView";
 import { ShopCard } from "@/components/ShopCard";
-import { rentalShops } from "@/data/mockData";
+import { api } from "@/services/api";
+import { RentalShop } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useRouter } from "expo-router";
 import { Bell, MapPin, MessageCircle, Send } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -31,6 +33,34 @@ export default function Home() {
   );
   const insets = useSafeAreaInsets();
 
+  const [shops, setShops] = useState<RentalShop[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchShops = async () => {
+      try {
+        const data = await api.getRentalShops();
+        // Mock distance calculation for now
+        const shopsWithDistance = data.map((shop) => ({
+          ...shop,
+          distance: parseFloat((Math.random() * 5).toFixed(1)), // Random 0-5km
+        }));
+        setShops(shopsWithDistance);
+      } catch (error) {
+        console.error("Failed to fetch shops:", error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to load rental shops",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchShops();
+  }, []);
+
   const handleCurrentLocation = () => {
     setLocation("Current Location");
     Toast.show({
@@ -40,15 +70,23 @@ export default function Home() {
   };
 
   const handleShopClick = (shopId: string) => {
-    navigation.navigate("ShopDetails", { id: shopId }); // Assuming ShopDetails is mapped in UserNavigator
+    navigation.navigate("ShopDetails", { id: shopId });
   };
 
-  const filteredShops = rentalShops.filter((shop) => {
+  const filteredShops = shops.filter((shop) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "car") return shop.vehicleCount.cars > 0;
     if (activeFilter === "bike") return shop.vehicleCount.bikes > 0;
     return true;
   });
+
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#0F1C23] justify-center items-center">
+        <ActivityIndicator size="large" color="#22D3EE" />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-[#0F1C23]" style={{ paddingTop: insets.top }}>

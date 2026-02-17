@@ -1,5 +1,6 @@
 import { VehicleCard } from "@/components/VehicleCard";
-import { rentalShops, vehicles } from "@/data/mockData";
+import { api } from "@/services/api";
+import { RentalShop, Vehicle } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -15,7 +16,7 @@ import {
   Share2,
   Star,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Image,
   ScrollView,
@@ -23,8 +24,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 type ShopDetailsRouteProp = RouteProp<UserStackParamList, "ShopDetails">;
 type ShopDetailsNavigationProp = NativeStackNavigationProp<
@@ -39,16 +42,64 @@ export default function ShopDetails() {
   const { id } = route.params;
   const insets = useSafeAreaInsets();
 
-  const shop = rentalShops.find((s) => s.id === id);
-  // In a real app, you'd filter vehicles by shopId.
-  // For this mock, we'll just show all vehicles or filter if shopId matches in mockData.
-  const shopVehicles = vehicles;
+  const [shop, setShop] = useState<RentalShop | null>(null);
+  const [shopVehicles, setShopVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [activeFilter, setActiveFilter] = useState<"all" | "car" | "bike">(
     "all",
   );
 
-  if (!shop) return null;
+  useEffect(() => {
+    const fetchShopDetails = async () => {
+      try {
+        setLoading(true);
+        const [shopData, vehiclesData] = await Promise.all([
+          api.getRentalShop(id),
+          api.getShopVehicles(id),
+        ]);
+        setShop(shopData);
+        setShopVehicles(vehiclesData);
+      } catch (err) {
+        console.error("Failed to fetch shop details:", err);
+        setError("Failed to load shop details");
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Could not load shop details",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchShopDetails();
+    }
+  }, [id]);
+
+  if (loading) {
+    return (
+      <View className="flex-1 justify-center items-center bg-[#0F1C23]">
+        <ActivityIndicator size="large" color="#22D3EE" />
+      </View>
+    );
+  }
+
+  if (error || !shop) {
+    return (
+      <View className="flex-1 justify-center items-center bg-[#0F1C23]">
+        <Text className="text-slate-400 mb-4">Shop not found</Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          className="bg-[#22D3EE] px-4 py-2 rounded-lg"
+        >
+          <Text className="font-bold text-[#0F1C23]">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const filteredVehicles = shopVehicles.filter((v) => {
     if (activeFilter === "all") return true;

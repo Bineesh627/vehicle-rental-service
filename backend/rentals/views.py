@@ -56,13 +56,42 @@ def login(request):
     })
 
 class RentalShopViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows rental shops to be viewed or edited.
+    PRO TIP: ModelViewSet handles GET, POST, PUT, PATCH, DELETE automatically.
+    """
     queryset = RentalShop.objects.all()
     serializer_class = RentalShopSerializer
 
+    def get_queryset(self):
+        """
+        Optionally restricts the returned shops, 
+        but currently returns all shops.
+        """
+        return RentalShop.objects.all()
+
 class VehicleViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows vehicles to be viewed or edited.
+    Supports filtering by shop: /api/vehicles/?shop=<shop_id>
+    """
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
 
+    def get_queryset(self):
+        """
+        Logic to filter vehicles if needed.
+        Currently returns all vehicles for the details page.
+        """
+        queryset = Vehicle.objects.all()
+        shop_id = self.request.query_params.get('shop')
+        if shop_id:
+            queryset = queryset.filter(shop__id=shop_id)
+        return queryset
+
 class BookingViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing bookings.
+    """
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
