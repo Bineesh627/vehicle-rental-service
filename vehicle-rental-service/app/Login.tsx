@@ -1,9 +1,6 @@
+import { router } from "expo-router";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/AuthContext";
-import { AuthStackParamList } from "@/navigation/types";
-import { UserRole } from "@/types/auth";
-import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
   ArrowLeftRight,
   ArrowRight,
@@ -11,44 +8,17 @@ import {
   EyeOff,
   Lock,
   Mail,
-  User,
-  Wrench,
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 
-const roleInfo: Record<
-  UserRole,
-  { icon: React.ElementType; label: string; color: string; iconColor: string }
-> = {
-  user: {
-    icon: User,
-    label: "Customer",
-    color: "bg-blue-500/20 border-blue-500/50",
-    iconColor: "#3b82f6",
-  },
-  staff: {
-    icon: Wrench,
-    label: "Staff",
-    color: "bg-green-500/20 border-green-500/50",
-    iconColor: "#22c55e",
-  },
-};
-
-type LoginScreenNavigationProp = NativeStackNavigationProp<
-  AuthStackParamList,
-  "Login"
->;
-
 export const Login = () => {
-  const navigation = useNavigation<LoginScreenNavigationProp>();
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -68,30 +38,19 @@ export const Login = () => {
         text1: "Success",
         text2: "Login successful!",
       });
+
+      // Navigate based on role
+      if (result.role === "staff") {
+        router.replace("/staff");
+      } else {
+        // Default to user tabs
+        router.replace("/(tabs)");
+      }
     } else {
       Toast.show({
         type: "error",
         text1: "Login Failed",
         text2: result.error || "Login failed",
-      });
-    }
-  };
-
-  const handleQuickLogin = async (role: UserRole) => {
-    setSelectedRole(role);
-    const credentials: Record<UserRole, { email: string; password: string }> = {
-      user: { email: "user@rental.com", password: "user123" },
-      staff: { email: "staff@rental.com", password: "staff123" },
-    };
-
-    const cred = credentials[role];
-    const result = await login(cred.email, cred.password);
-
-    if (result.success) {
-      Toast.show({
-        type: "success",
-        text1: "Success",
-        text2: `Logged in as ${roleInfo[role].label}`,
       });
     }
   };
@@ -109,37 +68,6 @@ export const Login = () => {
           <Text className="text-slate-400 text-base">
             Sign in to your account
           </Text>
-        </View>
-
-        {/* Quick Role Selection */}
-        <View className="mb-8">
-          <Text className="text-sm font-medium text-slate-500 mb-4 text-center">
-            Quick Login (Demo)
-          </Text>
-          <View className="flex-row flex-wrap justify-between gap-3">
-            {(Object.keys(roleInfo) as UserRole[]).map((role) => {
-              const info = roleInfo[role];
-              const Icon = info.icon;
-              return (
-                <TouchableOpacity
-                  key={role}
-                  onPress={() => handleQuickLogin(role)}
-                  className={`flex-row items-center gap-3 rounded-2xl p-4 border border-slate-700/50 bg-[#16202C] w-[48%] active:opacity-80`}
-                >
-                  <View
-                    className={`h-8 w-8 items-center justify-center rounded-full bg-${
-                      role === "user" ? "blue" : "green"
-                    }-500/20`}
-                  >
-                    <Icon color={info.iconColor} size={16} />
-                  </View>
-                  <Text className="text-sm font-medium text-white">
-                    {info.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
         </View>
 
         <View className="flex-row items-center gap-4 mb-8">
@@ -201,7 +129,7 @@ export const Login = () => {
         {/* Sign up link */}
         <View className="mt-8 flex-row justify-center items-center">
           <Text className="text-slate-400">Don't have an account? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
+          <TouchableOpacity onPress={() => router.push("/Signup")}>
             <Text className="font-bold text-[#22D3EE]">Sign up</Text>
           </TouchableOpacity>
         </View>

@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/context/AuthContext";
 import { AuthStackParamList } from "@/navigation/types";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -33,7 +34,10 @@ export default function Signup() {
     password: "",
   });
 
-  const handleSignup = () => {
+  // Get register from useAuth
+  const { register } = useAuth();
+
+  const handleSignup = async () => {
     if (!formData.name || !formData.email || !formData.password) {
       Toast.show({
         type: "error",
@@ -42,12 +46,28 @@ export default function Signup() {
       });
       return;
     }
-    Toast.show({
-      type: "success",
-      text1: "Success",
-      text2: "Account created successfully!",
-    });
-    navigation.navigate("Login"); // Redirect to login or auto-login
+
+    const result = await register(
+      formData.name,
+      formData.email,
+      formData.password,
+      formData.phone,
+    );
+
+    if (result.success) {
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Account created successfully!",
+      });
+      navigation.navigate("Login");
+    } else {
+      Toast.show({
+        type: "error",
+        text1: "Registration Failed",
+        text2: result.error || "Something went wrong",
+      });
+    }
   };
 
   const handleGoogleSignup = () => {
