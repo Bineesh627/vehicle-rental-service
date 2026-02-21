@@ -12,16 +12,18 @@ import {
   Shield,
   User,
 } from "lucide-react-native";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { profileApi, UserProfile, UserStats } from "@/services/api";
 
 const menuItems = [
   { icon: User, label: "Edit Profile", path: "EditProfile" },
@@ -38,6 +40,41 @@ export default function Profile() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        // Load profile and stats in parallel
+        const [profileData, statsData] = await Promise.all([
+          profileApi.getUserProfile(),
+          profileApi.getUserStats(),
+        ]);
+        
+        setUserProfile(profileData);
+        setUserStats(statsData);
+      } catch (err) {
+        console.error('Failed to load profile data:', err);
+        setError('Failed to load profile data');
+        Toast.show({
+          type: "error",
+          text1: "Failed to load profile data",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user) {
+      loadProfileData();
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     await logout();
@@ -48,6 +85,36 @@ export default function Profile() {
     router.replace("/Login");
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (error || !userProfile) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error || 'Profile data unavailable'}</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -55,7 +122,6 @@ export default function Profile() {
         <View style={styles.header}>
           <View style={styles.headerContent}>
             <Text style={styles.headerTitle}>Profile</Text>
-            {/* Dark mode toggle removed */}
           </View>
         </View>
 
@@ -64,27 +130,26 @@ export default function Profile() {
           <View style={styles.profileCard}>
             <View style={styles.profileHeader}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>JD</Text>
+                <Text style={styles.avatarText}>{getInitials(userProfile.first_name || userProfile.username)}</Text>
               </View>
               <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>John Doe</Text>
-                <Text style={styles.profileEmail}>john.doe@example.com</Text>
-                {/* Rating container removed */}
+                <Text style={styles.profileName}>{userProfile.first_name || userProfile.username}</Text>
+                <Text style={styles.profileEmail}>{userProfile.email}</Text>
               </View>
             </View>
 
             {/* Stats */}
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>12</Text>
+                <Text style={styles.statValue}>{userStats?.total_bookings || 0}</Text>
                 <Text style={styles.statLabel}>Total Booking</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>$456</Text>
+                <Text style={styles.statValue}>${userStats?.total_spent || 0}</Text>
                 <Text style={styles.statLabel}>Total Spent</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>3</Text>
+                <Text style={styles.statValue}>{userStats?.saved_places || 0}</Text>
                 <Text style={styles.statLabel}>Saved Places</Text>
               </View>
             </View>
@@ -285,5 +350,28 @@ const styles = StyleSheet.create({
     color: "#64748b", // Slate-500
     marginTop: 24,
     fontSize: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: "#94a3b8", // Slate-400
+    textAlign: "center",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#ef4444", // Red-500
+    textAlign: "center",
   },
 });

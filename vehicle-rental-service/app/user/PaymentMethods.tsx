@@ -9,7 +9,7 @@ import {
   Wallet,
   X,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   ScrollView,
@@ -18,17 +18,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-
-interface PaymentMethod {
-  id: string;
-  type: "card" | "upi" | "wallet";
-  name: string;
-  details: string;
-  isDefault: boolean;
-}
+import { profileManagementApi, PaymentMethod, PaymentMethodCreate } from "@/services/api";
 
 const initialPaymentMethods: PaymentMethod[] = [
   {
@@ -36,30 +30,31 @@ const initialPaymentMethods: PaymentMethod[] = [
     type: "card",
     name: "Visa ending in 4242",
     details: "Expires 12/26",
-    isDefault: true,
+    is_default: true,
+    created_at: new Date().toISOString(),
   },
   {
     id: "2",
     type: "card",
     name: "Mastercard ending in 8888",
     details: "Expires 08/25",
-    isDefault: false,
+    is_default: false,
+    created_at: new Date().toISOString(),
   },
   {
     id: "3",
     type: "upi",
     name: "Google Pay",
     details: "john@oksbi",
-    isDefault: false,
+    is_default: false,
+    created_at: new Date().toISOString(),
   },
 ];
 
 export default function PaymentMethods() {
   const router = useRouter();
 
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(
-    initialPaymentMethods
-  );
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showOptionsModal, setShowOptionsModal] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -68,11 +63,83 @@ export default function PaymentMethods() {
     expiryDate: "",
     cvv: "",
   });
+  const [upiData, setUpiData] = useState({
+    upiId: "",
+    upiAppName: "",
+  });
+  const [showUpiDialog, setShowUpiDialog] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Load payment methods on component mount
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      try {
+        setLoading(true);
+        const data = await profileManagementApi.getPaymentMethods();
+        setPaymentMethods(data);
+      } catch (error) {
+        console.error('Failed to load payment methods:', error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to load payment methods",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadPaymentMethods();
+  }, []);
 
   const resetForm = () =>
     setFormData({ cardNumber: "", cardHolder: "", expiryDate: "", cvv: "" });
 
-  const handleAddCard = () => {
+  const resetUpiForm = () =>
+    setUpiData({ upiId: "", upiAppName: "" });
+
+  const handleAddUpi = async () => {
+    if (!upiData.upiId) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Please enter your UPI ID.",
+      });
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const newMethod: PaymentMethodCreate = {
+        type: "upi",
+        name: upiData.upiAppName || "UPI Payment",
+        details: upiData.upiId,
+        is_default: paymentMethods.length === 0,
+      };
+
+      const createdMethod = await profileManagementApi.createPaymentMethod(newMethod);
+      setPaymentMethods((prev) => [...prev, createdMethod]);
+      
+      Toast.show({
+        type: "success",
+        text1: "UPI Added",
+        text2: "Your UPI payment method has been saved.",
+      });
+      setShowUpiDialog(false);
+      resetUpiForm();
+    } catch (error) {
+      console.error('Failed to add UPI method:', error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to add UPI payment method",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddCard = async () => {
     if (
       !formData.cardNumber ||
       !formData.cardHolder ||
@@ -85,39 +152,70 @@ export default function PaymentMethods() {
       });
       return;
     }
-    const lastFour = formData.cardNumber.slice(-4);
-    const newMethod: PaymentMethod = {
-      id: Date.now().toString(),
-      type: "card",
-      name: `Card ending in ${lastFour}`,
-      details: `Expires ${formData.expiryDate}`,
-      isDefault: paymentMethods.length === 0,
-    };
-    setPaymentMethods((prev) => [...prev, newMethod]);
-    Toast.show({
-      type: "success",
-      text1: "Card Added",
-      text2: "Your payment method has been saved.",
-    });
-    setShowAddDialog(false);
-    resetForm();
+
+    try {
+      setLoading(true);
+      const lastFour = formData.cardNumber.slice(-4);
+      const newMethod: PaymentMethodCreate = {
+        type: "card",
+        name: `Card ending in ${lastFour}`,
+        details: `Expires ${formData.expiryDate}`,
+        card_number: formData.cardNumber,
+        card_holder: formData.cardHolder,
+        expiry_date: formData.expiryDate,
+        is_default: paymentMethods.length === 0,
+      };
+
+      const createdMethod = await profileManagementApi.createPaymentMethod(newMethod);
+      setPaymentMethods((prev) => [...prev, createdMethod]);
+      
+      Toast.show({
+        type: "success",
+        text1: "Card Added",
+        text2: "Your payment method has been saved.",
+      });
+      setShowAddDialog(false);
+      resetForm();
+    } catch (error) {
+      console.error('Failed to add payment method:', error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to add payment method",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const setAsDefault = (id: string) => {
-    setPaymentMethods((prev) =>
-      prev.map((pm) => ({ ...pm, isDefault: pm.id === id }))
-    );
-    Toast.show({
-      type: "success",
-      text1: "Default Updated",
-      text2: "This is now your default payment method.",
-    });
-    setShowOptionsModal(null);
+  const setAsDefault = async (id: string) => {
+    try {
+      setLoading(true);
+      await profileManagementApi.updatePaymentMethod(id, { is_default: true });
+      setPaymentMethods((prev) =>
+        prev.map((pm) => ({ ...pm, is_default: pm.id === id }))
+      );
+      Toast.show({
+        type: "success",
+        text1: "Default Updated",
+        text2: "This is now your default payment method.",
+      });
+      setShowOptionsModal(null);
+    } catch (error) {
+      console.error('Failed to set default payment method:', error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to update default payment method",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const deletePaymentMethod = (id: string) => {
+  const deletePaymentMethod = async (id: string) => {
     const method = paymentMethods.find((pm) => pm.id === id);
-    if (method?.isDefault && paymentMethods.length > 1) {
+    if (method?.is_default && paymentMethods.length > 1) {
       Toast.show({
         type: "error",
         text1: "Cannot Delete",
@@ -125,17 +223,37 @@ export default function PaymentMethods() {
       });
       return;
     }
-    setPaymentMethods((prev) => prev.filter((pm) => pm.id !== id));
-    Toast.show({
-      type: "success",
-      text1: "Payment Method Removed",
-      text2: `${method?.name} has been removed.`,
-    });
-    setShowOptionsModal(null);
+
+    try {
+      setLoading(true);
+      await profileManagementApi.deletePaymentMethod(id);
+      setPaymentMethods((prev) => prev.filter((pm) => pm.id !== id));
+      Toast.show({
+        type: "success",
+        text1: "Payment Method Removed",
+        text2: `${method?.name} has been removed.`,
+      });
+      setShowOptionsModal(null);
+    } catch (error) {
+      console.error('Failed to delete payment method:', error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to delete payment method",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
@@ -183,7 +301,7 @@ export default function PaymentMethods() {
                 key={method.id}
                 style={[
                   styles.card,
-                  method.isDefault && styles.cardDefault,
+                  method.is_default && styles.cardDefault,
                 ]}
               >
                 <View style={styles.cardContent}>
@@ -205,7 +323,7 @@ export default function PaymentMethods() {
                     <View>
                       <View style={styles.cardHeaderRow}>
                         <Text style={styles.methodName}>{method.name}</Text>
-                        {method.isDefault && (
+                        {method.is_default && (
                           <View style={styles.defaultBadge}>
                             <Text style={styles.defaultText}>Default</Text>
                           </View>
@@ -225,21 +343,7 @@ export default function PaymentMethods() {
           {/* Add UPI Button - Updated to Outlined Design */}
           <TouchableOpacity
             style={styles.addUpiButton}
-            onPress={() => {
-              const newUPI: PaymentMethod = {
-                id: Date.now().toString(),
-                type: "upi",
-                name: "UPI Payment",
-                details: "Pay using any UPI app",
-                isDefault: false,
-              };
-              setPaymentMethods((prev) => [...prev, newUPI]);
-              Toast.show({
-                type: "success",
-                text1: "UPI Added",
-                text2: "UPI payment option has been added.",
-              });
-            }}
+            onPress={() => setShowUpiDialog(true)}
           >
             <View style={styles.upiIconContainer}>
               <Wallet size={20} color="#a855f7" />
@@ -340,6 +444,72 @@ export default function PaymentMethods() {
                   onPress={() => {
                     setShowAddDialog(false);
                     resetForm();
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Add UPI Modal */}
+        <Modal
+          visible={showUpiDialog}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setShowUpiDialog(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Add UPI Payment</Text>
+                <TouchableOpacity onPress={() => setShowUpiDialog(false)}>
+                  <X size={24} color="#94a3b8" />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>UPI ID</Text>
+                  <TextInput
+                    value={upiData.upiId}
+                    onChangeText={(text) =>
+                      setUpiData((prev) => ({ ...prev, upiId: text }))
+                    }
+                    placeholder="yourname@bankname"
+                    placeholderTextColor="#64748b"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    style={styles.input}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.label}>UPI App Name (Optional)</Text>
+                  <TextInput
+                    value={upiData.upiAppName}
+                    onChangeText={(text) =>
+                      setUpiData((prev) => ({ ...prev, upiAppName: text }))
+                    }
+                    placeholder="Google Pay, PhonePe, Paytm, etc."
+                    placeholderTextColor="#64748b"
+                    style={styles.input}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleAddUpi}
+                >
+                  <Text style={styles.saveButtonText}>Add UPI</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => {
+                    setShowUpiDialog(false);
+                    resetUpiForm();
                   }}
                 >
                   <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -644,6 +814,31 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontSize: 16,
   },
+  closeOptionsButton: {
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "#2dd4bf",
+    alignItems: "center",
+  },
+  closeOptionsText: {
+    color: "#ffffff",
+    fontWeight: "600",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#ffffff",
+    fontSize: 16,
+    marginTop: 8,
+  },
   // Options Modal
   optionsModalContainer: {
     backgroundColor: "#1e293b",
@@ -674,17 +869,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#ffffff",
     fontWeight: "500",
-  },
-  closeOptionsButton: {
-    marginTop: 12,
-    padding: 16,
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#334155",
-  },
-  closeOptionsText: {
-    color: "#ffffff",
-    fontWeight: "600",
   },
 });

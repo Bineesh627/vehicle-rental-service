@@ -13,7 +13,7 @@ import {
   Trash2,
   X,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   ScrollView,
@@ -22,37 +22,11 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-
-interface SavedLocation {
-  id: string;
-  name: string;
-  address: string;
-  type: "home" | "work" | "favorite" | "other";
-}
-
-const initialLocations: SavedLocation[] = [
-  {
-    id: "1",
-    name: "Home",
-    address: "123 Main Street, Downtown, City 12345",
-    type: "home",
-  },
-  {
-    id: "2",
-    name: "Office",
-    address: "456 Business Park, Corporate Zone, City 67890",
-    type: "work",
-  },
-  {
-    id: "3",
-    name: "Gym",
-    address: "789 Fitness Avenue, Sports District",
-    type: "favorite",
-  },
-];
+import { profileManagementApi, SavedLocation } from "@/services/api";
 
 const getLocationIcon = (type: string) => {
   switch (type) {
@@ -77,7 +51,8 @@ const locationTypes = [
 export default function SavedLocations() {
   const router = useRouter();
 
-  const [locations, setLocations] = useState<SavedLocation[]>(initialLocations);
+  const [locations, setLocations] = useState<SavedLocation[]>([]);
+  const [loading, setLoading] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showTypeModal, setShowTypeModal] = useState(false);
@@ -93,13 +68,35 @@ export default function SavedLocations() {
     type: "other" as "home" | "work" | "favorite" | "other",
   });
 
+  // Load saved locations on component mount
+  useEffect(() => {
+    const loadLocations = async () => {
+      try {
+        setLoading(true);
+        const data = await profileManagementApi.getSavedLocations();
+        setLocations(data);
+      } catch (error) {
+        console.error("Failed to load saved locations:", error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to load saved locations",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadLocations();
+  }, []);
+
   const resetForm = () => {
     setFormData({ name: "", address: "", type: "other" });
     setIsEditing(false);
     setSelectedLocationId(null);
   };
 
-  const handleSaveLocation = () => {
+  const handleSaveLocation = async () => {
     if (!formData.name || !formData.address) {
       Toast.show({
         type: "error",
@@ -109,31 +106,46 @@ export default function SavedLocations() {
       return;
     }
 
-    if (isEditing && selectedLocationId) {
-      setLocations((prev) =>
-        prev.map((loc) =>
-          loc.id === selectedLocationId ? { ...loc, ...formData } : loc
-        )
-      );
+    try {
+      setLoading(true);
+      
+      if (isEditing && selectedLocationId) {
+        const updatedLocation = await profileManagementApi.updateSavedLocation(
+          selectedLocationId,
+          formData
+        );
+        setLocations((prev) =>
+          prev.map((loc) =>
+            loc.id === selectedLocationId ? updatedLocation : loc
+          )
+        );
+        Toast.show({
+          type: "success",
+          text1: "Location Updated",
+          text2: `${formData.name} has been updated.`,
+        });
+      } else {
+        const newLocation = await profileManagementApi.createSavedLocation(formData);
+        setLocations((prev) => [...prev, newLocation]);
+        Toast.show({
+          type: "success",
+          text1: "Location Saved",
+          text2: `${formData.name} has been added.`,
+        });
+      }
+      
+      setShowDialog(false);
+      resetForm();
+    } catch (error) {
+      console.error("Failed to save location:", error);
       Toast.show({
-        type: "success",
-        text1: "Location Updated",
-        text2: `${formData.name} has been updated.`,
+        type: "error",
+        text1: "Error",
+        text2: "Failed to save location",
       });
-    } else {
-      const newLocation: SavedLocation = {
-        id: Date.now().toString(),
-        ...formData,
-      };
-      setLocations((prev) => [...prev, newLocation]);
-      Toast.show({
-        type: "success",
-        text1: "Location Saved",
-        text2: `${formData.name} has been added.`,
-      });
+    } finally {
+      setLoading(false);
     }
-    setShowDialog(false);
-    resetForm();
   };
 
   const openEditDialog = (location: SavedLocation) => {
@@ -148,19 +160,39 @@ export default function SavedLocations() {
     setShowOptionsModal(null);
   };
 
-  const deleteLocation = (id: string) => {
+  const deleteLocation = async (id: string) => {
     const location = locations.find((l) => l.id === id);
-    setLocations((prev) => prev.filter((l) => l.id !== id));
-    Toast.show({
-      type: "success",
-      text1: "Location Deleted",
-      text2: `${location?.name} has been removed.`,
-    });
-    setShowOptionsModal(null);
+    
+    try {
+      setLoading(true);
+      await profileManagementApi.deleteSavedLocation(id);
+      setLocations((prev) => prev.filter((l) => l.id !== id));
+      Toast.show({
+        type: "success",
+        text1: "Location Deleted",
+        text2: `${location?.name} has been removed.`,
+      });
+      setShowOptionsModal(null);
+    } catch (error) {
+      console.error("Failed to delete location:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to delete location",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
@@ -707,5 +739,20 @@ const styles = StyleSheet.create({
   closeOptionsText: {
     color: "#ffffff",
     fontWeight: "600",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#ffffff",
+    fontSize: 16,
+    marginTop: 8,
   },
 });

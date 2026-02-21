@@ -13,7 +13,7 @@ import {
   User,
   X,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -24,19 +24,21 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { profileManagementApi, KYCDocument } from "@/services/api";
 
 export default function KYCVerification() {
   const router = useRouter();
 
   const [kycData, setKycData] = useState({
-    fullName: "John Doe",
-    dateOfBirth: "15/05/1990",
-    address: "123 Main Street, Downtown, City 12345",
-    phone: "+1 555-0400",
-    email: "john.doe@example.com",
+    fullName: "",
+    dateOfBirth: "",
+    address: "",
+    phone: "",
+    email: "",
     drivingLicenseNumber: "",
     drivingLicensePhoto: null as any | null,
     secondaryDocType: "",
@@ -45,11 +47,50 @@ export default function KYCVerification() {
   });
 
   const [kycStatus, setKycStatus] = useState<
-    "pending" | "verified" | "not_submitted"
+    "pending" | "verified" | "not_submitted" | "rejected"
   >("not_submitted");
 
+  const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isDocTypeModalVisible, setDocTypeModalVisible] = useState(false);
+
+  // Load KYC data on component mount
+  useEffect(() => {
+    const loadKYCData = async () => {
+      try {
+        setLoading(true);
+        const data = await profileManagementApi.getKYCDocument();
+
+        // Map backend data to frontend state
+        setKycData({
+          fullName: data.full_name || "",
+          dateOfBirth: data.date_of_birth || "",
+          address: data.address || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          drivingLicenseNumber: data.driving_license_number || "",
+          drivingLicensePhoto: (data as any).driving_license_photo
+            ? { name: "License Photo", uri: (data as any).driving_license_photo }
+            : null,
+          secondaryDocType: mapBackendDocTypeToFrontend(data.secondary_doc_type || ""),
+          secondaryDocNumber: data.secondary_doc_number || "",
+          secondaryDocPhoto: (data as any).secondary_doc_photo
+            ? { name: "Secondary Document", uri: (data as any).secondary_doc_photo }
+            : null,
+        });
+
+        setKycStatus(data.status);
+      } catch (error) {
+        console.error("Failed to load KYC data:", error);
+        // If no KYC data exists, keep default state
+        setKycStatus("not_submitted");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadKYCData();
+  }, []);
 
   const docTypes = [
     "Aadhar Card",
@@ -58,6 +99,18 @@ export default function KYCVerification() {
     "PAN Card",
     "National ID",
   ];
+
+  // Map backend document types to frontend display names
+  const mapBackendDocTypeToFrontend = (backendType: string) => {
+    const typeMap: { [key: string]: string } = {
+      "aadhar": "Aadhar Card",
+      "voter": "Voter ID",
+      "passport": "Passport", 
+      "pan": "PAN Card",
+      "national_id": "National ID"
+    };
+    return typeMap[backendType] || backendType;
+  };
 
   const handleKycChange = (field: string, value: string | any | null) => {
     setKycData((prev) => ({ ...prev, [field]: value }));
@@ -73,7 +126,7 @@ export default function KYCVerification() {
     });
   };
 
-  const handleSubmitKYC = () => {
+  const handleSubmitKYC = async () => {
     if (
       !kycData.fullName ||
       !kycData.dateOfBirth ||
@@ -88,12 +141,68 @@ export default function KYCVerification() {
       });
       return;
     }
-    setKycStatus("pending");
-    Toast.show({
-      type: "success",
-      text1: "KYC Submitted",
-      text2: "Your documents are being verified.",
-    });
+
+    try {
+      setLoading(true);
+
+      // Convert date format from DD/MM/YYYY to YYYY-MM-DD for backend
+      const formatDate = (dateString: string) => {
+        if (!dateString) return "";
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+        return dateString;
+      };
+
+      // Map document type from display name to backend choice value
+      const mapDocType = (docType: string) => {
+        const typeMap: { [key: string]: string } = {
+          "Aadhar Card": "aadhar",
+          "Voter ID": "voter", 
+          "Passport": "passport",
+          "PAN Card": "pan",
+          "National ID": "national_id"
+        };
+        return typeMap[docType] || docType;
+      };
+
+      const kycSubmitData = {
+        full_name: kycData.fullName,
+        date_of_birth: formatDate(kycData.dateOfBirth),
+        address: kycData.address,
+        phone: kycData.phone,
+        email: kycData.email,
+        driving_license_number: kycData.drivingLicenseNumber,
+        secondary_doc_type: mapDocType(kycData.secondaryDocType),
+        secondary_doc_number: kycData.secondaryDocNumber,
+      };
+
+      console.log('Submitting KYC data:', kycSubmitData);
+
+      const response = await profileManagementApi.submitKYCDocument(kycSubmitData);
+
+      // Update local state with response
+      setKycData((prev) => ({ ...prev, ...response }));
+
+      setKycStatus("pending");
+      Toast.show({
+        type: "success",
+        text1: "KYC Submitted",
+        text2: "Your documents are being verified.",
+      });
+    } catch (error) {
+      console.error("Failed to submit KYC:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      Toast.show({
+        type: "error",
+        text1: "Submission Failed",
+        text2: errorMessage,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Helper for Input Fields - Fixed Alignment by using View for label container
@@ -130,6 +239,12 @@ export default function KYCVerification() {
 
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
+          <Text style={styles.loadingText}>Loading KYC data...</Text>
+        </View>
+      )}
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -151,6 +266,12 @@ export default function KYCVerification() {
                 </Text>
               </View>
             </View>
+            {kycStatus === "rejected" && (
+              <View style={styles.badgeRejected}>
+                <AlertCircle size={12} color="#ef4444" />
+                <Text style={styles.badgeTextRejected}>Rejected</Text>
+              </View>
+            )}
             {kycStatus === "verified" && (
               <View style={styles.badgeVerified}>
                 <CheckCircle size={12} color="#22c55e" />
@@ -270,7 +391,7 @@ export default function KYCVerification() {
                     <TouchableOpacity
                       style={styles.uploadBox}
                       onPress={() => handleFileChange("drivingLicensePhoto")}
-                      disabled={kycStatus !== "not_submitted"}
+                      disabled={kycStatus !== "not_submitted" || loading}
                     >
                       {kycData.drivingLicensePhoto ? (
                         <View style={styles.fileUploaded}>
@@ -310,7 +431,7 @@ export default function KYCVerification() {
                     <TouchableOpacity
                       style={styles.selectInput}
                       onPress={() => setDocTypeModalVisible(true)}
-                      disabled={kycStatus !== "not_submitted"}
+                      disabled={kycStatus !== "not_submitted" || loading}
                     >
                       <Text
                         style={
@@ -342,7 +463,7 @@ export default function KYCVerification() {
                     <TouchableOpacity
                       style={styles.uploadBox}
                       onPress={() => handleFileChange("secondaryDocPhoto")}
-                      disabled={kycStatus !== "not_submitted"}
+                      disabled={kycStatus !== "not_submitted" || loading}
                     >
                       {kycData.secondaryDocPhoto ? (
                         <View style={styles.fileUploaded}>
@@ -707,5 +828,33 @@ const styles = StyleSheet.create({
   modalOptionTextSelected: {
     color: "#2dd4bf",
     fontWeight: "600",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#ffffff",
+    fontSize: 16,
+    marginTop: 8,
+  },
+  badgeRejected: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 9999,
+  },
+  badgeTextRejected: {
+    fontSize: 12,
+    color: "#ef4444",
   },
 });

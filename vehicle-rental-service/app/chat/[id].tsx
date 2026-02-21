@@ -1,9 +1,12 @@
-import { chatData, Message } from "@/data/chatData";
+import { chatApi, ChatMessage } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ArrowLeft, Image as ImageIcon, Send } from "lucide-react-native";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   Keyboard,
@@ -17,81 +20,141 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+const POLL_INTERVAL_MS = 5000;
+
 export default function ChatDetail() {
-  const { id } = useLocalSearchParams();
+  const { id, shopName } = useLocalSearchParams<{
+    id: string;
+    shopName?: string;
+  }>();
   const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
-  // Safe Area Insets (for handling the iPhone notch/home bar)
-  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const chat = chatData.find((c) => c.id === id);
+  // ── Helpers ────────────────────────────────────────────────────────────────
+
+  const getAuth = useCallback(async () => {
+    const token = await AsyncStorage.getItem("auth_token");
+    return { token: token ?? "", userId: user?.id?.toString() ?? "" };
+  }, [user]);
+
+  // ── Load messages ──────────────────────────────────────────────────────────
+
+  const fetchMessages = useCallback(
+    async (showSpinner = false) => {
+      if (!id) return;
+      if (showSpinner) setLoading(true);
+      try {
+        const { token, userId } = await getAuth();
+        const data = await chatApi.getMessages(token, id, userId);
+        setMessages(data);
+      } catch (e) {
+        console.error("Failed to fetch messages:", e);
+      } finally {
+        if (showSpinner) setLoading(false);
+      }
+    },
+    [id, getAuth],
+  );
 
   useEffect(() => {
-    if (chat) setMessages(chat.messages);
-  }, [chat]);
+    fetchMessages(true);
 
-  // Auto-scroll to bottom when messages update or keyboard opens
+    // Poll every 5 s for new messages
+    pollRef.current = setInterval(() => fetchMessages(false), POLL_INTERVAL_MS);
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [fetchMessages]);
+
+  // Auto-scroll to bottom on new messages / keyboard show
   useEffect(() => {
-    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    });
-    // Scroll on initial load
+    const sub = Keyboard.addListener("keyboardDidShow", () =>
+      flatListRef.current?.scrollToEnd({ animated: true }),
+    );
     setTimeout(
       () => flatListRef.current?.scrollToEnd({ animated: false }),
       100,
     );
-
-    return () => {
-      showSubscription.remove();
-    };
+    return () => sub.remove();
   }, [messages]);
 
-  const sendMessage = () => {
-    if (inputText.trim().length === 0) return;
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText,
-      sender: "me",
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-    setMessages((prev) => [...prev, newMessage]);
-    setInputText("");
-  };
+  // ── Send text ──────────────────────────────────────────────────────────────
 
-  const pickImage = async () => {
+  const sendMessage = useCallback(async () => {
+    const text = inputText.trim();
+    if (!text || !id) return;
+    setSending(true);
+    setInputText("");
+    try {
+      const { token, userId } = await getAuth();
+      const newMsg = await chatApi.sendMessage(token, id, userId, text);
+      setMessages((prev) => [...prev, newMsg]);
+    } catch (e) {
+      console.error("Failed to send message:", e);
+      setInputText(text); // restore on failure
+    } finally {
+      setSending(false);
+    }
+  }, [inputText, id, getAuth]);
+
+  // ── Send image ─────────────────────────────────────────────────────────────
+
+  const pickImage = useCallback(async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
     });
+    if (result.canceled) return;
 
-    if (!result.canceled) {
-      const newMessage: Message = {
-        id: Date.now().toString(),
-        text: "",
-        image: result.assets[0].uri,
-        sender: "me",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-      };
-      setMessages((prev) => [...prev, newMessage]);
+    const imageUri = result.assets[0].uri;
+    if (!id) return;
+    setSending(true);
+    try {
+      const { token, userId } = await getAuth();
+      // Send image URI as image_url (works as local preview on the same device;
+      // a real upload would store it on S3/Cloudinary and send the public URL)
+      const newMsg = await chatApi.sendMessage(token, id, userId, "", imageUri);
+      setMessages((prev) => [...prev, newMsg]);
+    } catch (e) {
+      console.error("Failed to send image:", e);
+    } finally {
+      setSending(false);
     }
-  };
+  }, [id, getAuth]);
 
-  if (!chat) return <View className="flex-1 bg-[#0F1C23]" />;
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  const displayName = shopName || "Chat";
+
+  if (loading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#0F1C23",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color="#22d3ee" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0F1C23" }}>
-      {/* 1. Header is OUTSIDE KeyboardAvoidingView so it never moves */}
+      {/* Header */}
       <View
         style={{ paddingTop: insets.top }}
         className="bg-[#0F1C23] border-b border-slate-800"
@@ -104,31 +167,19 @@ export default function ChatDetail() {
             <ArrowLeft color="#FFFFFF" size={24} />
           </TouchableOpacity>
           <View>
-            <Text className="font-bold text-white text-lg">{chat.name}</Text>
-            {chat.isOnline ? (
-              <View className="flex-row items-center mt-0.5">
-                <View className="w-2 h-2 rounded-full bg-green-500 mr-1.5" />
-                <Text className="text-xs text-slate-400 font-medium tracking-wide">
-                  Online
-                </Text>
-              </View>
-            ) : (
-              <Text className="text-xs text-slate-500 font-medium tracking-wide">
-                Offline
-              </Text>
-            )}
+            <Text className="font-bold text-white text-lg">{displayName}</Text>
+            <Text className="text-xs text-slate-500 font-medium tracking-wide">
+              Rental Shop
+            </Text>
           </View>
         </View>
       </View>
 
-      {/* 2. The Main View */}
+      {/* Messages + Input */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        // iOS needs padding. Android usually works better with 'undefined' if app.json is configured correctly,
-        // but 'height' is a safe fallback for default Expo setups.
         behavior={Platform.OS === "ios" ? "padding" : "height"}
-        // 3. IMPORTANT: Offset accounts for the header height so input doesn't get hidden
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        keyboardVerticalOffset={0}
       >
         <FlatList
           ref={flatListRef}
@@ -140,6 +191,13 @@ export default function ChatDetail() {
             paddingVertical: 20,
             gap: 16,
           }}
+          ListEmptyComponent={
+            <View className="items-center justify-center mt-20">
+              <Text className="text-slate-500 text-sm">
+                No messages yet. Say hi! 👋
+              </Text>
+            </View>
+          }
           renderItem={({ item }) => (
             <View
               className={`max-w-[75%] px-4 py-3 rounded-2xl ${
@@ -148,10 +206,12 @@ export default function ChatDetail() {
                   : "bg-[#1E293B] self-start"
               }`}
             >
-              {item.image ? (
-                <TouchableOpacity onPress={() => setSelectedImage(item.image!)}>
+              {item.imageUrl ? (
+                <TouchableOpacity
+                  onPress={() => setSelectedImage(item.imageUrl!)}
+                >
                   <Image
-                    source={{ uri: item.image }}
+                    source={{ uri: item.imageUrl }}
                     style={{ width: 200, height: 200, borderRadius: 8 }}
                     resizeMode="cover"
                   />
@@ -160,13 +220,16 @@ export default function ChatDetail() {
                 <Text className="text-white text-base">{item.text}</Text>
               )}
               <Text className="text-[10px] text-slate-300 text-right mt-1">
-                {item.timestamp}
+                {new Date(item.createdAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
               </Text>
             </View>
           )}
         />
 
-        {/* 4. Input Area */}
+        {/* Input */}
         <View
           className="flex-row items-end p-4 bg-[#0F1C23] border-t border-slate-800 gap-3"
           style={{
@@ -176,6 +239,7 @@ export default function ChatDetail() {
         >
           <TouchableOpacity
             onPress={pickImage}
+            disabled={sending}
             className="w-[50px] h-[50px] bg-[#1E293B] rounded-full items-center justify-center"
           >
             <ImageIcon color="#94A3B8" size={24} />
@@ -187,23 +251,34 @@ export default function ChatDetail() {
               onChangeText={setInputText}
               placeholder="Type a message..."
               placeholderTextColor="#64748B"
-              className="text-white text-base max-h-32 pt-0 pb-0" // Removed extra padding that causes jumps
+              className="text-white text-base max-h-32 pt-0 pb-0"
               multiline
+              editable={!sending}
             />
           </View>
+
           <TouchableOpacity
             onPress={sendMessage}
-            className="w-[50px] h-[50px] bg-[#00A884] rounded-full items-center justify-center"
+            disabled={sending || inputText.trim().length === 0}
+            className={`w-[50px] h-[50px] rounded-full items-center justify-center ${
+              sending || inputText.trim().length === 0
+                ? "bg-slate-700"
+                : "bg-[#00A884]"
+            }`}
           >
-            <Send color="#FFFFFF" size={20} />
+            {sending ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Send color="#FFFFFF" size={20} />
+            )}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
 
-      {/* Full Screen Image Viewer */}
+      {/* Full-screen image viewer */}
       <Modal
         visible={!!selectedImage}
-        transparent={true}
+        transparent
         onRequestClose={() => setSelectedImage(null)}
         animationType="fade"
       >

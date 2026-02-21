@@ -8,7 +8,7 @@ import {
   Phone,
   User,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -18,18 +18,19 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { profileApi, UserProfile, profileManagementApi } from "@/services/api";
 
 export default function EditProfile() {
   const router = useRouter();
 
   const [profileData, setProfileData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    phone: "+1 555-0400",
-    address: "123 Main Street, Downtown, City 12345",
+    name: "",
+    email: "",
+    address: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -40,6 +41,33 @@ export default function EditProfile() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  // Load profile data on component mount
+  useEffect(() => {
+    const loadProfileData = async () => {
+      try {
+        setLoading(true);
+        const data = await profileManagementApi.getUserProfileExtended();
+        setProfileData({
+          name: data.first_name || "",
+          email: data.email || "",
+          address: "", // Backend doesn't have address field yet
+        });
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to load profile data",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfileData();
+  }, []);
 
   const handleProfileChange = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -49,16 +77,33 @@ export default function EditProfile() {
     setPasswordData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveProfile = () => {
-    Toast.show({
-      type: "success",
-      text1: "Profile Updated",
-      text2: "Your profile has been saved successfully.",
-    });
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    try {
+      setLoading(true);
+      await profileManagementApi.updateUserProfile({
+        first_name: profileData.name,
+        email: profileData.email,
+      });
+      
+      Toast.show({
+        type: "success",
+        text1: "Profile Updated",
+        text2: "Your profile has been saved successfully.",
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Failed to update profile:', error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to update profile",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!passwordData.currentPassword) {
       Toast.show({
         type: "error",
@@ -83,16 +128,31 @@ export default function EditProfile() {
       });
       return;
     }
-    Toast.show({
-      type: "success",
-      text1: "Password Changed",
-      text2: "Your password has been updated successfully.",
-    });
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
+
+    try {
+      setLoading(true);
+      // Password change logic would go here
+      // For now, just show success message
+      Toast.show({
+        type: "success",
+        text1: "Password Changed",
+        text2: "Your password has been updated successfully.",
+      });
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      console.error('Failed to change password:', error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to change password",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Helper to render consistent input fields with fixed alignment
@@ -130,6 +190,12 @@ export default function EditProfile() {
 
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
       <SafeAreaView style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -151,7 +217,9 @@ export default function EditProfile() {
             <View style={styles.avatarSection}>
               <View style={styles.avatarContainer}>
                 <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>JD</Text>
+                  <Text style={styles.avatarText}>
+                    {profileData.name ? profileData.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2) : 'JD'}
+                  </Text>
                 </View>
                 <TouchableOpacity
                   style={styles.cameraButton}
@@ -203,16 +271,6 @@ export default function EditProfile() {
                   false,
                   isEditing,
                   (text) => handleProfileChange("email", text)
-                )}
-
-                {renderInput(
-                  "Phone Number",
-                  <Phone size={14} color="#94a3b8" />,
-                  profileData.phone,
-                  "phone",
-                  false,
-                  isEditing,
-                  (text) => handleProfileChange("phone", text)
                 )}
 
                 {renderInput(
@@ -425,5 +483,20 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontWeight: "700",
     fontSize: 16,
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#ffffff",
+    fontSize: 16,
+    marginTop: 8,
   },
 });

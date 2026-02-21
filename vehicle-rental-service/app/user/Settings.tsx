@@ -9,7 +9,7 @@ import {
   Mail,
   MessageSquare,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Platform,
   ScrollView,
@@ -18,29 +18,67 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { profileManagementApi, UserSettings } from "@/services/api";
 
 export default function Settings() {
   const router = useRouter();
 
-  const [settings, setSettings] = useState({
-    pushNotifications: true,
-    emailNotifications: true,
-    smsNotifications: false,
-    bookingUpdates: true,
-    paymentAlerts: true,
+  const [settings, setSettings] = useState<UserSettings>({
+    push_notifications: true,
+    email_notifications: true,
+    sms_notifications: false,
+    booking_updates: true,
+    payment_alerts: true,
     promotions: true,
     reminders: true,
   });
 
-  const toggleSetting = (key: keyof typeof settings) => {
-    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
-    Toast.show({
-      type: "success",
-      text1: "Settings Updated",
-    });
+  const [loading, setLoading] = useState(false);
+
+  // Load settings on component mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        const data = await profileManagementApi.getUserSettings();
+        setSettings(data);
+      } catch (error) {
+        console.error('Failed to load settings:', error);
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to load settings",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSettings();
+  }, []);
+
+  const toggleSetting = async (key: keyof UserSettings) => {
+    const newValue = !settings[key];
+    try {
+      await profileManagementApi.updateUserSettings({ [key]: newValue });
+      setSettings((prev) => ({ ...prev, [key]: newValue }));
+      Toast.show({
+        type: "success",
+        text1: "Settings Updated",
+        text2: `${key.replace(/_/g, ' ')} updated successfully`,
+      });
+    } catch (error) {
+      console.error('Failed to update settings:', error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to update settings",
+      });
+    }
   };
 
   const renderSwitch = (value: boolean, onValueChange: () => void) => (
@@ -55,6 +93,12 @@ export default function Settings() {
 
   return (
     <View style={styles.container}>
+      {loading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
@@ -91,8 +135,8 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.pushNotifications, () =>
-                  toggleSetting("pushNotifications")
+                {renderSwitch(settings.push_notifications, () =>
+                  toggleSetting("push_notifications")
                 )}
               </View>
 
@@ -108,8 +152,8 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.emailNotifications, () =>
-                  toggleSetting("emailNotifications")
+                {renderSwitch(settings.email_notifications, () =>
+                  toggleSetting("email_notifications")
                 )}
               </View>
 
@@ -125,8 +169,8 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.smsNotifications, () =>
-                  toggleSetting("smsNotifications")
+                {renderSwitch(settings.sms_notifications, () =>
+                  toggleSetting("sms_notifications")
                 )}
               </View>
             </View>
@@ -154,8 +198,8 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.bookingUpdates, () =>
-                  toggleSetting("bookingUpdates")
+                {renderSwitch(settings.booking_updates, () =>
+                  toggleSetting("booking_updates")
                 )}
               </View>
 
@@ -171,8 +215,8 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.paymentAlerts, () =>
-                  toggleSetting("paymentAlerts")
+                {renderSwitch(settings.payment_alerts, () =>
+                  toggleSetting("payment_alerts")
                 )}
               </View>
 
@@ -309,5 +353,20 @@ const styles = StyleSheet.create({
   settingDescription: {
     fontSize: 12,
     color: "#94a3b8", // Slate-400
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#ffffff",
+    fontSize: 16,
+    marginTop: 8,
   },
 });

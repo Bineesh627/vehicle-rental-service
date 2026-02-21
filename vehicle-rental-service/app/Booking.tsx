@@ -1,4 +1,5 @@
-import { rentalShops, vehicles } from "@/data/mockData";
+import { api } from "@/services/api";
+import { Vehicle, RentalShop } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
 import { useRouter } from "expo-router";
@@ -14,8 +15,9 @@ import {
   Truck,
   Wallet,
 } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   ScrollView,
@@ -41,6 +43,12 @@ export default function Booking() {
   const { id, type } = route.params;
   const bookingType = type === "day" ? "day" : "hour";
 
+  // Data state
+  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
+  const [shop, setShop] = useState<RentalShop | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
   // Calendar State
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -53,15 +61,46 @@ export default function Booking() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [showDeliverySelector, setShowDeliverySelector] = useState(false);
 
-  const vehicle = vehicles.find((v) => v.id === id);
-  const shop = vehicle
-    ? rentalShops.find((s) => s.id === vehicle.shopId)
-    : null;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        if (!id) throw new Error("No vehicle ID provided");
+        const vehicleData = await api.getVehicle(id);
+        setVehicle(vehicleData);
+        if (vehicleData.shopId) {
+          const shopData = await api.getRentalShop(vehicleData.shopId);
+          setShop(shopData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch booking data:", err);
+        setFetchError("Failed to load vehicle details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
 
-  if (!vehicle || !shop) {
+  if (loading) {
     return (
       <View style={styles.centerContainer}>
-        <Text style={styles.mutedText}>Vehicle not found</Text>
+        <ActivityIndicator size="large" color="#22d3ee" />
+      </View>
+    );
+  }
+
+  if (fetchError || !vehicle || !shop) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.mutedText}>
+          {fetchError || "Vehicle not found"}
+        </Text>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.goBackButton}
+        >
+          <Text style={styles.goBackButtonText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -808,5 +847,16 @@ const styles = StyleSheet.create({
     color: "#0f172a", // Dark text
     fontSize: 18,
     fontWeight: "700",
+  },
+  goBackButton: {
+    marginTop: 16,
+    backgroundColor: "#22d3ee",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  goBackButtonText: {
+    color: "#0f172a",
+    fontWeight: "600",
   },
 });
