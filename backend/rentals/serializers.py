@@ -3,7 +3,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import User
 from .models import (
     RentalShop, Vehicle, Booking, Conversation, Message,
-    UserSettings, PaymentMethod, SavedLocation, KYCDocument
+    UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile
 )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -11,7 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
         required=True,
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
-    role = serializers.CharField(source='profile.role', required=False)
+    role = serializers.CharField(source='user_profile.role', required=False)
 
     class Meta:
         model = User
@@ -25,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         
         # UserProfile is created by signal, just update the role
-        user.profile.role = role
+        user.user_profile.role = role
         user.profile.save()
         
         return user
@@ -118,7 +118,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
     """Serializes user profile information."""
     email = serializers.EmailField(read_only=True)
     first_name = serializers.CharField(read_only=True)
-    role = serializers.CharField(source='profile.role', read_only=True)
+    role = serializers.CharField(source='user_profile.role', read_only=True)
 
     class Meta:
         model = User
@@ -199,3 +199,27 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['first_name', 'email', 'phone']
+    
+    def update(self, instance, validated_data):
+        # Update User fields
+        instance.first_name = validated_data.get('first_name', instance.first_name)
+        instance.email = validated_data.get('email', instance.email)
+        instance.save()
+        
+        # Handle address separately since it's in UserProfile
+        address = self.context.get('address')
+        if address is not None:
+            user_profile, created = UserProfile.objects.get_or_create(user=instance)
+            user_profile.address = address
+            user_profile.save()
+        
+        return instance
+
+from rest_framework import serializers
+from .models import Notification
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'title', 'message', 'type', 'is_read', 'created_at']
+        read_only_fields = ['created_at']

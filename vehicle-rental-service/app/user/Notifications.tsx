@@ -9,69 +9,22 @@ import {
   CreditCard,
   Gift,
   Trash2,
+  RefreshCw,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
+  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-
-interface Notification {
-  id: string;
-  type: "booking" | "payment" | "promo" | "alert" | "success";
-  title: string;
-  message: string;
-  time: string;
-  isRead: boolean;
-}
-
-const initialNotifications: Notification[] = [
-  {
-    id: "1",
-    type: "success",
-    title: "Booking Confirmed",
-    message: "Your Toyota Camry booking for Feb 20 has been confirmed!",
-    time: "2 hours ago",
-    isRead: false,
-  },
-  {
-    id: "2",
-    type: "payment",
-    title: "Payment Successful",
-    message: "Payment of $89 received for booking #B4521",
-    time: "5 hours ago",
-    isRead: false,
-  },
-  {
-    id: "3",
-    type: "promo",
-    title: "Weekend Special! 🎉",
-    message: "Get 20% off on all car rentals this weekend. Use code: WEEKEND20",
-    time: "1 day ago",
-    isRead: true,
-  },
-  {
-    id: "4",
-    type: "booking",
-    title: "Upcoming Ride Reminder",
-    message: "Your BMW 3 Series rental starts tomorrow at 9:00 AM",
-    time: "1 day ago",
-    isRead: true,
-  },
-  {
-    id: "5",
-    type: "alert",
-    title: "Document Expiring Soon",
-    message: "Your driving license will expire in 30 days. Please update it.",
-    time: "3 days ago",
-    isRead: true,
-  },
-];
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { notificationsApi, type Notification as AppNotification } from "@/services/api";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -107,42 +60,159 @@ const getIconStyles = (type: string) => {
   }
 };
 
+const formatTime = (dateString: string) => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffDays > 0) {
+    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  } else if (diffHours > 0) {
+    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  } else {
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+  }
+};
+
 export default function Notifications() {
   const router = useRouter();
 
-  const [notifications, setNotifications] =
-    useState<Notification[]>(initialNotifications);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  // Debug: Check authentication status
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('auth_token');
+        console.log(' [Notifications] Auth token on startup:', token ? 'Present' : 'Missing');
+        console.log(' [Notifications] API_BASE_URL will be:', require('@/services/api').API_BASE_URL);
+      } catch (error) {
+        console.log(' [Notifications] Error checking auth:', error);
+      }
+    };
+    checkAuth();
+  }, []);
 
-  const markAsRead = (id: string) =>
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
-    );
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    Toast.show({
-      type: "success",
-      text1: "All notifications marked as read",
-    });
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      console.log(' [Notifications Component] Loading notifications...');
+      setError(null);
+      const data = await notificationsApi.getNotifications();
+      console.log(' [Notifications Component] Received data:', data);
+      setNotifications(data);
+      console.log(' [Notifications Component] Notifications state updated');
+    } catch (err) {
+      console.log(' [Notifications Component] Error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load notifications';
+      setError(errorMessage);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: errorMessage,
+        position: "bottom",
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    loadNotifications();
+  }, [loadNotifications]);
+
+  const markAsRead = async (id: string) => {
+    try {
+      // Optimistic update
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+      );
+      
+      // API call
+      await notificationsApi.markNotificationRead(id);
+    } catch (err) {
+      // Revert optimistic update on error
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: false } : n))
+      );
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to mark notification as read';
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: errorMessage,
+        position: "bottom",
+      });
+    }
   };
-  const deleteNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-    Toast.show({
-      type: "success",
-      text1: "Notification deleted",
-    });
-  };
-  const clearAll = () => {
-    setNotifications([]);
-    Toast.show({
-      type: "success",
-      text1: "All notifications cleared",
-    });
+  const markAllAsRead = async () => {
+    // Prevent multiple rapid clicks
+    if (isProcessing) return;
+    
+    const allRead = notifications.every((n) => n.is_read);
+    if (allRead) {
+      Toast.show({
+        type: "info",
+        text1: "All notifications already read",
+        position: "bottom",
+      });
+      return;
+    }
+    
+    try {
+      setIsProcessing(true);
+      
+      // Optimistic update
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, is_read: true }))
+      );
+      
+      // API call
+      await notificationsApi.markAllNotificationsRead();
+      
+      Toast.show({
+        type: "success",
+        text1: "All notifications marked as read",
+        position: "bottom",
+      });
+    } catch (err) {
+      // Revert optimistic update on error
+      await loadNotifications(); // Reload from server
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to mark all notifications as read';
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: errorMessage,
+        position: "bottom",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
     <View style={styles.container}>
+      {loading && !refreshing && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      )}
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
@@ -160,27 +230,15 @@ export default function Notifications() {
               )}
             </View>
           </View>
-          {notifications.length > 0 && (
-            <TouchableOpacity onPress={markAllAsRead}>
-              <Text style={styles.markReadText}>Mark all read</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
           style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2dd4bf" />
+          }
         >
-          {/* Clear All Button */}
-          {notifications.length > 0 && (
-            <View style={styles.clearAllContainer}>
-              <TouchableOpacity onPress={clearAll}>
-                <Text style={styles.clearAllText}>Clear All</Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* Notifications List */}
           {notifications.length === 0 ? (
             <View style={styles.emptyState}>
               <BellOff size={48} color="#64748b" style={{ marginBottom: 12 }} />
@@ -204,7 +262,7 @@ export default function Notifications() {
                     <View
                       style={[
                         styles.card,
-                        !notification.isRead && styles.cardUnread,
+                        !notification.is_read && styles.cardUnread,
                       ]}
                     >
                       <View style={styles.cardContent}>
@@ -222,7 +280,7 @@ export default function Notifications() {
                               <Text
                                 style={[
                                   styles.title,
-                                  !notification.isRead && styles.titleBold,
+                                  !notification.is_read && styles.titleBold,
                                 ]}
                               >
                                 {notification.title}
@@ -230,7 +288,7 @@ export default function Notifications() {
                               <TouchableOpacity
                                 onPress={(e) => {
                                   e.stopPropagation();
-                                  deleteNotification(notification.id);
+                                  // TODO: Implement delete notification
                                 }}
                                 style={styles.deleteButton}
                               >
@@ -243,7 +301,7 @@ export default function Notifications() {
                             >
                               {notification.message}
                             </Text>
-                            <Text style={styles.time}>{notification.time}</Text>
+                            <Text style={styles.time}>{formatTime(notification.created_at)}</Text>
                           </View>
                         </View>
                       </View>
@@ -373,6 +431,12 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 4,
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  textDisabled: {
+    opacity: 0.7,
+  },
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -393,5 +457,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#94a3b8",
     textAlign: "center",
+  },
+  loadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(15, 23, 42, 0.8)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1000,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#ffffff",
   },
 });

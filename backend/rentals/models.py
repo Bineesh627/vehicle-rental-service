@@ -82,7 +82,8 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+    if hasattr(instance, 'user_profile'):
+        instance.user_profile.save()
 
 
 class UserSettings(models.Model):
@@ -230,3 +231,51 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Msg #{self.id} [{self.sender_role}]: {self.text[:40]}"
+
+
+class UserProfile(models.Model):
+    """Extended user profile information"""
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('staff', 'Staff'),
+        ('admin', 'Admin'),
+        ('owner', 'Owner'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
+    address = models.TextField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.role}"
+
+
+class Notification(models.Model):
+    """User notifications for mobile app"""
+    NOTIFICATION_TYPES = [
+        ('booking', 'Booking'),
+        ('payment', 'Payment'), 
+        ('promo', 'Promotion'),
+        ('alert', 'Alert'),
+        ('success', 'Success'),
+        ('system', 'System'),
+    ]
+    
+    type = models.CharField(
+        max_length=20,
+        choices=NOTIFICATION_TYPES,
+        default='system'
+    )
+    
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        app_label = 'rentals'
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"

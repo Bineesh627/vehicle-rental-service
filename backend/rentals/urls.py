@@ -7,6 +7,8 @@ from .views import (
     user_profile, user_stats,
     user_profile_update, user_settings_view,
     payment_methods_view, saved_locations_view, kyc_document_view,
+    change_password,
+    notification_list, mark_notification_read, create_notification,
 )
 
 router = DefaultRouter()
@@ -14,9 +16,13 @@ router.register(r'shops', RentalShopViewSet)
 router.register(r'vehicles', VehicleViewSet)
 router.register(r'bookings', BookingViewSet)
 
+# Notification routes - function-based views, so use direct path routing
+# These are handled as regular API views, not ViewSets
+
 # Auto-generated routes:
 # /api/shops/     -> List/Create/Detail Rental Shops
 # /api/vehicles/  -> List/Create/Detail Vehicles
+# /api/notifications/ -> List/Create/Mark Read Notifications
 # /api/bookings/  -> List/Create/Detail Bookings
 #
 # Chat routes:
@@ -33,6 +39,7 @@ urlpatterns = [
     path('profile/stats/', user_stats, name='user-stats'),
     path('profile/update/', user_profile_update, name='user-profile-update'),
     path('profile/settings/', user_settings_view, name='user-settings'),
+    path('profile/change-password/', change_password, name='change-password'),
     # Payment Methods
     path('payments/', payment_methods_view, name='payment-methods'),
     path('payments/<int:pk>/', payment_methods_view, name='payment-method-detail'),
@@ -41,6 +48,10 @@ urlpatterns = [
     path('locations/<int:pk>/', saved_locations_view, name='saved-location-detail'),
     # KYC
     path('kyc/', kyc_document_view, name='kyc-document'),
+    # Notifications
+    path('notifications/', notification_list, name='notification-list'),
+    path('notifications/mark-read/<int:notification_id>/', mark_notification_read, name='mark-notification-read'),
+    path('notifications/create/', create_notification, name='create-notification'),
     # Chat
     path('chat/conversations/', conversation_list, name='chat-conversations'),
     path('chat/conversations/<int:conversation_id>/messages/', message_list, name='chat-messages'),

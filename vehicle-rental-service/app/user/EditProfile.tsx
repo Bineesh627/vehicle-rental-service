@@ -52,7 +52,7 @@ export default function EditProfile() {
         setProfileData({
           name: data.first_name || "",
           email: data.email || "",
-          address: "", // Backend doesn't have address field yet
+          address: data.address || "", // Now load address from backend
         });
       } catch (error) {
         console.error('Failed to load profile:', error);
@@ -83,6 +83,7 @@ export default function EditProfile() {
       await profileManagementApi.updateUserProfile({
         first_name: profileData.name,
         email: profileData.email,
+        address: profileData.address, // Now include address
       });
       
       Toast.show({
@@ -131,8 +132,11 @@ export default function EditProfile() {
 
     try {
       setLoading(true);
-      // Password change logic would go here
-      // For now, just show success message
+      await profileManagementApi.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+      
       Toast.show({
         type: "success",
         text1: "Password Changed",
@@ -145,10 +149,11 @@ export default function EditProfile() {
       });
     } catch (error) {
       console.error('Failed to change password:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to change password';
       Toast.show({
         type: "error",
         text1: "Error",
-        text2: "Failed to change password",
+        text2: errorMessage,
       });
     } finally {
       setLoading(false);

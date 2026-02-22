@@ -292,6 +292,7 @@ export const profileManagementApi = {
             email: data.email,
             first_name: data.first_name,
             role: data.role,
+            address: data.address || '', // Add address field
             settings: data.settings,
         };
     },
@@ -315,6 +316,25 @@ export const profileManagementApi = {
             first_name: data.first_name,
             role: data.role || 'user',
         };
+    },
+
+    /** Change user password */
+    async changePassword(passwordData: { currentPassword: string; newPassword: string }): Promise<void> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await fetch(`${API_BASE_URL}/profile/change-password/`, {
+            method: 'POST',
+            headers: authHeaders(token),
+            body: JSON.stringify({
+                current_password: passwordData.currentPassword,
+                new_password: passwordData.newPassword,
+            }),
+        });
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to change password');
+        }
     },
 
     /** Get user notification settings */
@@ -552,6 +572,7 @@ export interface UserProfile {
     email: string;
     first_name: string;
     role: string;
+    address?: string; // Optional address field
 }
 
 export interface UserStats {
@@ -608,5 +629,81 @@ export const profileApi = {
             active_bookings: data.active_bookings,
             completed_bookings: data.completed_bookings,
         };
+    },
+};
+
+// ── Notifications API ───────────────────────────────────────────────────────────
+
+export interface Notification {
+    id: string;
+    title: string;
+    message: string;
+    type: "booking" | "payment" | "promo" | "alert" | "success" | "system";
+    is_read: boolean;
+    created_at: string;
+}
+
+export const notificationsApi = {
+    /** Get all notifications for the current user */
+    async getNotifications(): Promise<Notification[]> {
+        console.log('🔍 [Notifications API] Starting fetch...');
+        const token = await getAuthToken();
+        console.log('🔑 [Notifications API] Token:', token ? 'Found' : 'Not found');
+        if (!token) throw new Error('No authentication token found');
+        
+        const url = `${API_BASE_URL}/notifications/`;
+        console.log('🌐 [Notifications API] Fetching from:', url);
+        
+        const response = await fetch(url, {
+            headers: authHeaders(token),
+        });
+        console.log('📡 [Notifications API] Response status:', response.status);
+        if (!response.ok) {
+            console.log('❌ [Notifications API] Response not OK:', response.statusText);
+            throw new Error('Failed to fetch notifications');
+        }
+        const data = await response.json();
+        console.log('📊 [Notifications API] Raw data:', data);
+        
+        // Map backend data to frontend format
+        const mappedData = data.map((notification: any) => ({
+            id: notification.id.toString(),
+            title: notification.title,
+            message: notification.message,
+            type: notification.type,
+            is_read: notification.is_read,
+            created_at: notification.created_at,
+        }));
+        console.log('✅ [Notifications API] Mapped data:', mappedData);
+        return mappedData;
+    },
+
+    /** Mark a single notification as read */
+    async markNotificationRead(notificationId: string): Promise<void> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await fetch(`${API_BASE_URL}/notifications/mark-read/${notificationId}/`, {
+            method: 'POST',
+            headers: authHeaders(token),
+        });
+        if (!response.ok) throw new Error('Failed to mark notification as read');
+    },
+
+    /** Mark all notifications as read */
+    async markAllNotificationsRead(): Promise<void> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+        
+        // First get all unread notifications
+        const notifications = await this.getNotifications();
+        const unreadNotifications = notifications.filter(n => !n.is_read);
+        
+        // Mark each as read (bulk operation)
+        const promises = unreadNotifications.map(notification => 
+            this.markNotificationRead(notification.id)
+        );
+        
+        await Promise.all(promises);
     },
 };

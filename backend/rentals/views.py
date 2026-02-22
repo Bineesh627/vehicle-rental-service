@@ -6,7 +6,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .models import RentalShop, Vehicle, Booking, Conversation, Message, UserSettings, PaymentMethod, SavedLocation, KYCDocument
+from .models import RentalShop, Vehicle, Booking, Conversation, Message, UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile
 from .serializers import (
     RentalShopSerializer, VehicleSerializer, BookingSerializer,
     UserSerializer, ConversationSerializer, MessageSerializer,
@@ -164,12 +164,16 @@ def user_profile_update(request):
     if request.method == 'GET':
         try:
             user_settings = UserSettings.objects.get_or_create(user=request.user)
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
             profile_data = {
                 'id': request.user.id,
                 'username': request.user.username,
                 'email': request.user.email,
                 'first_name': request.user.first_name,
                 'phone': getattr(request.user, 'phone', ''),
+                'address': user_profile.address or '',
+                'role': user_profile.role,
                 'settings': UserSettingsSerializer(user_settings).data,
             }
             return Response(profile_data)
@@ -183,6 +187,8 @@ def user_profile_update(request):
                 serializer.save()
                 return Response(serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -245,6 +251,8 @@ def payment_methods_view(request, pk=None):
                 response_serializer = PaymentMethodSerializer(payment_method)
                 return Response(response_serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except PaymentMethod.DoesNotExist:
             return Response({'error': 'Payment method not found'}, status=status.HTTP_404_NOT_FOUND)
     
@@ -287,6 +295,8 @@ def saved_locations_view(request, pk=None):
                 response_serializer = SavedLocationSerializer(location)
                 return Response(response_serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except SavedLocation.DoesNotExist:
             return Response({'error': 'Location not found'}, status=status.HTTP_404_NOT_FOUND)
     
@@ -403,7 +413,7 @@ def message_list(request, conversation_id):
 
     # Determine sender_role from the user's profile
     try:
-        sender_role = request.user.profile.role
+        sender_role = getattr(request.user.user_profile, "role", "user")
     except Exception:
         sender_role = 'user'
 
@@ -581,12 +591,16 @@ def user_profile_update(request):
     if request.method == 'GET':
         try:
             user_settings = UserSettings.objects.get_or_create(user=request.user)
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            
             profile_data = {
                 'id': request.user.id,
                 'username': request.user.username,
                 'email': request.user.email,
                 'first_name': request.user.first_name,
                 'phone': getattr(request.user, 'phone', ''),
+                'address': user_profile.address or '',
+                'role': user_profile.role,
                 'settings': UserSettingsSerializer(user_settings).data,
             }
             return Response(profile_data)
@@ -595,11 +609,34 @@ def user_profile_update(request):
     
     elif request.method == 'PUT':
         try:
-            serializer = UserProfileUpdateSerializer(request.user, data=request.data, partial=True)
+            # Extract address from request data
+            address = request.data.get('address')
+            
+            # Remove address from data since it's not a User field
+            update_data = request.data.copy()
+            if 'address' in update_data:
+                del update_data['address']
+            
+            serializer = UserProfileUpdateSerializer(request.user, data=update_data, partial=True, context={'address': address})
             if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data)
+                updated_user = serializer.save()
+                
+                # Return updated profile data
+                user_profile, created = UserProfile.objects.get_or_create(user=updated_user)
+                response_data = {
+                    'id': updated_user.id,
+                    'username': updated_user.username,
+                    'email': updated_user.email,
+                    'first_name': updated_user.first_name,
+                    'phone': getattr(updated_user, 'phone', ''),
+                    'address': user_profile.address or '',
+                    'role': user_profile.role,
+                }
+                    
+                return Response(response_data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -617,11 +654,37 @@ def user_settings_view(request):
         return Response(serializer.data)
     
     elif request.method == 'PUT':
-        serializer = UserSettingsSerializer(user_settings, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            # Extract address from request data
+            address = request.data.get('address')
+            
+            # Remove address from data since it's not a User field
+            update_data = request.data.copy()
+            if 'address' in update_data:
+                del update_data['address']
+            
+            serializer = UserProfileUpdateSerializer(request.user, data=update_data, partial=True, context={'address': address})
+            if serializer.is_valid():
+                updated_user = serializer.save()
+                
+                # Return updated profile data
+                user_profile, created = UserProfile.objects.get_or_create(user=updated_user)
+                response_data = {
+                    'id': updated_user.id,
+                    'username': updated_user.username,
+                    'email': updated_user.email,
+                    'first_name': updated_user.first_name,
+                    'phone': getattr(updated_user, 'phone', ''),
+                    'address': user_profile.address or '',
+                    'role': user_profile.role,
+                }
+                    
+                return Response(response_data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'POST', 'PUT', 'DELETE'])
 @permission_classes([IsAuthenticated])
@@ -662,6 +725,8 @@ def payment_methods_view(request, pk=None):
                 response_serializer = PaymentMethodSerializer(payment_method)
                 return Response(response_serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except PaymentMethod.DoesNotExist:
             return Response({'error': 'Payment method not found'}, status=status.HTTP_404_NOT_FOUND)
     
@@ -704,6 +769,8 @@ def saved_locations_view(request, pk=None):
                 response_serializer = SavedLocationSerializer(location)
                 return Response(response_serializer.data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except SavedLocation.DoesNotExist:
             return Response({'error': 'Location not found'}, status=status.HTTP_404_NOT_FOUND)
     
@@ -714,6 +781,39 @@ def saved_locations_view(request, pk=None):
             return Response({'message': 'Location deleted successfully'})
         except SavedLocation.DoesNotExist:
             return Response({'error': 'Location not found'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """
+    Change user password
+    """
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+    
+    if not current_password or not new_password:
+        return Response({'error': 'Current password and new password are required'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    # Verify current password
+    if not request.user.check_password(current_password):
+        return Response({'error': 'Current password is incorrect'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    # Validate new password
+    if len(new_password) < 6:
+        return Response({'error': 'Password must be at least 6 characters long'}, 
+                       status=status.HTTP_400_BAD_REQUEST)
+    
+    # Change password
+    try:
+        request.user.set_password(new_password)
+        request.user.save()
+        return Response({'message': 'Password changed successfully'})
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET', 'POST', 'PUT'])
 @permission_classes([IsAuthenticated])
@@ -741,12 +841,81 @@ def kyc_document_view(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
     elif request.method == 'PUT':
-        if kyc_doc.status in ['verified', 'rejected']:
-            return Response({'error': 'Cannot modify verified/rejected KYC'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        serializer = KYCDocumentCreateSerializer(kyc_doc, data=request.data, partial=True)
-        if serializer.is_valid():
-            kyc_doc = serializer.save(status='pending')
-            response_serializer = KYCDocumentSerializer(kyc_doc)
-            return Response(response_serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            # Extract address from request data
+            address = request.data.get('address')
+            
+            # Remove address from data since it's not a User field
+            update_data = request.data.copy()
+            if 'address' in update_data:
+                del update_data['address']
+            
+            serializer = UserProfileUpdateSerializer(request.user, data=update_data, partial=True, context={'address': address})
+            if serializer.is_valid():
+                updated_user = serializer.save()
+                
+                # Return updated profile data
+                user_profile, created = UserProfile.objects.get_or_create(user=updated_user)
+                response_data = {
+                    'id': updated_user.id,
+                    'username': updated_user.username,
+                    'email': updated_user.email,
+                    'first_name': updated_user.first_name,
+                    'phone': getattr(updated_user, 'phone', ''),
+                    'address': user_profile.address or '',
+                    'role': user_profile.role,
+                }
+                    
+                return Response(response_data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+from rest_framework import viewsets, status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Notification
+from .serializers import NotificationSerializer
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def notification_list(request):
+    """Get user notifications"""
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    serializer = NotificationSerializer(notifications, many=True)
+    return Response(serializer.data)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def mark_notification_read(request, notification_id):
+    """Mark notification as read"""
+    try:
+        notification = Notification.objects.get(id=notification_id, user=request.user)
+        notification.is_read = True
+        notification.save()
+        return Response({'message': 'Notification marked as read'})
+    except Notification.DoesNotExist:
+        return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_notification(request):
+    """Create new notification (for system use)"""
+    title = request.data.get('title')
+    message = request.data.get('message')
+    notification_type = request.data.get('type', 'system')
+    
+    if title and message:
+        notification = Notification.objects.create(
+            user=request.user,
+            title=title,
+            message=message,
+            type=notification_type,
+            is_read=False
+        )
+        return Response({'id': notification.id, 'message': 'Notification created'}, status=status.HTTP_201_CREATED)
+    
+    return Response({'error': 'Title and message are required'}, status=status.HTTP_400_BAD_REQUEST)

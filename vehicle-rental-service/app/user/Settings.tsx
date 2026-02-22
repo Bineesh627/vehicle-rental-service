@@ -38,6 +38,7 @@ export default function Settings() {
   });
 
   const [loading, setLoading] = useState(false);
+  const [processingKey, setProcessingKey] = useState<string | null>(null);
 
   // Load settings on component mount
   useEffect(() => {
@@ -62,8 +63,13 @@ export default function Settings() {
   }, []);
 
   const toggleSetting = async (key: keyof UserSettings) => {
+    // Prevent multiple rapid clicks on same setting
+    if (processingKey === key) return;
+    
     const newValue = !settings[key];
+    
     try {
+      setProcessingKey(key);
       await profileManagementApi.updateUserSettings({ [key]: newValue });
       setSettings((prev) => ({ ...prev, [key]: newValue }));
       Toast.show({
@@ -78,13 +84,17 @@ export default function Settings() {
         text1: "Error",
         text2: "Failed to update settings",
       });
+    } finally {
+      // Clear processing state after a short delay
+      setTimeout(() => setProcessingKey(null), 300);
     }
   };
 
-  const renderSwitch = (value: boolean, onValueChange: () => void) => (
+  const renderSwitch = (value: boolean, onValueChange: () => void, settingKey: keyof UserSettings) => (
     <Switch
       value={value}
       onValueChange={onValueChange}
+      disabled={processingKey === settingKey}
       trackColor={{ false: "#334155", true: "#2dd4bf" }}
       thumbColor={Platform.OS === "ios" ? "#ffffff" : "#ffffff"}
       ios_backgroundColor="#334155"
@@ -135,9 +145,7 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.push_notifications, () =>
-                  toggleSetting("push_notifications")
-                )}
+                {renderSwitch(settings.push_notifications, () => toggleSetting("push_notifications"), "push_notifications")}
               </View>
 
               <View style={styles.settingRow}>
@@ -152,9 +160,7 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.email_notifications, () =>
-                  toggleSetting("email_notifications")
-                )}
+                {renderSwitch(settings.email_notifications, () => toggleSetting("email_notifications"), "email_notifications")}
               </View>
 
               <View style={styles.settingRow}>
@@ -169,9 +175,7 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.sms_notifications, () =>
-                  toggleSetting("sms_notifications")
-                )}
+                {renderSwitch(settings.sms_notifications, () => toggleSetting("sms_notifications"), "sms_notifications")}
               </View>
             </View>
           </View>
@@ -198,9 +202,7 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.booking_updates, () =>
-                  toggleSetting("booking_updates")
-                )}
+                {renderSwitch(settings.booking_updates, () => toggleSetting("booking_updates"), "booking_updates")}
               </View>
 
               <View style={styles.settingRow}>
@@ -215,9 +217,7 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.payment_alerts, () =>
-                  toggleSetting("payment_alerts")
-                )}
+                {renderSwitch(settings.payment_alerts, () => toggleSetting("payment_alerts"), "payment_alerts")}
               </View>
 
               <View style={styles.settingRow}>
@@ -232,9 +232,7 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.promotions, () =>
-                  toggleSetting("promotions")
-                )}
+                {renderSwitch(settings.promotions, () => toggleSetting("promotions"), "promotions")}
               </View>
 
               <View style={styles.settingRow}>
@@ -249,9 +247,7 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.reminders, () =>
-                  toggleSetting("reminders")
-                )}
+                {renderSwitch(settings.reminders, () => toggleSetting("reminders"), "reminders")}
               </View>
             </View>
           </View>
