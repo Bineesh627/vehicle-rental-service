@@ -1,6 +1,6 @@
 import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Vehicle, RentalShop } from "@/types";
+import { Vehicle, RentalShop, Booking } from "@/types";
 
 const getBaseUrl = () => {
     const debuggerHost = Constants.expoConfig?.hostUri;
@@ -8,7 +8,7 @@ const getBaseUrl = () => {
     if (localhost) {
         return `http://${localhost}:8000/api`;
     }
-    return "http://192.168.43.122:8000/api";
+    return "http://localhost:8000/api";
 };
 
 const API_BASE_URL = getBaseUrl();
@@ -47,7 +47,84 @@ export const api = {
         if (!response.ok) throw new Error("Failed to fetch shop vehicles");
         const data = await response.json();
         return data.map(mapBackendVehicleToFrontend);
+    },
+
+    async createBooking(bookingData: {
+        vehicle_id: string;
+        booking_type: 'hour' | 'day';
+        start_date: string;
+        duration: number;
+        delivery_option: 'self' | 'delivery';
+        delivery_address?: string;
+        payment_method: 'card' | 'upi' | 'wallet';
+    }): Promise<any> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await fetch(`${API_BASE_URL}/bookings/create/`, {
+            method: 'POST',
+            headers: authHeaders(token),
+            body: JSON.stringify(bookingData),
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to create booking');
+        }
+        
+        return await response.json();
+    },
+
+    async getBookings(): Promise<Booking[]> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+
+        const response = await fetch(`${API_BASE_URL}/bookings/`, {
+            headers: authHeaders(token),
+        });
+        if (!response.ok) throw new Error("Failed to fetch bookings");
+        const data = await response.json();
+        return data.map(mapBackendBookingToFrontend);
+    },
+
+    async getBookingDetails(id: string): Promise<Booking> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+
+        const response = await fetch(`${API_BASE_URL}/bookings/${id}/`, {
+            headers: authHeaders(token),
+        });
+        if (!response.ok) throw new Error("Failed to fetch booking details");
+        const data = await response.json();
+        return mapBackendBookingToFrontend(data);
+    },
+
+    async cancelBooking(id: string): Promise<void> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+
+        const response = await fetch(`${API_BASE_URL}/bookings/${id}/cancel/`, {
+            method: 'POST',
+            headers: authHeaders(token),
+        });
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.status || "Failed to cancel booking");
+        }
     }
+};
+
+const mapBackendBookingToFrontend = (data: any): Booking => {
+    return {
+        id: data.id.toString(),
+        vehicleId: data.vehicle.id ? data.vehicle.id.toString() : data.vehicle.toString(),
+        vehicle: data.vehicle.id ? mapBackendVehicleToFrontend(data.vehicle) : ({} as any),
+        shop: data.shop.id ? mapBackendShopToFrontend(data.shop) : ({} as any),
+        startDate: data.start_date,
+        endDate: data.end_date,
+        totalPrice: parseFloat(data.total_price),
+        status: data.status,
+    } as Booking;
 };
 
 const mapBackendVehicleToFrontend = (data: any): Vehicle => {
@@ -543,7 +620,6 @@ export const profileManagementApi = {
         
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('KYC submission error:', response.status, errorText);
             throw new Error(`Failed to submit KYC document: ${response.status} ${errorText}`);
         }
         return await response.json();
@@ -587,7 +663,6 @@ const getAuthToken = async (): Promise<string | null> => {
     try {
         return await AsyncStorage.getItem('auth_token');
     } catch (e) {
-        console.error('Failed to get auth token', e);
         return null;
     }
 };
@@ -630,6 +705,47 @@ export const profileApi = {
             completed_bookings: data.completed_bookings,
         };
     },
+
+    /** Get all payment methods */
+    async getPaymentMethods(): Promise<PaymentMethod[]> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await fetch(`${API_BASE_URL}/payments/`, {
+            headers: authHeaders(token),
+        });
+        if (!response.ok) throw new Error('Failed to fetch payment methods');
+        const data = await response.json();
+        return data.map((pm: any) => ({
+            id: pm.id.toString(),
+            type: pm.type,
+            name: pm.name,
+            details: pm.details,
+            is_default: pm.is_default,
+            created_at: pm.created_at,
+        }));
+    },
+
+    /** Get all saved locations */
+    async getSavedLocations(): Promise<SavedLocation[]> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await fetch(`${API_BASE_URL}/locations/`, {
+            headers: authHeaders(token),
+        });
+        if (!response.ok) throw new Error('Failed to fetch saved locations');
+        const data = await response.json();
+        return data.map((loc: any) => ({
+            id: loc.id.toString(),
+            name: loc.name,
+            address: loc.address,
+            type: loc.type,
+            latitude: loc.latitude,
+            longitude: loc.longitude,
+            created_at: loc.created_at,
+        }));
+    },
 };
 
 // ── Notifications API ───────────────────────────────────────────────────────────
@@ -646,24 +762,18 @@ export interface Notification {
 export const notificationsApi = {
     /** Get all notifications for the current user */
     async getNotifications(): Promise<Notification[]> {
-        console.log('🔍 [Notifications API] Starting fetch...');
         const token = await getAuthToken();
-        console.log('🔑 [Notifications API] Token:', token ? 'Found' : 'Not found');
         if (!token) throw new Error('No authentication token found');
         
         const url = `${API_BASE_URL}/notifications/`;
-        console.log('🌐 [Notifications API] Fetching from:', url);
         
         const response = await fetch(url, {
             headers: authHeaders(token),
         });
-        console.log('📡 [Notifications API] Response status:', response.status);
         if (!response.ok) {
-            console.log('❌ [Notifications API] Response not OK:', response.statusText);
             throw new Error('Failed to fetch notifications');
         }
         const data = await response.json();
-        console.log('📊 [Notifications API] Raw data:', data);
         
         // Map backend data to frontend format
         const mappedData = data.map((notification: any) => ({
@@ -674,7 +784,6 @@ export const notificationsApi = {
             is_read: notification.is_read,
             created_at: notification.created_at,
         }));
-        console.log('✅ [Notifications API] Mapped data:', mappedData);
         return mappedData;
     },
 
@@ -705,5 +814,19 @@ export const notificationsApi = {
         );
         
         await Promise.all(promises);
+    },
+
+    /** Delete a notification */
+    async deleteNotification(notificationId: string): Promise<void> {
+        const token = await getAuthToken();
+        if (!token) throw new Error('No authentication token found');
+        
+        const response = await fetch(`${API_BASE_URL}/notifications/delete/${notificationId}/`, {
+            method: 'DELETE',
+            headers: authHeaders(token),
+        });
+        if (!response.ok) {
+            throw new Error('Failed to delete notification');
+        }
     },
 };

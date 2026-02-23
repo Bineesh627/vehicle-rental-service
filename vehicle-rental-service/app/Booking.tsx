@@ -1,4 +1,4 @@
-import { api } from "@/services/api";
+import { api, profileApi } from "@/services/api";
 import { Vehicle, RentalShop } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -29,10 +29,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 // Assuming these components handle their own modal styling,
-// but we'll focus on the main screen styling here.
 import { DeliveryLocationSelector } from "@/components/user/DeliveryLocationSelector";
 
-type PaymentMethod = "card" | "upi" | "wallet";
+import { PaymentMethod, SavedLocation } from "@/services/api";
+
 type DeliveryOption = "self" | "delivery";
 
 export default function Booking() {
@@ -46,6 +46,13 @@ export default function Booking() {
   // Data state
   const [vehicle, setVehicle] = useState<Vehicle | null>(null);
   const [shop, setShop] = useState<RentalShop | null>(null);
+
+  // Database integrations
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState<
+    PaymentMethod[]
+  >([]);
+  const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -55,7 +62,7 @@ export default function Booking() {
 
   const [selectedTime, setSelectedTime] = useState("10:00 AM");
   const [duration, setDuration] = useState(bookingType === "day" ? 1 : 4);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("card");
+  const [paymentMethodId, setPaymentMethodId] = useState<string | null>(null);
 
   const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>("self");
   const [deliveryAddress, setDeliveryAddress] = useState("");
@@ -71,6 +78,23 @@ export default function Booking() {
           const shopData = await api.getRentalShop(vehicleData.shopId);
           setShop(shopData);
         }
+
+        // Fetch payment and address databases
+        const [pmData, locData] = await Promise.all([
+          profileApi.getPaymentMethods(),
+          profileApi.getSavedLocations(),
+        ]);
+
+        setSavedPaymentMethods(pmData);
+        setSavedLocations(locData);
+
+        // Pre-select defaults
+        const defaultPm = pmData.find((pm) => pm.is_default);
+        if (defaultPm) setPaymentMethodId(defaultPm.id);
+        else if (pmData.length > 0) setPaymentMethodId(pmData[0].id);
+
+        const defaultLoc = locData.find((loc) => loc.type === "home");
+        if (defaultLoc) setDeliveryAddress(defaultLoc.address);
       } catch (err) {
         console.error("Failed to fetch booking data:", err);
         setFetchError("Failed to load vehicle details");
@@ -172,25 +196,64 @@ export default function Booking() {
     );
   };
 
-  const handleConfirmBooking = () => {
+  const handleConfirmBooking = async () => {
     if (deliveryOption === "delivery" && !deliveryAddress) {
       Alert.alert("Error", "Please set a delivery location");
       return;
     }
 
-    Alert.alert(
-      "Booking confirmed!",
-      `Your ${vehicle.name} is booked for ${duration} ${
-        bookingType === "day"
-          ? duration === 1
-            ? "day"
-            : "days"
-          : duration === 1
-            ? "hour"
-            : "hours"
-      } on ${selectedDate.toLocaleDateString()}`,
-      [{ text: "OK", onPress: () => router.replace("/(tabs)/bookings") }],
-    );
+    try {
+      // Combine date and time for start_date
+      const [hours, minutes] = selectedTime.split(":");
+      const [period] = selectedTime.split(" ");
+      let hour24 = parseInt(hours);
+
+      if (period === "PM" && hour24 !== 12) {
+        hour24 += 12;
+      } else if (period === "AM" && hour24 === 12) {
+        hour24 = 0;
+      }
+
+      const startDateTime = new Date(selectedDate);
+      startDateTime.setHours(hour24, parseInt(minutes));
+
+      const bookingData = {
+        vehicle_id: vehicle.id,
+        booking_type: bookingType as "hour" | "day",
+        start_date: startDateTime.toISOString(),
+        duration: duration,
+        delivery_option: deliveryOption,
+        delivery_address:
+          deliveryOption === "delivery" ? deliveryAddress : undefined,
+        payment_method:
+          savedPaymentMethods.find((p) => p.id === paymentMethodId)?.type ||
+          "card",
+      };
+
+      const response = await api.createBooking(bookingData);
+
+      Alert.alert(
+        "Booking confirmed!",
+        `Your ${vehicle.name} is booked for ${duration} ${
+          bookingType === "day"
+            ? duration === 1
+              ? "day"
+              : "days"
+            : duration === 1
+              ? "hour"
+              : "hours"
+        } on ${selectedDate.toLocaleDateString()}`,
+        [{ text: "OK", onPress: () => router.replace("/(tabs)/bookings") }],
+      );
+    } catch (error) {
+      Alert.alert(
+        "Booking Failed",
+        error instanceof Error
+          ? error.message
+          : "Failed to create booking. Please try again.",
+        [{ text: "OK" }],
+      );
+    }
   };
 
   return (
@@ -371,53 +434,67 @@ export default function Booking() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Payment Method</Text>
           <View style={styles.paymentContainer}>
-            {[
-              {
-                id: "card" as const,
-                icon: CreditCard,
-                label: "Credit / Debit Card",
-              },
-              { id: "upi" as const, icon: Smartphone, label: "UPI Payment" },
-              { id: "wallet" as const, icon: Wallet, label: "Digital Wallet" },
-            ].map((method) => (
-              <TouchableOpacity
-                key={method.id}
-                onPress={() => setPaymentMethod(method.id)}
-                style={[
-                  styles.paymentOption,
-                  paymentMethod === method.id
-                    ? styles.paymentOptionActive
-                    : styles.paymentOptionInactive,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.paymentIconBox,
-                    paymentMethod === method.id
-                      ? styles.bgPrimary
-                      : styles.bgSecondary,
-                  ]}
-                >
-                  <method.icon
-                    size={20}
-                    color={paymentMethod === method.id ? "#0f172a" : "#64748b"}
-                  />
-                </View>
-                <Text style={styles.paymentLabel}>{method.label}</Text>
-                <View
-                  style={[
-                    styles.radioOuter,
-                    paymentMethod === method.id
-                      ? styles.borderPrimary
-                      : styles.borderGray,
-                  ]}
-                >
-                  {paymentMethod === method.id && (
-                    <View style={styles.radioInner} />
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))}
+            {savedPaymentMethods.length === 0 ? (
+              <Text style={styles.mutedText}>
+                No saved payment methods. A default card will be used.
+              </Text>
+            ) : (
+              savedPaymentMethods.map((method) => {
+                let Icon =
+                  method.type === "card"
+                    ? CreditCard
+                    : method.type === "upi"
+                      ? Smartphone
+                      : Wallet;
+
+                return (
+                  <TouchableOpacity
+                    key={method.id}
+                    onPress={() => setPaymentMethodId(method.id)}
+                    style={[
+                      styles.paymentOption,
+                      paymentMethodId === method.id
+                        ? styles.paymentOptionActive
+                        : styles.paymentOptionInactive,
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.paymentIconBox,
+                        paymentMethodId === method.id
+                          ? styles.bgPrimary
+                          : styles.bgSecondary,
+                      ]}
+                    >
+                      <Icon
+                        size={20}
+                        color={
+                          paymentMethodId === method.id ? "#0f172a" : "#64748b"
+                        }
+                      />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.paymentLabel}>{method.name}</Text>
+                      <Text style={styles.mutedText}>
+                        {method.details || method.type}
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.radioOuter,
+                        paymentMethodId === method.id
+                          ? styles.borderPrimary
+                          : styles.borderGray,
+                      ]}
+                    >
+                      {paymentMethodId === method.id && (
+                        <View style={styles.radioInner} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                );
+              })
+            )}
           </View>
         </View>
 
@@ -536,6 +613,7 @@ export default function Booking() {
         visible={showDeliverySelector}
         type="delivery"
         currentAddress={deliveryAddress}
+        locations={savedLocations}
         onSelect={(address) => {
           setDeliveryAddress(address);
           setShowDeliverySelector(false);

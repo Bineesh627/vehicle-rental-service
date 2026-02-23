@@ -2,18 +2,19 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     RentalShopViewSet, VehicleViewSet, BookingViewSet,
-    register, login,
+    register, login, create_booking,
     conversation_list, message_list,
     user_profile, user_stats,
     user_profile_update, user_settings_view,
     payment_methods_view, saved_locations_view, kyc_document_view,
     change_password,
-    notification_list, mark_notification_read, create_notification,
+    notification_list, mark_notification_read, delete_notification, create_notification,
 )
 
 router = DefaultRouter()
 router.register(r'shops', RentalShopViewSet)
 router.register(r'vehicles', VehicleViewSet)
+# Register bookings ViewSet. This will handle list/detail (but create_booking is mapped explicitly below)
 router.register(r'bookings', BookingViewSet)
 
 # Notification routes - function-based views, so use direct path routing
@@ -31,7 +32,9 @@ router.register(r'bookings', BookingViewSet)
 # GET  /api/chat/conversations/<id>/messages/ -> get all messages in conversation
 # POST /api/chat/conversations/<id>/messages/ -> send a message
 urlpatterns = [
+    path('bookings/create/', create_booking, name='create-booking'),
     path('', include(router.urls)),
+    # Auth
     path('register/', register, name='register'),
     path('login/', login, name='login'),
     # Profile
@@ -51,6 +54,7 @@ urlpatterns = [
     # Notifications
     path('notifications/', notification_list, name='notification-list'),
     path('notifications/mark-read/<int:notification_id>/', mark_notification_read, name='mark-notification-read'),
+    path('notifications/delete/<int:notification_id>/', delete_notification, name='delete-notification'),
     path('notifications/create/', create_notification, name='create-notification'),
     # Chat
     path('chat/conversations/', conversation_list, name='chat-conversations'),

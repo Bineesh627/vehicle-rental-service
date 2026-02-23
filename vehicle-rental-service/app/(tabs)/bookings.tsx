@@ -1,10 +1,9 @@
-import { bookings } from "@/data/mockData";
 import { UserStackParamList } from "@/navigation/types";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { format } from "date-fns";
 import { Calendar, ChevronRight, Clock, MapPin } from "lucide-react-native";
-import React from "react";
+import React, { useState, useCallback } from "react";
 import {
   Image,
   ScrollView,
@@ -12,8 +11,12 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { api } from "@/services/api";
+import { Booking } from "@/types";
 
 type BookingsNavigationProp = NativeStackNavigationProp<
   UserStackParamList,
@@ -22,12 +25,44 @@ type BookingsNavigationProp = NativeStackNavigationProp<
 
 export default function Bookings() {
   const navigation = useNavigation<BookingsNavigationProp>();
+  const insets = useSafeAreaInsets();
+
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchBookings = async () => {
+    try {
+      const data = await api.getBookings();
+      setBookings(data);
+      setError(null);
+    } catch (err: any) {
+      console.error("Error fetching bookings:", err);
+      setError(err.message || "Failed to load bookings");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchBookings();
+    }, []),
+  );
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchBookings();
+  }, []);
+
   const upcomingBookings = bookings.filter((b) => b.status === "upcoming");
   const activeBookings = bookings.filter((b) => b.status === "active");
   const pastBookings = bookings.filter(
     (b) => b.status === "completed" || b.status === "cancelled",
   );
-  const insets = useSafeAreaInsets();
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -36,237 +71,278 @@ export default function Bookings() {
         <Text style={styles.headerTitle}>My Bookings</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Upcoming */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Upcoming</Text>
-          {upcomingBookings.length > 0 ? (
-            <View>
-              {upcomingBookings.map((booking) => (
-                <View key={booking.id} style={styles.card}>
-                  <View style={styles.cardContent}>
-                    <Image
-                      source={{ uri: booking.vehicle.images[0] }}
-                      style={styles.vehicleImage}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.cardBody}>
-                      <View style={styles.cardHeader}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.vehicleName}>
-                            {booking.vehicle.name}
-                          </Text>
-                          <View style={styles.locationContainer}>
-                            <MapPin color="#94a3b8" size={14} />
-                            <Text style={styles.locationText}>
-                              {booking.shop.name}
-                            </Text>
-                          </View>
-                        </View>
-                        <View
-                          style={[styles.statusBadge, styles.badgeUpcoming]}
-                        >
-                          <Text style={styles.textUpcoming}>
-                            {booking.status}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.dateRow}>
-                        <View style={styles.dateItem}>
-                          <Calendar color="#94a3b8" size={14} />
-                          <Text style={styles.dateText}>
-                            {format(new Date(booking.startDate), "MMM d, yyyy")}
-                          </Text>
-                        </View>
-                        <View style={styles.dateItem}>
-                          <Clock color="#94a3b8" size={14} />
-                          <Text style={styles.dateText}>
-                            {format(new Date(booking.startDate), "h:mm a")}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.cardFooter}>
-                    <View>
-                      <Text style={styles.totalLabel}>Total</Text>
-                      <Text style={styles.totalPrice}>
-                        ${booking.totalPrice}
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate("BookingDetails", {
-                          id: booking.id,
-                        })
-                      }
-                      style={styles.detailsButton}
-                    >
-                      <Text style={styles.detailsButtonText}>View Details</Text>
-                      <ChevronRight color="#2dd4bf" size={16} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Calendar
-                color="#64748b"
-                size={48}
-                style={{ opacity: 0.5, marginBottom: 12 }}
-              />
-              <Text style={styles.emptyStateText}>No upcoming bookings</Text>
-            </View>
-          )}
+      {loading && !refreshing ? (
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color="#2dd4bf" />
         </View>
-
-        {/* Active Bookings */}
-        {activeBookings.length > 0 && (
+      ) : error ? (
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchBookings}>
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#2dd4bf"
+            />
+          }
+        >
+          {/* Upcoming */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Active Bookings</Text>
-            <View>
-              {activeBookings.map((booking) => (
-                <View key={booking.id} style={[styles.card, styles.activeCard]}>
-                  <View style={styles.cardContent}>
-                    <Image
-                      source={{ uri: booking.vehicle.images[0] }}
-                      style={styles.vehicleImage}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.cardBody}>
-                      <View style={styles.cardHeader}>
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.vehicleName}>
-                            {booking.vehicle.name}
-                          </Text>
-                          <View style={styles.locationContainer}>
-                            <MapPin color="#94a3b8" size={14} />
-                            <Text style={styles.locationText}>
-                              {booking.shop.name}
+            <Text style={styles.sectionTitle}>Upcoming</Text>
+            {upcomingBookings.length > 0 ? (
+              <View>
+                {upcomingBookings.map((booking) => (
+                  <View key={booking.id} style={styles.card}>
+                    <View style={styles.cardContent}>
+                      <Image
+                        source={{ uri: booking.vehicle.images[0] }}
+                        style={styles.vehicleImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.cardBody}>
+                        <View style={styles.cardHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.vehicleName}>
+                              {booking.vehicle.name}
+                            </Text>
+                            <View style={styles.locationContainer}>
+                              <MapPin color="#94a3b8" size={14} />
+                              <Text style={styles.locationText}>
+                                {booking.shop.name}
+                              </Text>
+                            </View>
+                          </View>
+                          <View
+                            style={[styles.statusBadge, styles.badgeUpcoming]}
+                          >
+                            <Text style={styles.textUpcoming}>
+                              {booking.status}
                             </Text>
                           </View>
                         </View>
-                        <View style={[styles.statusBadge, styles.badgeActive]}>
-                          <Text style={styles.textActive}>Active</Text>
-                        </View>
-                      </View>
-                      <View style={styles.dateRow}>
-                        <View style={styles.dateItem}>
-                          <Calendar color="#94a3b8" size={14} />
-                          <Text style={styles.dateText}>
-                            Ends: {format(new Date(booking.endDate), "MMM d")}
-                          </Text>
-                        </View>
-                        <View style={styles.dateItem}>
-                          <Clock color="#94a3b8" size={14} />
-                          <Text style={styles.dateText}>
-                            {format(new Date(booking.endDate), "h:mm a")}
-                          </Text>
+                        <View style={styles.dateRow}>
+                          <View style={styles.dateItem}>
+                            <Calendar color="#94a3b8" size={14} />
+                            <Text style={styles.dateText}>
+                              {format(
+                                new Date(booking.startDate),
+                                "MMM d, yyyy",
+                              )}
+                            </Text>
+                          </View>
+                          <View style={styles.dateItem}>
+                            <Clock color="#94a3b8" size={14} />
+                            <Text style={styles.dateText}>
+                              {format(new Date(booking.startDate), "h:mm a")}
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </View>
-                  </View>
-
-                  <View style={styles.activeFooter}>
-                    <TouchableOpacity
-                      onPress={() =>
-                        navigation.navigate("BookingDetails", {
-                          id: booking.id,
-                        })
-                      }
-                      style={styles.detailsButton}
-                    >
-                      <Text style={styles.detailsButtonText}>View Details</Text>
-                      <ChevronRight color="#2dd4bf" size={16} />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Past bookings */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Past Bookings</Text>
-          {pastBookings.length > 0 ? (
-            <View>
-              {pastBookings.map((booking) => (
-                <View key={booking.id} style={styles.card}>
-                  <View style={styles.cardContent}>
-                    <Image
-                      source={{ uri: booking.vehicle.images[0] }}
-                      style={[styles.vehicleImage, styles.grayscale]}
-                      resizeMode="cover"
-                    />
-                    <View style={styles.cardBody}>
-                      <View style={styles.cardHeader}>
-                        <View>
-                          <Text style={styles.vehicleName}>
-                            {booking.vehicle.name}
-                          </Text>
-                          <Text style={styles.dateText}>
-                            {format(new Date(booking.startDate), "MMM d, yyyy")}
-                          </Text>
-                        </View>
-                        <View
-                          style={[
-                            styles.statusBadge,
-                            booking.status === "completed"
-                              ? styles.badgeCompleted
-                              : styles.badgeCancelled,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.statusText,
-                              booking.status === "completed"
-                                ? styles.textCompleted
-                                : styles.textCancelled,
-                            ]}
-                          >
-                            {booking.status}
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.pastBookingFooter}>
-                        <Text style={styles.pastPrice}>
+                    <View style={styles.cardFooter}>
+                      <View>
+                        <Text style={styles.totalLabel}>Total</Text>
+                        <Text style={styles.totalPrice}>
                           ${booking.totalPrice}
                         </Text>
-                        <View style={styles.pastActions}>
-                          <TouchableOpacity
-                            onPress={() =>
-                              navigation.navigate("BookingDetails", {
-                                id: booking.id,
-                              })
-                            }
+                      </View>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("BookingDetails", {
+                            id: booking.id,
+                          })
+                        }
+                        style={styles.detailsButton}
+                      >
+                        <Text style={styles.detailsButtonText}>
+                          View Details
+                        </Text>
+                        <ChevronRight color="#2dd4bf" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Calendar
+                  color="#64748b"
+                  size={48}
+                  style={{ opacity: 0.5, marginBottom: 12 }}
+                />
+                <Text style={styles.emptyStateText}>No upcoming bookings</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Active Bookings */}
+          {activeBookings.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Active Bookings</Text>
+              <View>
+                {activeBookings.map((booking) => (
+                  <View
+                    key={booking.id}
+                    style={[styles.card, styles.activeCard]}
+                  >
+                    <View style={styles.cardContent}>
+                      <Image
+                        source={{ uri: booking.vehicle.images[0] }}
+                        style={styles.vehicleImage}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.cardBody}>
+                        <View style={styles.cardHeader}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.vehicleName}>
+                              {booking.vehicle.name}
+                            </Text>
+                            <View style={styles.locationContainer}>
+                              <MapPin color="#94a3b8" size={14} />
+                              <Text style={styles.locationText}>
+                                {booking.shop.name}
+                              </Text>
+                            </View>
+                          </View>
+                          <View
+                            style={[styles.statusBadge, styles.badgeActive]}
                           >
-                            <Text style={styles.pastDetailsText}>Details</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() =>
-                              navigation.navigate("VehicleDetails", {
-                                id: booking.vehicleId,
-                              })
-                            }
+                            <Text style={styles.textActive}>Active</Text>
+                          </View>
+                        </View>
+                        <View style={styles.dateRow}>
+                          <View style={styles.dateItem}>
+                            <Calendar color="#94a3b8" size={14} />
+                            <Text style={styles.dateText}>
+                              Ends: {format(new Date(booking.endDate), "MMM d")}
+                            </Text>
+                          </View>
+                          <View style={styles.dateItem}>
+                            <Clock color="#94a3b8" size={14} />
+                            <Text style={styles.dateText}>
+                              {format(new Date(booking.endDate), "h:mm a")}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.activeFooter}>
+                      <TouchableOpacity
+                        onPress={() =>
+                          navigation.navigate("BookingDetails", {
+                            id: booking.id,
+                          })
+                        }
+                        style={styles.detailsButton}
+                      >
+                        <Text style={styles.detailsButtonText}>
+                          View Details
+                        </Text>
+                        <ChevronRight color="#2dd4bf" size={16} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Past bookings */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Past Bookings</Text>
+            {pastBookings.length > 0 ? (
+              <View>
+                {pastBookings.map((booking) => (
+                  <View key={booking.id} style={styles.card}>
+                    <View style={styles.cardContent}>
+                      <Image
+                        source={{ uri: booking.vehicle.images[0] }}
+                        style={[styles.vehicleImage, styles.grayscale]}
+                        resizeMode="cover"
+                      />
+                      <View style={styles.cardBody}>
+                        <View style={styles.cardHeader}>
+                          <View>
+                            <Text style={styles.vehicleName}>
+                              {booking.vehicle.name}
+                            </Text>
+                            <Text style={styles.dateText}>
+                              {format(
+                                new Date(booking.startDate),
+                                "MMM d, yyyy",
+                              )}
+                            </Text>
+                          </View>
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              booking.status === "completed"
+                                ? styles.badgeCompleted
+                                : styles.badgeCancelled,
+                            ]}
                           >
-                            <Text style={styles.bookAgainText}>Book Again</Text>
-                          </TouchableOpacity>
+                            <Text
+                              style={[
+                                styles.statusText,
+                                booking.status === "completed"
+                                  ? styles.textCompleted
+                                  : styles.textCancelled,
+                              ]}
+                            >
+                              {booking.status}
+                            </Text>
+                          </View>
+                        </View>
+                        <View style={styles.pastBookingFooter}>
+                          <Text style={styles.pastPrice}>
+                            ${booking.totalPrice}
+                          </Text>
+                          <View style={styles.pastActions}>
+                            <TouchableOpacity
+                              onPress={() =>
+                                navigation.navigate("BookingDetails", {
+                                  id: booking.id,
+                                })
+                              }
+                            >
+                              <Text style={styles.pastDetailsText}>
+                                Details
+                              </Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() =>
+                                navigation.navigate("VehicleDetails", {
+                                  id: booking.vehicleId,
+                                })
+                              }
+                            >
+                              <Text style={styles.bookAgainText}>
+                                Book Again
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
                     </View>
                   </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyStateText}>No past bookings</Text>
-            </View>
-          )}
-        </View>
-      </ScrollView>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateText}>No past bookings</Text>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -287,6 +363,26 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#ffffff",
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: "#334155",
+    borderRadius: 8,
+  },
+  retryText: {
+    color: "#ffffff",
+    fontWeight: "600",
   },
   scrollContent: {
     padding: 16,

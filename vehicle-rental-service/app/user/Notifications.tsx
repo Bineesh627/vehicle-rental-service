@@ -86,13 +86,11 @@ export default function Notifications() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Debug: Check authentication status
+  // Check authentication status
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const token = await AsyncStorage.getItem('auth_token');
-        console.log(' [Notifications] Auth token on startup:', token ? 'Present' : 'Missing');
-        console.log(' [Notifications] API_BASE_URL will be:', require('@/services/api').API_BASE_URL);
       } catch (error) {
         console.log(' [Notifications] Error checking auth:', error);
       }
@@ -104,12 +102,9 @@ export default function Notifications() {
 
   const loadNotifications = useCallback(async () => {
     try {
-      console.log(' [Notifications Component] Loading notifications...');
       setError(null);
       const data = await notificationsApi.getNotifications();
-      console.log(' [Notifications Component] Received data:', data);
       setNotifications(data);
-      console.log(' [Notifications Component] Notifications state updated');
     } catch (err) {
       console.log(' [Notifications Component] Error:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to load notifications';
@@ -159,6 +154,34 @@ export default function Notifications() {
       });
     }
   };
+  const deleteNotification = async (id: string) => {
+    try {
+      // Optimistic update - remove from UI
+      setNotifications((prev) => prev.filter((n) => n.id !== id));
+      
+      // API call to delete from backend
+      await notificationsApi.deleteNotification(id);
+      
+      Toast.show({
+        type: "success",
+        text1: "Success",
+        text2: "Notification deleted",
+        position: "bottom",
+      });
+    } catch (err) {
+      // Revert optimistic update on error
+      await loadNotifications(); // Reload from server
+      
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete notification';
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: errorMessage,
+        position: "bottom",
+      });
+    }
+  };
+
   const markAllAsRead = async () => {
     // Prevent multiple rapid clicks
     if (isProcessing) return;
@@ -230,6 +253,17 @@ export default function Notifications() {
               )}
             </View>
           </View>
+          {unreadCount > 0 && (
+            <TouchableOpacity
+              onPress={markAllAsRead}
+              style={[styles.markReadButton, isProcessing && styles.buttonDisabled]}
+              disabled={isProcessing}
+            >
+              <Text style={[styles.markReadText, isProcessing && styles.textDisabled]}>
+                {isProcessing ? 'Marking...' : 'Mark All Read'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         <ScrollView
@@ -288,7 +322,7 @@ export default function Notifications() {
                               <TouchableOpacity
                                 onPress={(e) => {
                                   e.stopPropagation();
-                                  // TODO: Implement delete notification
+                                  deleteNotification(notification.id);
                                 }}
                                 style={styles.deleteButton}
                               >
@@ -347,6 +381,10 @@ const styles = StyleSheet.create({
   unreadCount: {
     fontSize: 12,
     color: "#94a3b8", // Slate-400
+  },
+  markReadButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   markReadText: {
     fontSize: 14,

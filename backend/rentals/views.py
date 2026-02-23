@@ -1,19 +1,19 @@
 from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, action
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .models import RentalShop, Vehicle, Booking, Conversation, Message, UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile
+from .models import RentalShop, Vehicle, Booking, Conversation, Message, UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile, Notification
 from .serializers import (
-    RentalShopSerializer, VehicleSerializer, BookingSerializer,
+    RentalShopSerializer, VehicleSerializer, BookingSerializer, BookingCreateSerializer,
     UserSerializer, ConversationSerializer, MessageSerializer,
     UserProfileSerializer, UserStatsSerializer,
     UserSettingsSerializer, PaymentMethodSerializer, PaymentMethodCreateSerializer,
     SavedLocationSerializer, KYCDocumentSerializer, KYCDocumentCreateSerializer,
-    UserProfileUpdateSerializer,
+    UserProfileUpdateSerializer, NotificationSerializer,
 )
 
 @api_view(['POST'])
@@ -95,6 +95,54 @@ class BookingViewSet(viewsets.ModelViewSet):
     """
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    
+    def get_queryset(self):
+        """Filter bookings by current user"""
+        if self.request.user.is_authenticated:
+            return Booking.objects.filter(user=self.request.user)
+        return Booking.objects.none()
+    
+    def perform_create(self, serializer):
+        """Set user when creating booking"""
+        serializer.save(user=self.request.user)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def create_booking(request):
+    """
+    Create a new booking
+    """
+    from .serializers import BookingCreateSerializer, BookingSerializer
+    from .models import Booking, Notification
+    
+    serializer = BookingCreateSerializer(data=request.data)
+    
+    if serializer.is_valid():
+        try:
+            booking = serializer.save(user=request.user)
+            
+            # Create notification for successful booking
+            Notification.objects.create(
+                user=request.user,
+                title='Booking Confirmed',
+                message=f'Your booking for {booking.vehicle.name} has been confirmed',
+                type='booking',
+                is_read=False
+            )
+            
+            # Return booking details
+            response_serializer = BookingSerializer(booking)
+            return Response(response_serializer.data, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            print("CREATE BOOKING EXCEPTION:", str(e))
+            import traceback
+            traceback.print_exc()
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    print("CREATE BOOKING VALIDATION ERRORS:", serializer.errors)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ── Profile Views ───────────────────────────────────────────────────────────
@@ -523,6 +571,15 @@ class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
 
+    @action(detail=True, methods=['post'])
+    def cancel(self, request, pk=None):
+        booking = self.get_object()
+        if booking.status == 'cancelled':
+            return Response({'status': 'already cancelled'}, status=status.HTTP_400_BAD_REQUEST)
+        booking.status = 'cancelled'
+        booking.save()
+        return Response({'status': 'cancelled', 'booking_id': booking.id})
+
 
 # ── Profile Views ───────────────────────────────────────────────────────────
 
@@ -871,13 +928,6 @@ def kyc_document_view(request):
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-from rest_framework import viewsets, status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from .models import Notification
-from .serializers import NotificationSerializer
-
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def notification_list(request):
@@ -895,6 +945,19 @@ def mark_notification_read(request, notification_id):
         notification.is_read = True
         notification.save()
         return Response({'message': 'Notification marked as read'})
+    except Notification.DoesNotExist:
+        return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_notification(request, notification_id):
+    """Delete notification"""
+    try:
+        notification = Notification.objects.get(id=notification_id, user=request.user)
+        notification.delete()
+        return Response({'message': 'Notification deleted successfully'})
     except Notification.DoesNotExist:
         return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
     except Exception as e:

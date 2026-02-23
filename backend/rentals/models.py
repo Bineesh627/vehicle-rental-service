@@ -48,43 +48,57 @@ class Booking(models.Model):
         ('cancelled', 'Cancelled'),
         ('upcoming', 'Upcoming'),
     ]
+    
+    BOOKING_TYPES = [
+        ('hour', 'Hourly'),
+        ('day', 'Daily'),
+    ]
+    
+    DELIVERY_OPTIONS = [
+        ('self', 'Self Pickup'),
+        ('delivery', 'Home Delivery'),
+    ]
+    
+    PAYMENT_METHODS = [
+        ('card', 'Credit/Debit Card'),
+        ('upi', 'UPI Payment'),
+        ('wallet', 'Digital Wallet'),
+    ]
 
+    user = models.ForeignKey(User, related_name='bookings', on_delete=models.CASCADE)
     vehicle = models.ForeignKey(Vehicle, related_name='bookings', on_delete=models.CASCADE)
     shop = models.ForeignKey(RentalShop, related_name='bookings', on_delete=models.CASCADE)
+    
+    # Booking details
+    booking_type = models.CharField(max_length=10, choices=BOOKING_TYPES, default='hour')
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
+    duration = models.IntegerField(help_text="Duration in hours or days")
+    
+    # Pricing
+    base_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    service_fee = models.DecimalField(max_digits=10, decimal_places=2, default=5)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    # Delivery details
+    delivery_option = models.CharField(max_length=10, choices=DELIVERY_OPTIONS, default='self')
+    delivery_address = models.TextField(blank=True, null=True)
+    
+    # Payment details
+    payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS)
+    payment_status = models.CharField(max_length=20, default='pending')
+    
+    # Status
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='upcoming')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
 
     def __str__(self):
-        return f"Booking {self.id} - {self.vehicle.name}"
-
-class UserProfile(models.Model):
-    ROLE_CHOICES = [
-        ('user', 'User'),
-        ('staff', 'Staff'),
-        ('admin', 'Admin'),
-        ('owner', 'Owner'),
-    ]
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
-
-    def __str__(self):
-        return f"{self.user.username} - {self.role}"
-
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        UserProfile.objects.create(user=instance)
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'user_profile'):
-        instance.user_profile.save()
-
+        return f"Booking {self.id} - {self.vehicle.name} ({self.user.username})"
 
 class UserSettings(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='settings')
@@ -248,6 +262,19 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.role}"
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'user_profile'):
+        instance.user_profile.save()
 
 
 class Notification(models.Model):

@@ -56,10 +56,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const loadUser = async () => {
       try {
-        const stored = await AsyncStorage.getItem("auth_user");
-        if (stored) setUser(JSON.parse(stored));
+        const storedUser = await AsyncStorage.getItem("auth_user");
+        const storedToken = await AsyncStorage.getItem("auth_token");
+
+        if (storedUser && storedToken) {
+          // Verify token by fetching the user profile
+          const response = await fetch(`${API_BASE_URL}/profile/`, {
+            headers: {
+              Authorization: `Token ${storedToken}`,
+            },
+          });
+
+          if (response.ok) {
+            setUser(JSON.parse(storedUser));
+          } else {
+            // Token is invalid/expired (e.g., backend DB was reset)
+            console.warn("Stored token is invalid. Logging out.");
+            await AsyncStorage.removeItem("auth_user");
+            await AsyncStorage.removeItem("auth_token");
+            setUser(null);
+          }
+        }
       } catch (e) {
-        console.error("Failed to load user", e);
+        console.error("Failed to load or verify user", e);
       } finally {
         setIsLoading(false);
       }

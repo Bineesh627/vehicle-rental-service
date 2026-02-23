@@ -1,4 +1,3 @@
-import { bookings } from "@/data/mockData";
 import { UserStackParamList } from "@/navigation/types";
 import {
   NavigationProp,
@@ -16,7 +15,7 @@ import {
   Navigation,
   Phone,
 } from "lucide-react-native";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dimensions,
   Image,
@@ -26,8 +25,12 @@ import {
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { api } from "@/services/api";
+import { Booking } from "@/types";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -37,12 +40,103 @@ export default function BookingDetails() {
   const insets = useSafeAreaInsets();
   const { id } = (route.params as { id: string }) || {};
 
-  const booking = bookings.find((b) => b.id === id);
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  useEffect(() => {
+    if (!id) {
+      setLoading(false);
+      setError("No booking ID provided");
+      return;
+    }
+
+    const fetchBookingDetails = async () => {
+      try {
+        setLoading(true);
+        const data = await api.getBookingDetails(id);
+        setBooking(data);
+        setError(null);
+      } catch (err: any) {
+        console.error("Error fetching booking details:", err);
+        setError(err.message || "Failed to load booking details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookingDetails();
+  }, [id]);
+
+  const handleCancelBooking = () => {
+    Alert.alert(
+      "Cancel Booking",
+      "Are you sure you want to cancel this booking?",
+      [
+        { text: "No", style: "cancel" },
+        {
+          text: "Yes, Cancel",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setIsCancelling(true);
+              await api.cancelBooking(id);
+              // Refetch booking
+              const data = await api.getBookingDetails(id);
+              setBooking(data);
+              Alert.alert("Success", "Your booking has been cancelled.");
+            } catch (err: any) {
+              Alert.alert("Error", err.message || "Failed to cancel booking");
+            } finally {
+              setIsCancelling(false);
+            }
+          },
+        },
+      ],
+    );
+  };
+
+  const handleModifyBooking = () => {
+    Alert.alert(
+      "Modify Booking",
+      "To modify your dates or duration, please cancel this booking and create a new one.",
+      [{ text: "OK" }],
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#2dd4bf" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.centerContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity
+          style={styles.backLink}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backLinkText}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   if (!booking) {
     return (
       <View style={styles.notFoundContainer}>
         <Text style={styles.notFoundText}>Booking not found</Text>
+        <TouchableOpacity
+          style={styles.backLink}
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={styles.backLinkText}>Go Back</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -271,11 +365,21 @@ export default function BookingDetails() {
         <View style={styles.footerContent}>
           {booking.status === "upcoming" && (
             <>
-              <TouchableOpacity style={styles.footerCancelButton}>
-                <Text style={styles.footerCancelText}>Cancel Booking</Text>
+              <TouchableOpacity
+                style={styles.footerCancelButton}
+                onPress={handleCancelBooking}
+                disabled={isCancelling}
+              >
+                <Text style={styles.footerCancelText}>
+                  {isCancelling ? "Cancelling..." : "Cancel Booking"}
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.footerModifyButton}>
+              <TouchableOpacity
+                style={styles.footerModifyButton}
+                onPress={handleModifyBooking}
+                disabled={isCancelling}
+              >
                 <Text style={styles.footerModifyText}>Modify Booking</Text>
               </TouchableOpacity>
             </>
@@ -334,6 +438,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0f172a", // Dark background
+  },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: "#0f172a",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  errorText: {
+    color: "#ef4444",
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  backLink: {
+    marginTop: 12,
+    padding: 10,
+  },
+  backLinkText: {
+    color: "#2dd4bf",
+    fontSize: 16,
+    fontWeight: "600",
   },
   notFoundContainer: {
     flex: 1,

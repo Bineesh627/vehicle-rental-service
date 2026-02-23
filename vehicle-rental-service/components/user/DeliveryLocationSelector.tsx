@@ -11,24 +11,22 @@ import {
 } from "react-native";
 import { MapPin, Navigation, X, Check } from "lucide-react-native";
 
+import { SavedLocation } from "@/services/api";
+
 interface DeliveryLocationSelectorProps {
   visible: boolean;
   type: "delivery" | "pickup";
   currentAddress?: string;
+  locations?: SavedLocation[];
   onSelect: (address: string) => void;
   onClose: () => void;
 }
-
-const savedLocations = [
-  { id: "1", name: "Home", address: "123 Main Street, Apt 4B" },
-  { id: "2", name: "Work", address: "456 Business Park, Suite 200" },
-  { id: "3", name: "Gym", address: "789 Fitness Lane" },
-];
 
 export const DeliveryLocationSelector = ({
   visible,
   type,
   currentAddress = "",
+  locations = [],
   onSelect,
   onClose,
 }: DeliveryLocationSelectorProps) => {
@@ -99,31 +97,42 @@ export const DeliveryLocationSelector = ({
           {/* Saved Locations */}
           <View style={styles.savedSection}>
             <Text style={styles.sectionTitle}>Saved Locations</Text>
-            {savedLocations.map((loc) => (
-              <TouchableOpacity
-                key={loc.id}
-                onPress={() => setAddress(loc.address)}
-                style={[
-                  styles.locationItem,
-                  address === loc.address
-                    ? styles.locationItemActive
-                    : styles.locationItemInactive,
-                ]}
-              >
-                <View style={styles.locationIcon}>
-                  <MapPin size={16} color="#2dd4bf" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.locName}>{loc.name}</Text>
-                  <Text style={styles.locAddress}>{loc.address}</Text>
-                </View>
-                {address === loc.address && <Check size={20} color="#2dd4bf" />}
-              </TouchableOpacity>
-            ))}
+            {locations.length === 0 ? (
+              <Text style={{ color: "#94a3b8", fontSize: 14 }}>
+                No saved locations found.
+              </Text>
+            ) : (
+              locations.map((loc) => (
+                <TouchableOpacity
+                  key={loc.id}
+                  onPress={() => setAddress(loc.address)}
+                  style={[
+                    styles.locationItem,
+                    address === loc.address
+                      ? styles.locationItemActive
+                      : styles.locationItemInactive,
+                  ]}
+                >
+                  <View style={styles.locationIcon}>
+                    <MapPin size={16} color="#2dd4bf" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.locName}>{loc.name}</Text>
+                    <Text style={styles.locAddress}>{loc.address}</Text>
+                  </View>
+                  {address === loc.address && (
+                    <Check size={20} color="#2dd4bf" />
+                  )}
+                </TouchableOpacity>
+              ))
+            )}
           </View>
 
           {/* Confirm Button */}
-          <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm}>
+          <TouchableOpacity
+            style={styles.confirmButton}
+            onPress={handleConfirm}
+          >
             <Text style={styles.confirmButtonText}>
               Confirm {type === "delivery" ? "Delivery" : "Pickup"} Location
             </Text>
