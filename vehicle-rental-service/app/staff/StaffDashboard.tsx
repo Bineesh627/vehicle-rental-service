@@ -12,10 +12,18 @@ import {
   Truck,
   User,
 } from "lucide-react-native";
-import { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { staffApi, StaffTask } from "@/services/api";
 
 // Theme Colors derived from the screenshot
 const COLORS = {
@@ -49,47 +57,68 @@ const stats = [
   },
 ];
 
-const initialDeliveryTasks = [
-  {
-    id: "1",
-    type: "delivery",
-    vehicle: "Toyota Camry",
-    customer: "John Davis",
-    phone: "+1 555-1234",
-    address: "123 Main St, Downtown",
-    time: "10:00 AM",
-    status: "pending",
-  },
-  {
-    id: "2",
-    type: "delivery",
-    vehicle: "Honda Activa",
-    customer: "Sarah Miller",
-    phone: "+1 555-5678",
-    address: "456 Oak Ave, Midtown",
-    time: "11:30 AM",
-    status: "in_progress",
-  },
-];
-
-const initialPickupTasks = [
-  {
-    id: "3",
-    type: "pickup",
-    vehicle: "BMW 3 Series",
-    customer: "Mike Ross",
-    phone: "+1 555-9012",
-    address: "789 Luxury Lane, Uptown",
-    time: "2:00 PM",
-    status: "pending",
-  },
-];
-
 export default function StaffDashboard() {
   const { user, logout } = useAuth();
   const router = useRouter();
-  const [deliveryTasks, setDeliveryTasks] = useState(initialDeliveryTasks);
-  const [pickupTasks, setPickupTasks] = useState(initialPickupTasks);
+  const [deliveryTasks, setDeliveryTasks] = useState<StaffTask[]>([]);
+  const [pickupTasks, setPickupTasks] = useState<StaffTask[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchTasks = async () => {
+    try {
+      const data = await staffApi.getAssignedTasks();
+      const active = data.filter((t) => t.status !== "completed");
+      setCompletedCount(data.filter((t) => t.status === "completed").length);
+      setDeliveryTasks(active.filter((t) => t.type === "delivery"));
+      setPickupTasks(active.filter((t) => t.type === "pickup"));
+    } catch (error) {
+      console.error(error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to fetch tasks",
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTasks();
+  };
+
+  const currentStats = [
+    {
+      label: "Assigned Today",
+      value: (
+        deliveryTasks.length +
+        pickupTasks.length +
+        completedCount
+      ).toString(),
+      icon: Package,
+      color: COLORS.primary,
+    },
+    {
+      label: "Completed",
+      value: completedCount.toString(),
+      icon: CheckCircle,
+      color: "#22C55E", // Green
+    },
+    {
+      label: "Pending",
+      value: (deliveryTasks.length + pickupTasks.length).toString(),
+      icon: Clock,
+      color: COLORS.secondary,
+    },
+  ];
 
   const handleLogout = () => {
     logout();
@@ -112,29 +141,49 @@ export default function StaffDashboard() {
     });
   };
 
-  const markAsDelivered = (taskId: string) => {
-    setDeliveryTasks((prev) => prev.filter((t) => t.id !== taskId));
-    Toast.show({
-      type: "success",
-      text1: "Vehicle Delivered",
-      text2: "Task completed successfully!",
-    });
+  const markAsDelivered = async (taskId: string) => {
+    try {
+      await staffApi.updateTaskStatus(taskId, "completed");
+      setDeliveryTasks((prev) => prev.filter((t) => t.id !== taskId));
+      setCompletedCount((c) => c + 1);
+      Toast.show({
+        type: "success",
+        text1: "Vehicle Delivered",
+        text2: "Task completed successfully!",
+      });
+    } catch (e) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to mark as delivered",
+      });
+    }
   };
 
-  const markAsPickedUp = (taskId: string) => {
-    setPickupTasks((prev) => prev.filter((t) => t.id !== taskId));
-    Toast.show({
-      type: "success",
-      text1: "Vehicle Picked Up",
-      text2: "Task completed successfully!",
-    });
+  const markAsPickedUp = async (taskId: string) => {
+    try {
+      await staffApi.updateTaskStatus(taskId, "completed");
+      setPickupTasks((prev) => prev.filter((t) => t.id !== taskId));
+      setCompletedCount((c) => c + 1);
+      Toast.show({
+        type: "success",
+        text1: "Vehicle Picked Up",
+        text2: "Task completed successfully!",
+      });
+    } catch (e) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to mark as picked up",
+      });
+    }
   };
 
   const TaskCard = ({
     task,
     isDelivery,
   }: {
-    task: (typeof initialDeliveryTasks)[0];
+    task: StaffTask;
     isDelivery: boolean;
   }) => (
     <View
@@ -172,21 +221,25 @@ export default function StaffDashboard() {
             </Text>
           </View>
         </View>
-        <Text className="text-xs text-gray-400">{task.time}</Text>
+        <Text className="text-xs text-gray-400">{task.scheduledTime}</Text>
       </View>
 
       {/* Main Content */}
       <View className="mb-4">
         <Text className="text-xl font-bold text-white mb-1">
-          {task.vehicle}
+          {task.vehicleName}
         </Text>
-        <Text className="text-sm text-gray-400">{task.customer}</Text>
+        <Text className="text-sm text-gray-400">
+          {task.customerName || "Unknown Customer"}
+        </Text>
       </View>
 
       {/* Address */}
       <View className="flex-row items-start gap-2 mb-5">
         <MapPin size={16} color="#6B7280" style={{ marginTop: 2 }} />
-        <Text className="text-sm text-gray-400 flex-1">{task.address}</Text>
+        <Text className="text-sm text-gray-400 flex-1">
+          {task.address || "No address provided (Self Pickup)"}
+        </Text>
       </View>
 
       {/* Chat Button */}
@@ -211,7 +264,12 @@ export default function StaffDashboard() {
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
           style={{ borderColor: COLORS.primary }}
-          onPress={() => handleCall(task.phone, task.customer)}
+          onPress={() =>
+            handleCall(
+              task.customerPhone || "0000000000",
+              task.customerName || "Customer",
+            )
+          }
         >
           <Phone size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
           <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Call</Text>
@@ -221,7 +279,7 @@ export default function StaffDashboard() {
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
           style={{ borderColor: COLORS.primary }}
-          onPress={() => handleNavigate(task.address)}
+          onPress={() => handleNavigate(task.address || "")}
         >
           <Navigation
             size={16}
@@ -294,7 +352,7 @@ export default function StaffDashboard() {
         >
           {/* Stats Row */}
           <View className="flex-row gap-3 mb-8">
-            {stats.map((stat, index) => (
+            {currentStats.map((stat, index) => (
               <View
                 key={index}
                 className="flex-1 pt-6 pb-4 items-center justify-between rounded-2xl border"

@@ -41,12 +41,23 @@ def register(request):
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def login(request):
-    username = request.data.get('username') or request.data.get('email')
+    username_or_email = request.data.get('username') or request.data.get('email')
     password = request.data.get('password')
 
-    user = authenticate(username=username, password=password)
+    # First try authenticating by assuming the input is a username
+    user = authenticate(username=username_or_email, password=password)
+    
+    # If that fails, see if the input is an email, and authenticate with the matching username
     if not user:
-        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_404_NOT_FOUND)
+        from django.contrib.auth.models import User
+        try:
+            user_obj = User.objects.get(email=username_or_email)
+            user = authenticate(username=user_obj.username, password=password)
+        except User.DoesNotExist:
+            pass
+
+    if not user:
+        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_401_UNAUTHORIZED)
     
     token, created = Token.objects.get_or_create(user=user)
     serializer = UserSerializer(user)
@@ -130,6 +141,33 @@ def create_booking(request):
                 type='booking',
                 is_read=False
             )
+            
+            # Create corresponding Staff Tasks
+            try:
+                from django.contrib.auth.models import User
+                from staff.models import StaffTask
+                
+                # Assign to the first available staff for now
+                staff_user = User.objects.filter(user_profile__role='staff').first()
+                if staff_user:
+                    # Delivery Task
+                    StaffTask.objects.create(
+                        staff=staff_user,
+                        booking=booking,
+                        type='delivery',
+                        scheduled_time=booking.start_date,
+                        status='pending'
+                    )
+                    # Pickup Task
+                    StaffTask.objects.create(
+                        staff=staff_user,
+                        booking=booking,
+                        type='pickup',
+                        scheduled_time=booking.end_date,
+                        status='pending'
+                    )
+            except Exception as e:
+                print("Failed to auto-assign staff tasks:", str(e))
             
             # Return booking details
             response_serializer = BookingSerializer(booking)
@@ -513,22 +551,6 @@ def register(request):
         }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def login(request):
-    username = request.data.get('username') or request.data.get('email')
-    password = request.data.get('password')
-
-    user = authenticate(username=username, password=password)
-    if not user:
-        return Response({'error': 'Invalid Credentials'}, status=status.HTTP_404_NOT_FOUND)
-    
-    token, created = Token.objects.get_or_create(user=user)
-    serializer = UserSerializer(user)
-    return Response({
-        'token': token.key,
-        'user': serializer.data
-    })
 
 class RentalShopViewSet(viewsets.ModelViewSet):
     """

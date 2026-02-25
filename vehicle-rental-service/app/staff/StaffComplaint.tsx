@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { staffApi } from "@/services/api";
 
 export default function StaffComplaint() {
   const navigation =
@@ -25,16 +26,22 @@ export default function StaffComplaint() {
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
 
-  const handleSubmit = () => {
-    // Here you would typically send the complaint to a backend service
-    console.log("Staff Complaint Submitted:", { subject, details });
-    Toast.show({
-      type: "success",
-      text1: "Complaint Submitted",
-      text2: "We've received your report.",
-    });
-    // Go back to the previous screen
-    navigation.goBack();
+  const handleSubmit = async () => {
+    try {
+      await staffApi.submitComplaint(subject, details);
+      Toast.show({
+        type: "success",
+        text1: "Complaint Submitted",
+        text2: "We've received your report.",
+      });
+      navigation.goBack();
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Failed to submit complaint.",
+      });
+    }
   };
 
   return (
