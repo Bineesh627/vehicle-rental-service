@@ -5,8 +5,22 @@ class RentalDashboard {
     this.init();
   }
 
+  getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+  }
+
   init() {
-    this.checkAuth();
     this.loadStoredData();
     this.setupEventListeners();
     this.updateUserDisplay();
@@ -18,27 +32,22 @@ class RentalDashboard {
     if (document.getElementById("staffTable")) {
       this.loadStaffData();
     }
-    if (document.getElementById("vehicleGrid")) {
-      this.loadVehicleData();
-    }
+
     if (document.getElementById("bookingsTable")) {
       this.loadBookingData();
     }
   }
 
-  checkAuth() {
-    const isLoggedIn = sessionStorage.getItem("isLoggedIn");
-    const isAuthPage =
-      window.location.pathname.includes("login.html") ||
-      window.location.pathname.includes("register.html") ||
-      window.location.pathname.endsWith("index.html");
-
-    if (!isLoggedIn && !isAuthPage) {
-      window.location.href = "login.html";
-    }
-  }
-
   loadStoredData() {
+    // If mockData is completely removed from the HTML, we need to initialize it locally
+    if (typeof mockData === 'undefined') {
+      window.mockData = {
+        staff: [],
+        vehicles: [],
+        bookings: []
+      };
+    }
+
     // Load any stored data from localStorage
     const storedStaff = localStorage.getItem("staffData");
     const storedVehicles = localStorage.getItem("vehicleData");
@@ -75,9 +84,8 @@ class RentalDashboard {
     const logoutBtn = document.getElementById("logoutBtn");
     if (logoutBtn) {
       logoutBtn.addEventListener("click", () => {
-        sessionStorage.removeItem("isLoggedIn");
-        sessionStorage.removeItem("userEmail");
-        window.location.href = "login.html";
+        sessionStorage.clear(); // Clear all mock data on logout for safety
+        window.location.href = "/logout/"; // Use standard Django logout routing
       });
     }
 
@@ -107,18 +115,7 @@ class RentalDashboard {
   }
 
   loadDashboardData() {
-    const stats = calculateStats();
-
-    // Update statistics cards
-    document.getElementById("totalRevenue").textContent =
-      `$${stats.totalRevenue.toLocaleString()}`;
-    document.getElementById("activeBookings").textContent =
-      stats.activeBookings;
-    document.getElementById("totalVehicles").textContent = stats.totalVehicles;
-    document.getElementById("totalStaff").textContent = stats.totalStaff;
-
-    // Load recent bookings
-    this.loadRecentBookings();
+    // Data is now handled natively via Django context in dashboard_view
   }
 
   getBadgeClass(status) {
@@ -145,42 +142,21 @@ class RentalDashboard {
   }
 
   loadRecentBookings() {
-    const tbody = document.getElementById("recentBookings");
-    if (!tbody) return;
-
-    const recentBookings = mockData.bookings
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      .slice(0, 5);
-
-    tbody.innerHTML = recentBookings
-      .map(
-        (booking) => `
-            <tr>
-                <td class="font-semibold text-dark">#${booking.id}</td>
-                <td>
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="avatar bg-primary text-white d-flex align-items-center justify-content-center text-uppercase fw-bold" style="width: 32px; height: 32px; font-size: 14px;">
-                            ${booking.customerName.charAt(0)}
-                        </div>
-                        <span class="font-medium">${booking.customerName}</span>
-                    </div>
-                </td>
-                <td>${booking.vehicleName}</td>
-                <td><span class="badge ${this.getBadgeClass(booking.status)}">${booking.status}</span></td>
-                <td class="text-muted">${new Date(booking.createdAt).toLocaleDateString()}</td>
-            </tr>
-        `,
-      )
-      .join("");
+    // Recent bookings are now handled natively via Django context in dashboard_view
   }
 
   loadStaffData() {
     const tbody = document.getElementById("staffTable");
     if (!tbody) return;
 
-    tbody.innerHTML = mockData.staff
-      .map(
-        (staff) => `
+    fetch('/api/staff/')
+      .then(res => res.json())
+      .then(data => {
+        if (data.staff) {
+          mockData.staff = data.staff;
+          tbody.innerHTML = mockData.staff
+            .map(
+              (staff) => `
             <tr>
                 <td>
                     <div class="d-flex align-items-center gap-3">
@@ -196,10 +172,10 @@ class RentalDashboard {
                 <td>${staff.phone}</td>
                 <td><span class="badge badge-secondary">${staff.role}</span></td>
                 <td><span class="badge ${this.getBadgeClass(staff.status)}">${staff.status}</span></td>
-                <td class="text-muted">${new Date(staff.joinDate).toLocaleDateString()}</td>
+                <td class="text-muted">${staff.joinDate}</td>
                 <td>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-icon btn-secondary" onclick="dashboard.editStaff(${staff.id})">
+                        <button class="btn btn-icon btn-secondary" onclick="dashboard.editStaff(${staff.id})" disabled title="Edit disabled for API managed staff">
                             <i class="bi bi-pencil"></i>
                         </button>
                         <button class="btn btn-icon btn-danger" onclick="dashboard.deleteStaff(${staff.id})">
@@ -209,8 +185,11 @@ class RentalDashboard {
                 </td>
             </tr>
         `,
-      )
-      .join("");
+            )
+            .join("");
+        }
+      })
+      .catch(err => console.error("Error loading staff API data:", err));
   }
 
   loadVehicleData() {
@@ -264,57 +243,47 @@ class RentalDashboard {
   }
 
   loadBookingData() {
-    const tbody = document.getElementById("bookingsTable");
-    if (!tbody) return;
+    // Booking table is now fully rendered via Django template natively
+    // Removed legacy mapping function
+  }
 
-    tbody.innerHTML = mockData.bookings
-      .map((booking) => {
-        const assignedStaff = booking.assignedStaffId
-          ? mockData.staff.find((s) => s.id === booking.assignedStaffId)
-          : null;
+  // --- Utility functions ---
 
-        return `
-                <tr>
-                    <td class="font-semibold">#${booking.id}</td>
-                    <td>
-                        <div class="font-medium text-dark">${booking.vehicleName}</div>
-                    </td>
-                    <td>
-                        <div class="font-medium text-dark">${booking.customerName}</div>
-                        <div class="small text-muted">${booking.customerEmail}</div>
-                    </td>
-                    <td>
-                        <div class="small">${new Date(booking.startDate).toLocaleDateString()}</div>
-                        <div class="small border-top border-secondary opacity-50 my-1 w-50"></div>
-                        <div class="small">${new Date(booking.endDate).toLocaleDateString()}</div>
-                    </td>
-                    <td class="font-bold text-primary">$${booking.totalAmount}</td>
-                    <td><span class="badge ${this.getBadgeClass(booking.status)}">${booking.status}</span></td>
-                    <td>
-                        ${
-                          assignedStaff
-                            ? `<div class="d-flex align-items-center gap-2">
-                                <div class="avatar bg-surface border text-muted d-flex align-items-center justify-content-center text-uppercase " style="width: 24px; height: 24px; font-size: 10px;">
-                                    ${assignedStaff.name.charAt(0)}
-                                </div>
-                                <span class="small">${assignedStaff.name}</span>
-                            </div>`
-                            : '<span class="text-muted small italic">Unassigned</span>'
-                        }
-                    </td>
-                    <td>
-                        ${
-                          booking.status === "pending"
-                            ? `<button class="btn btn-sm btn-primary" onclick="dashboard.openAssignModal(${booking.id})">
-                                <i class="bi bi-person-plus"></i> Assign
-                            </button>`
-                            : '<span class="text-muted small">-</span>'
-                        }
-                    </td>
-                </tr>
-            `;
-      })
-      .join("");
+  getBadgeClass(status) {
+      // No longer needed for bookings since Django template parses colors natively, 
+      // but keeping it for legacy staff references in case
+      switch(status.toLowerCase()) {
+        case 'active': return 'badge-success';
+        case 'inactive': return 'badge-secondary';
+        case 'pending': return 'badge-warning';
+        case 'completed': return 'badge-primary';
+        case 'cancelled': return 'badge-danger';
+        default: return 'badge-secondary';
+      }
+  }
+
+  openAssignModal(bookingId) {
+    // Populate the hidden dropdown value using the parameter or event
+    const bookingInput = document.getElementById("modalBookingId");
+    if(bookingInput) {
+        bookingInput.value = bookingId;
+    }
+    
+    // Set a generic booking info HTML for the modal card header
+    const infoDiv = document.getElementById("bookingInfo");
+    if (infoDiv) {
+        infoDiv.innerHTML = `
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded p-2 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                     <i class="bi bi-calendar-check fs-4"></i>
+                </div>
+                <div>
+                     <h6 class="mb-1 fw-bold text-dark">Assigning to Booking #BKG-${bookingId.toString().padStart(4, '0')}</h6>
+                     <div class="small text-muted"><i class="bi bi-info-circle me-1"></i>Please select an active staff member below.</div>
+                </div>
+            </div>
+        `;
+    }
   }
 
   addStaff() {
@@ -324,27 +293,35 @@ class RentalDashboard {
       return;
     }
 
-    const newStaff = {
-      id: Math.max(...mockData.staff.map((s) => s.id)) + 1,
+    const payload = {
       name: document.getElementById("staffName").value,
       email: document.getElementById("staffEmail").value,
       phone: document.getElementById("staffPhone").value,
-      role: document.getElementById("staffRole").value,
-      status: "active",
-      joinDate: new Date().toISOString().split("T")[0],
+      password: document.getElementById("staffPassword") ? document.getElementById("staffPassword").value : 'defaultPass123',
+      role: 'staff'
     };
 
-    mockData.staff.push(newStaff);
-    this.saveData();
-    this.loadStaffData();
-
-    const modal = bootstrap.Modal.getInstance(
-      document.getElementById("addStaffModal"),
-    );
-    modal.hide();
-    form.reset();
-
-    this.showNotification("Staff member added successfully!", "success");
+    fetch('/api/staff/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': this.getCookie('csrftoken')
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+      if(data.success) {
+        this.loadStaffData();
+        const modal = bootstrap.Modal.getInstance(document.getElementById("addStaffModal"));
+        modal.hide();
+        form.reset();
+        this.showNotification("Staff member added successfully!", "success");
+      } else {
+        this.showNotification("Error: " + data.error, "danger");
+      }
+    })
+    .catch(err => this.showNotification("Network error", "danger"));
   }
 
   addVehicle() {
@@ -496,10 +473,24 @@ class RentalDashboard {
       confirmButtonText: 'Yes, delete it!'
     }).then((result) => {
       if (result.isConfirmed) {
-        mockData.staff = mockData.staff.filter((s) => s.id !== id);
-        this.saveData();
-        this.loadStaffData();
-        this.showNotification("Staff deleted successfully!", "success");
+        fetch('/api/staff/', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': this.getCookie('csrftoken')
+          },
+          body: JSON.stringify({id: id})
+        })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                this.loadStaffData();
+                this.showNotification("Staff deleted successfully!", "success");
+            } else {
+                this.showNotification("Failed to delete: " + data.error, "danger");
+            }
+        })
+        .catch(err => this.showNotification("Network error", "danger"));
       }
     });
   }

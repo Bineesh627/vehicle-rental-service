@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rentals',
     'staff',
+    'owner',
 ]
 
 REST_FRAMEWORK = {
@@ -136,3 +137,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+LOGIN_URL = '/login.html'
+LOGIN_REDIRECT_URL = '/dashboard.html'
+LOGOUT_REDIRECT_URL = '/login.html'
