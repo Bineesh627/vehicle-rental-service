@@ -23,7 +23,10 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { staffApi, StaffTask } from "@/services/api";
+import { staffApi, chatApi, StaffTask } from "@/services/api";
+import { useFocusEffect } from "expo-router";
+import { useAuth } from "@/context/AuthContext";
+import React from "react";
 
 // Theme Colors matching the screenshots
 const COLORS = {
@@ -43,31 +46,46 @@ export default function AssignedTasks() {
   const [activeTab, setActiveTab] = useState("All");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { token } = useAuth();
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (showRefresh = false) => {
+    if (showRefresh) setRefreshing(true);
     try {
       const data = await staffApi.getAssignedTasks();
-      setTasks(data);
+      // Only set tasks if the network request actually returns valid data
+      if (Array.isArray(data)) setTasks(data);
     } catch (error) {
       console.error(error);
-      Toast.show({
-        type: "error",
-        text1: "Error",
-        text2: "Failed to fetch tasks",
-      });
+      // We don't want to show a toast on every silent background poll failure
+      if (showRefresh) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: "Failed to fetch tasks",
+        });
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      // Fetch immediately on focus
+      fetchTasks();
+
+      // Then poll every 5 seconds
+      const pollInterval = setInterval(() => {
+        fetchTasks(false);
+      }, 5000);
+
+      return () => clearInterval(pollInterval);
+    }, []),
+  );
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchTasks();
+    fetchTasks(true);
   };
 
   const filteredTasks = tasks.filter((task) => {
@@ -297,7 +315,7 @@ export default function AssignedTasks() {
                             <Text className="text-xs uppercase text-gray-500 font-bold mb-0.5">
                               {task.type}
                             </Text>
-                            <Text className="text-lg font-bold text-white">
+                            <Text className="text-white font-bold text-lg mb-1">
                               {task.vehicleName}
                             </Text>
                           </View>
@@ -360,7 +378,31 @@ export default function AssignedTasks() {
                       <TouchableOpacity
                         className="flex-row items-center justify-center py-3 mb-4 rounded-full border"
                         style={{ borderColor: COLORS.primary }}
-                        onPress={() => router.push("/chat/1")}
+                        onPress={async () => {
+                          try {
+                            const conv =
+                              await chatApi.getOrCreateBookingConversation(
+                                token || "",
+                                task.bookingId.toString(),
+                              );
+                            router.push({
+                              pathname: "/chat/[id]",
+                              params: {
+                                id: conv.id,
+                                partnerName: conv.partnerName,
+                                partnerRole: conv.partnerRole,
+                                isOnline: String(conv.isOnline),
+                                shopName: conv.shopName,
+                              },
+                            });
+                          } catch (e) {
+                            Toast.show({
+                              type: "error",
+                              text1: "Chat Error",
+                              text2: "Could not open conversation",
+                            });
+                          }
+                        }}
                       >
                         <MessageSquare
                           size={16}

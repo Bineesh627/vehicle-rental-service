@@ -23,10 +23,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 const POLL_INTERVAL_MS = 5000;
 
 export default function ChatDetail() {
-  const { id, shopName } = useLocalSearchParams<{
-    id: string;
-    shopName?: string;
-  }>();
+  const { id, shopName, partnerName, partnerRole, isOnline } =
+    useLocalSearchParams<{
+      id: string;
+      shopName?: string;
+      partnerName?: string;
+      partnerRole?: string;
+      isOnline?: string;
+    }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
@@ -135,7 +139,27 @@ export default function ChatDetail() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
-  const displayName = shopName || "Chat";
+  const pRole = partnerRole || "";
+  const pName = partnerName && partnerName !== "Unknown" ? partnerName : "";
+  const onlineStatus = String(isOnline) === "true";
+
+  let headerTitle = pName;
+  let headerSubtitle = "";
+  let showSubtitle = true;
+
+  if (pRole === "Staff" || pRole === "Rental Shop") {
+    // If Customer (User) viewing Staff/Shop
+    headerTitle = pName;
+    headerSubtitle = shopName ? `${shopName} • ` : "";
+  } else if (pRole === "User" || pRole === "Customer") {
+    // If Staff viewing Customer (User)
+    headerTitle = pName;
+    showSubtitle = false;
+  } else {
+    // Fallback if role is empty
+    headerTitle = pName;
+    headerSubtitle = shopName ? `${shopName} • ` : "";
+  }
 
   if (loading) {
     return (
@@ -166,11 +190,38 @@ export default function ChatDetail() {
           >
             <ArrowLeft color="#FFFFFF" size={24} />
           </TouchableOpacity>
-          <View>
-            <Text className="font-bold text-white text-lg">{displayName}</Text>
-            <Text className="text-xs text-slate-500 font-medium tracking-wide">
-              Rental Shop
+          <View className="flex-1 mr-2">
+            <Text
+              className="font-bold text-white text-lg capitalize"
+              numberOfLines={1}
+            >
+              {headerTitle}
             </Text>
+            <View
+              className="flex-row items-center mt-0.5"
+              style={{ flexWrap: "nowrap" }}
+            >
+              {showSubtitle && (
+                <Text className="text-xs text-slate-500 font-medium tracking-wide">
+                  {headerSubtitle}
+                </Text>
+              )}
+              {onlineStatus ? (
+                <View className="flex-row items-center">
+                  <View className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5" />
+                  <Text className="text-[11px] text-green-500 font-medium">
+                    Online
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center">
+                  <View className="w-1.5 h-1.5 rounded-full bg-slate-500 mr-1.5" />
+                  <Text className="text-[11px] text-slate-500 font-medium">
+                    Offline
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
       </View>

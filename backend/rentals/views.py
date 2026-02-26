@@ -422,18 +422,38 @@ def conversation_list(request):
         Get or create the conversation between the user and the shop.
     """
     if request.method == 'GET':
-        convs = Conversation.objects.filter(user=request.user).prefetch_related('messages')
-        serializer = ConversationSerializer(convs, many=True)
+        # Need to capture both user and staff conversations
+        try:
+            role = getattr(request.user.user_profile, "role", "user")
+        except Exception:
+            role = 'user'
+
+        if role in ['staff', 'owner']:
+            # If shop/staff, load all conversations for their shop or assigned tasks
+            # This is simplified: Staff app usually doesn't query the full list, but if they do:
+            convs = Conversation.objects.all().prefetch_related('messages')
+        else:
+            convs = Conversation.objects.filter(user=request.user).prefetch_related('messages')
+
+        serializer = ConversationSerializer(convs, many=True, context={'request': request})
         return Response(serializer.data)
 
     # POST – get_or_create conversation
     shop_id = request.data.get('shop_id')
-    if not shop_id:
-        return Response({'error': 'shop_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+    booking_id = request.data.get('booking_id')
+    
+    if booking_id:
+        booking = get_object_or_404(Booking, id=booking_id)
+        # If staff is requesting, the conversation is between the booking user and the shop
+        conv, _ = Conversation.objects.get_or_create(user=booking.user, shop=booking.shop, booking=booking)
+    elif shop_id:
+        shop = get_object_or_404(RentalShop, id=shop_id)
+        # Regular customer-to-shop chat without booking context
+        conv, _ = Conversation.objects.get_or_create(user=request.user, shop=shop, booking=None)
+    else:
+        return Response({'error': 'shop_id or booking_id is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    shop = get_object_or_404(RentalShop, id=shop_id)
-    conv, _ = Conversation.objects.get_or_create(user=request.user, shop=shop)
-    serializer = ConversationSerializer(conv)
+    serializer = ConversationSerializer(conv, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -449,13 +469,23 @@ def message_list(request, conversation_id):
         Body: { "text": "...", "image_url": "..." (optional) }
         Send a new message as the logged-in user (role = 'user').
     """
-    conv = get_object_or_404(Conversation, id=conversation_id, user=request.user)
+    conv = get_object_or_404(Conversation, id=conversation_id)
+
+    # Determine sender_role from the user's profile
+    try:
+        sender_role = getattr(request.user.user_profile, "role", "user")
+    except Exception:
+        sender_role = 'user'
+
+    if sender_role == 'user' and conv.user != request.user:
+        return Response({'error': 'Not authorized'}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == 'GET':
         # Mark unread messages from the other side as read
-        conv.messages.filter(
-            sender_role__in=['staff', 'owner'], is_read=False
-        ).update(is_read=True)
+        if sender_role in ['staff', 'owner']:
+            conv.messages.filter(sender_role='user', is_read=False).update(is_read=True)
+        else:
+            conv.messages.filter(sender_role__in=['staff', 'owner'], is_read=False).update(is_read=True)
 
         messages = conv.messages.all()
         serializer = MessageSerializer(messages, many=True)
@@ -470,12 +500,6 @@ def message_list(request, conversation_id):
             {'error': 'A message must have text or an image_url.'},
             status=status.HTTP_400_BAD_REQUEST,
         )
-
-    # Determine sender_role from the user's profile
-    try:
-        sender_role = getattr(request.user.user_profile, "role", "user")
-    except Exception:
-        sender_role = 'user'
 
     message = Message.objects.create(
         conversation=conv,

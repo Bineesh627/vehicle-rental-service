@@ -24,6 +24,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import { staffApi, StaffTask } from "@/services/api";
+import { chatApi } from "@/services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Theme Colors derived from the screenshot
 const COLORS = {
@@ -246,7 +248,31 @@ export default function StaffDashboard() {
       <TouchableOpacity
         className="flex-row items-center justify-center py-3 mb-4 rounded-full border"
         style={{ borderColor: COLORS.primary }}
-        onPress={() => router.push("/chat/1")}
+        onPress={async () => {
+          try {
+            const token = await AsyncStorage.getItem("auth_token");
+            const conv = await chatApi.getOrCreateBookingConversation(
+              token || "",
+              task.bookingId.toString(),
+            );
+            router.push({
+              pathname: "/chat/[id]",
+              params: {
+                id: conv.id,
+                partnerName: conv.partnerName,
+                partnerRole: conv.partnerRole,
+                isOnline: String(conv.isOnline),
+                shopName: conv.shopName,
+              },
+            });
+          } catch (e) {
+            Toast.show({
+              type: "error",
+              text1: "Chat Error",
+              text2: "Could not open conversation",
+            });
+          }
+        }}
       >
         <MessageSquare
           size={16}

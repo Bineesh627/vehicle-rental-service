@@ -190,22 +190,25 @@ class KYCDocument(models.Model):
 # ── Chat ──────────────────────────────────────────────────────────────────────
 
 class Conversation(models.Model):
-    """One conversation between a customer (User) and a RentalShop."""
+    """A conversation between a customer and a RentalShop, OR tied to a specific Booking."""
     user = models.ForeignKey(
         User, on_delete=models.CASCADE, related_name='conversations'
     )
     shop = models.ForeignKey(
         RentalShop, on_delete=models.CASCADE, related_name='conversations'
     )
+    booking = models.ForeignKey(
+        'Booking', on_delete=models.SET_NULL, null=True, blank=True, related_name='conversations'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        # Only one conversation per user-shop pair
-        unique_together = ('user', 'shop')
         ordering = ['-updated_at']
 
     def __str__(self):
+        if self.booking:
+            return f"Conv #{self.id}: {self.user.username} ↔ Booking #{self.booking.id}"
         return f"Conv #{self.id}: {self.user.username} ↔ {self.shop.name}"
 
     @property

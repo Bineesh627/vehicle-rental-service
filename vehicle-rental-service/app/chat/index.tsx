@@ -135,7 +135,13 @@ export default function ChatList() {
                 );
                 router.push({
                   pathname: "/chat/[id]",
-                  params: { id: item.id, shopName: item.shopName },
+                  params: {
+                    id: item.id,
+                    shopName: item.shopName,
+                    partnerName: item.partnerName,
+                    partnerRole: item.partnerRole,
+                    isOnline: String(item.isOnline),
+                  },
                 });
               }}
             >

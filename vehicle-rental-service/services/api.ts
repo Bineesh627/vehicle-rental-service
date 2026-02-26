@@ -176,6 +176,8 @@ export interface ChatConversation {
   id: string;
   shopId: string;
   shopName: string;
+  partnerName: string;
+  partnerRole: string;
   isOnline: boolean;
   lastMessage: string;
   time: string;
@@ -207,6 +209,8 @@ const mapConversation = (data: any): ChatConversation => ({
   id: data.id.toString(),
   shopId: data.shop_id.toString(),
   shopName: data.shop_name,
+  partnerName: data.partner_name || "",
+  partnerRole: data.partner_role || "",
   isOnline: data.is_online ?? false,
   lastMessage: data.last_message_text ?? "",
   time: data.last_message_time ?? "",
@@ -251,6 +255,24 @@ export const chatApi = {
       body: JSON.stringify({ shop_id: shopId }),
     });
     if (!resp.ok) throw new Error("Failed to get/create conversation");
+    const data = await resp.json();
+    return mapConversation(data);
+  },
+
+  /**
+   * Get an existing conversation for a specific booking, or create one if none exists.
+   * @param bookingId  The backend integer ID of the booking (as a string).
+   */
+  async getOrCreateBookingConversation(
+    token: string,
+    bookingId: string,
+  ): Promise<ChatConversation> {
+    const resp = await fetch(`${API_BASE_URL}/chat/conversations/`, {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify({ booking_id: bookingId }),
+    });
+    if (!resp.ok) throw new Error("Failed to get/create booking conversation");
     const data = await resp.json();
     return mapConversation(data);
   },
@@ -875,13 +897,14 @@ export const notificationsApi = {
 
 export interface StaffTask {
   id: string;
-  type: "delivery" | "pickup";
+  type: string;
   vehicleName: string;
   customerName: string;
-  customerPhone: string;
+  customerPhone?: string;
   address: string;
   scheduledTime: string;
   status: "pending" | "in_progress" | "completed";
+  bookingId: string;
 }
 
 export const staffApi = {
@@ -893,7 +916,11 @@ export const staffApi = {
       headers: authHeaders(token),
     });
     if (!response.ok) throw new Error("Failed to fetch assigned tasks");
-    return await response.json();
+    const tasks = await response.json();
+    return tasks.map((task: any) => ({
+      ...task,
+      bookingId: task.booking_id ? task.booking_id.toString() : "",
+    }));
   },
 
   async updateTaskStatus(taskId: string, status: string): Promise<StaffTask> {

@@ -11,10 +11,10 @@ class StaffTaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = StaffTask
-        fields = ['id', 'type', 'vehicleName', 'customerName', 'customerPhone', 'address', 'scheduledTime', 'status']
+        fields = ['id', 'type', 'vehicleName', 'customerName', 'customerPhone', 'address', 'scheduledTime', 'status', 'booking_id']
 
     def get_vehicleName(self, obj):
-        return obj.booking.vehicle.name if obj.booking and obj.booking.vehicle else "Unknown Vehicle"
+        return f"{obj.booking.vehicle.brand} {obj.booking.vehicle.model}" if obj.booking and obj.booking.vehicle else "Unknown Vehicle"
 
     def get_customerName(self, obj):
         if not obj.booking or not obj.booking.user: return "Unknown Customer"

@@ -221,7 +221,8 @@ class ConversationSerializer(serializers.ModelSerializer):
     """Serialises a conversation with preview info for the chat list."""
     shop_id = serializers.IntegerField(source='shop.id', read_only=True)
     shop_name = serializers.CharField(source='shop.name', read_only=True)
-    # is_online is a placeholder; you can flip this to a real presence flag later
+    partner_name = serializers.SerializerMethodField()
+    partner_role = serializers.SerializerMethodField()
     is_online = serializers.SerializerMethodField()
     last_message_text = serializers.SerializerMethodField()
     last_message_time = serializers.SerializerMethodField()
@@ -230,13 +231,73 @@ class ConversationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Conversation
         fields = [
-            'id', 'shop_id', 'shop_name',
+            'id', 'shop_id', 'shop_name', 'booking_id',
+            'partner_name', 'partner_role',
             'is_online', 'last_message_text', 'last_message_time',
             'unread_count', 'updated_at',
         ]
 
+    def _get_partner(self, obj):
+        request = self.context.get('request')
+        if not request: return None
+        
+        # Determine the role of the person asking for the conversation
+        try:
+            role = getattr(request.user.user_profile, "role", "user")
+        except Exception:
+            role = 'user'
+
+        # If staff or owner is viewing this, their partner is ALWAYS the customer (obj.user)
+        if role in ['staff', 'owner']:
+            return obj.user
+            
+        # If the customer is viewing this...
+        if obj.booking and getattr(obj.booking, 'staff_tasks', None) and obj.booking.staff_tasks.exists():
+            # If there's an assigned staff task, the customer's partner is the Staff member
+            return obj.booking.staff_tasks.first().staff
+            
+        # Fallback to the Shop as the partner
+        return obj.shop
+
+    def get_partner_name(self, obj):
+        partner = self._get_partner(obj)
+        from django.contrib.auth.models import User
+        from .models import RentalShop
+        if isinstance(partner, User):
+            first = partner.first_name.strip()
+            last = partner.last_name.strip()
+            if first or last:
+                return f"{first} {last}".strip()
+            return partner.username  # Fallback to username if names aren't set
+        if isinstance(partner, RentalShop):
+            return partner.name
+        return obj.shop.name if obj.shop else "Chat"
+
+    def get_partner_role(self, obj):
+        partner = self._get_partner(obj)
+        from django.contrib.auth.models import User
+        if isinstance(partner, User):
+            # If the partner is a User, it's either the Customer or the Staff member.
+            # We can check the partner's actual role in the DB
+            try:
+                partner_role = getattr(partner.user_profile, "role", "user")
+                if partner_role == 'staff':
+                    return "Staff"
+            except Exception:
+                pass
+            return "User"
+        return "Rental Shop"
+
     def get_is_online(self, obj):
-        return False  # Extend with WebSocket presence later
+        # A basic pseudo-presence check: active in the last 15 mins
+        # In a real app this would use WebSockets or Redis.
+        from django.utils import timezone
+        from datetime import timedelta
+        partner = self._get_partner(obj)
+        if isinstance(partner, User):
+            if partner.last_login:
+                return timezone.now() - partner.last_login < timedelta(minutes=15)
+        return True # Default the shop to online
 
     def get_last_message_text(self, obj):
         msg = obj.last_message

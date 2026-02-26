@@ -26,6 +26,7 @@ const API_BASE_URL = getBaseUrl();
 
 interface AuthContextType {
   user: AuthUser | null;
+  token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (
@@ -51,6 +52,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -69,12 +71,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (response.ok) {
             setUser(JSON.parse(storedUser));
+            setToken(storedToken);
           } else {
             // Token is invalid/expired (e.g., backend DB was reset)
             console.warn("Stored token is invalid. Logging out.");
             await AsyncStorage.removeItem("auth_user");
             await AsyncStorage.removeItem("auth_token");
             setUser(null);
+            setToken(null);
           }
         }
       } catch (e) {
@@ -118,6 +122,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
 
         setUser(authUser);
+        setToken(data.token);
         await AsyncStorage.setItem("auth_user", JSON.stringify(authUser));
         await AsyncStorage.setItem("auth_token", data.token);
         return { success: true, role: authUser.role };
@@ -167,8 +172,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = useCallback(async () => {
     setUser(null);
+    setToken(null);
     try {
       await AsyncStorage.removeItem("auth_user");
+      await AsyncStorage.removeItem("auth_token");
     } catch (e) {
       console.error("Failed to remove user", e);
     }
@@ -178,7 +185,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, isLoading, isAuthenticated, login, register, logout }}
+      value={{
+        user,
+        token,
+        isLoading,
+        isAuthenticated,
+        login,
+        register,
+        logout,
+      }}
     >
       {children}
     </AuthContext.Provider>

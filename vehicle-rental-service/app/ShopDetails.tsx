@@ -1,5 +1,6 @@
 import { VehicleCard } from "@/components/VehicleCard";
-import { api } from "@/services/api";
+import { api, chatApi } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 import { RentalShop, Vehicle } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
 import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
@@ -41,6 +42,7 @@ export default function ShopDetails() {
   const navigation = useNavigation<ShopDetailsNavigationProp>();
   const { id } = route.params;
   const insets = useSafeAreaInsets();
+  const { token } = useAuth();
 
   const [shop, setShop] = useState<RentalShop | null>(null);
   const [shopVehicles, setShopVehicles] = useState<Vehicle[]>([]);
@@ -218,9 +220,30 @@ export default function ShopDetails() {
 
             <TouchableOpacity
               className="flex-row items-center justify-center gap-2 bg-[#1E293B] py-4 rounded-2xl border border-slate-700"
-              onPress={() =>
-                router.push({ pathname: "/chat/[id]", params: { id: shop.id } })
-              }
+              onPress={async () => {
+                try {
+                  const conv = await chatApi.getOrCreateConversation(
+                    token || "",
+                    shop.id,
+                  );
+                  router.push({
+                    pathname: "/chat/[id]",
+                    params: {
+                      id: conv.id,
+                      partnerName: conv.partnerName,
+                      partnerRole: conv.partnerRole,
+                      isOnline: String(conv.isOnline),
+                      shopName: conv.shopName,
+                    },
+                  });
+                } catch (e) {
+                  Toast.show({
+                    type: "error",
+                    text1: "Error",
+                    text2: "Could not open conversation",
+                  });
+                }
+              }}
             >
               <MessageCircle color="#FFFFFF" size={20} />
               <Text className="font-bold text-white text-base">
