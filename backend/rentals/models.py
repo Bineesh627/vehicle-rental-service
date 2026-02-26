@@ -55,7 +55,7 @@ class Booking(models.Model):
     ]
     
     DELIVERY_OPTIONS = [
-        ('self', 'Self Pickup'),
+        ('pickup', 'Self Pickup'),
         ('delivery', 'Home Delivery'),
     ]
     
@@ -82,7 +82,7 @@ class Booking(models.Model):
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     
     # Delivery details
-    delivery_option = models.CharField(max_length=10, choices=DELIVERY_OPTIONS, default='self')
+    delivery_option = models.CharField(max_length=10, choices=DELIVERY_OPTIONS, default='pickup')
     delivery_address = models.TextField(blank=True, null=True)
     
     # Payment details

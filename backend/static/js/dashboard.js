@@ -262,7 +262,7 @@ class RentalDashboard {
       }
   }
 
-  openAssignModal(bookingId) {
+  openAssignModal(bookingId, currentStaffId = null) {
     // Populate the hidden dropdown value using the parameter or event
     const bookingInput = document.getElementById("modalBookingId");
     if(bookingInput) {
@@ -278,11 +278,20 @@ class RentalDashboard {
                      <i class="bi bi-calendar-check fs-4"></i>
                 </div>
                 <div>
-                     <h6 class="mb-1 fw-bold text-dark">Assigning to Booking #BKG-${bookingId.toString().padStart(4, '0')}</h6>
+                     <h6 class="mb-1 fw-bold text-dark">${currentStaffId ? 'Reassigning' : 'Assigning'} to Booking #BKG-${bookingId.toString().padStart(4, '0')}</h6>
                      <div class="small text-muted"><i class="bi bi-info-circle me-1"></i>Please select an active staff member below.</div>
                 </div>
             </div>
         `;
+    }
+
+    const select = document.getElementById("assignStaffSelect");
+    if (select) {
+        if (currentStaffId) {
+            select.value = currentStaffId;
+        } else {
+            select.value = "";
+        }
     }
   }
 
@@ -363,69 +372,7 @@ class RentalDashboard {
     this.showNotification("Shop added successfully!", "success");
   }
 
-  openAssignModal(bookingId) {
-    this.currentBookingId = bookingId;
-    const booking = mockData.bookings.find((b) => b.id === bookingId);
 
-    document.getElementById("bookingInfo").innerHTML = `
-            <div class="font-medium text-dark mb-1">Booking #${booking.id}</div>
-            <div class="small text-muted mb-1"><i class="bi bi-car-front me-2"></i>${booking.vehicleName}</div>
-            <div class="small text-muted mb-1"><i class="bi bi-person me-2"></i>${booking.customerName}</div>
-            <div class="small text-muted"><i class="bi bi-calendar me-2"></i>${new Date(booking.startDate).toLocaleDateString()} to ${new Date(booking.endDate).toLocaleDateString()}</div>
-        `;
-
-    const activeStaff = mockData.staff.filter((s) => s.status === "active");
-    const select = document.getElementById("assignStaffSelect");
-    select.innerHTML =
-      '<option value="">Choose staff member...</option>' +
-      activeStaff
-        .map(
-          (staff) => `
-                <option value="${staff.id}">${staff.name} - ${staff.role}</option>
-            `,
-        )
-        .join("");
-
-    const modal = new bootstrap.Modal(
-      document.getElementById("assignStaffModal"),
-    );
-    modal.show();
-  }
-
-  assignStaff() {
-    const staffId = parseInt(
-      document.getElementById("assignStaffSelect").value,
-    );
-    if (!staffId) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Missing Selection',
-        text: 'Please select a staff member'
-      });
-      return;
-    }
-
-    const booking = mockData.bookings.find(
-      (b) => b.id === this.currentBookingId,
-    );
-    const staff = mockData.staff.find((s) => s.id === staffId);
-
-    booking.assignedStaffId = staffId;
-    booking.status = "assigned";
-
-    this.saveData();
-    this.loadBookingData();
-
-    const modal = bootstrap.Modal.getInstance(
-      document.getElementById("assignStaffModal"),
-    );
-    modal.hide();
-
-    this.showNotification(
-      `Booking assigned to ${staff.name} successfully!`,
-      "success",
-    );
-  }
 
   editStaff(id) {
     const staff = mockData.staff.find((s) => s.id === id);

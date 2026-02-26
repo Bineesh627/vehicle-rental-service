@@ -54,7 +54,7 @@ export const api = {
     booking_type: "hour" | "day";
     start_date: string;
     duration: number;
-    delivery_option: "self" | "delivery";
+    delivery_option: "pickup" | "delivery";
     delivery_address?: string;
     payment_method: "card" | "upi" | "wallet";
   }): Promise<any> {

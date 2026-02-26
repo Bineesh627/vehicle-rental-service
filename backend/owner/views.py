@@ -99,18 +99,22 @@ def booking_management_view(request):
             staff_id = request.POST.get('staff_id')
             
             try:
+                print("ASSIGN STAFF ACTION:", booking_id, staff_id)
                 booking = Booking.objects.get(id=booking_id, shop=shop)
                 staff_member = User.objects.get(id=staff_id, user_profile__role='staff')
                 
-                # Create or update Staff Task
-                task, created = StaffTask.objects.update_or_create(
+                print("FOUND BOOKING AND STAFF", booking, staff_member)
+                
+                # Delete any existing tasks for this booking to handle reassignments and orphaned tasks
+                StaffTask.objects.filter(booking=booking).delete()
+                
+                # Create new Staff Task for the newly assigned staff member
+                task = StaffTask.objects.create(
                     booking=booking,
-                    defaults={
-                        'staff': staff_member,
-                        'type': 'delivery' if booking.delivery_option == 'delivery' else 'pickup',
-                        'scheduled_time': booking.start_date,
-                        'status': 'pending'
-                    }
+                    staff=staff_member,
+                    type='delivery' if booking.delivery_option == 'delivery' else 'pickup',
+                    scheduled_time=booking.start_date,
+                    status='pending'
                 )
                 
                 # Update booking status to active since it's assigned

@@ -33,7 +33,7 @@ import { DeliveryLocationSelector } from "@/components/user/DeliveryLocationSele
 
 import { PaymentMethod, SavedLocation } from "@/services/api";
 
-type DeliveryOption = "self" | "delivery";
+type DeliveryOption = "pickup" | "delivery";
 
 export default function Booking() {
   const navigation = useNavigation();
@@ -64,7 +64,8 @@ export default function Booking() {
   const [duration, setDuration] = useState(bookingType === "day" ? 1 : 4);
   const [paymentMethodId, setPaymentMethodId] = useState<string | null>(null);
 
-  const [deliveryOption, setDeliveryOption] = useState<DeliveryOption>("self");
+  const [deliveryOption, setDeliveryOption] =
+    useState<DeliveryOption>("pickup");
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [showDeliverySelector, setShowDeliverySelector] = useState(false);
 
@@ -506,17 +507,17 @@ export default function Booking() {
           </View>
           <View style={styles.grid}>
             <TouchableOpacity
-              onPress={() => setDeliveryOption("self")}
+              onPress={() => setDeliveryOption("pickup")}
               style={[
                 styles.gridItemHalf,
-                deliveryOption === "self"
+                deliveryOption === "pickup"
                   ? styles.outlineActive
                   : styles.outlineInactive,
               ]}
             >
               <Text
                 style={
-                  deliveryOption === "self"
+                  deliveryOption === "pickup"
                     ? styles.outlineTextActive
                     : styles.outlineTextInactive
                 }

@@ -142,33 +142,7 @@ def create_booking(request):
                 is_read=False
             )
             
-            # Create corresponding Staff Tasks
-            try:
-                from django.contrib.auth.models import User
-                from staff.models import StaffTask
-                
-                # Assign to the first available staff for now
-                staff_user = User.objects.filter(user_profile__role='staff').first()
-                if staff_user:
-                    # Delivery Task
-                    StaffTask.objects.create(
-                        staff=staff_user,
-                        booking=booking,
-                        type='delivery',
-                        scheduled_time=booking.start_date,
-                        status='pending'
-                    )
-                    # Pickup Task
-                    StaffTask.objects.create(
-                        staff=staff_user,
-                        booking=booking,
-                        type='pickup',
-                        scheduled_time=booking.end_date,
-                        status='pending'
-                    )
-            except Exception as e:
-                print("Failed to auto-assign staff tasks:", str(e))
-            
+
             # Return booking details
             response_serializer = BookingSerializer(booking)
             return Response(response_serializer.data, status=status.HTTP_201_CREATED)

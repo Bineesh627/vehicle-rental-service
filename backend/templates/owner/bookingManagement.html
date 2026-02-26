@@ -183,9 +183,18 @@
                                         <div class="small text-success fw-medium"><i
                                                 class="bi bi-shield-check me-1"></i>Paid</div>
                                     </td>
-                                    <td><span
+                                    <td>
+                                        {% with task=booking.staff_tasks.first %}
+                                        {% if task and task.status == 'completed' %}
+                                        <span class="badge bg-info px-3 py-2 rounded-pill fw-medium"
+                                            style="letter-spacing: 0.5px;">Completed</span>
+                                        {% else %}
+                                        <span
                                             class="badge {% if booking.status == 'active' %}bg-success{% elif booking.status == 'upcoming' %}bg-warning{% elif booking.status == 'completed' %}bg-secondary{% else %}bg-danger{% endif %} px-3 py-2 rounded-pill fw-medium"
-                                            style="letter-spacing: 0.5px;">{{ booking.get_status_display }}</span></td>
+                                            style="letter-spacing: 0.5px;">{{ booking.get_status_display }}</span>
+                                        {% endif %}
+                                        {% endwith %}
+                                    </td>
                                     <td>
                                         {% with task=booking.staff_tasks.first %}
                                         {% if task and task.staff %}
@@ -204,11 +213,22 @@
                                     </td>
                                     <td class="text-end pe-4">
                                         {% if booking.status == 'upcoming' or booking.status == 'active' %}
-                                        <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm assign-btn"
-                                            data-booking-id="{{ booking.id }}" data-bs-toggle="modal"
-                                            data-bs-target="#assignStaffModal">
-                                            <i class="bi bi-person-plus-fill me-1"></i> Assign
+                                        {% with task=booking.staff_tasks.first %}
+                                        {% if task and task.status == 'completed' %}
+                                        <button
+                                            class="btn btn-sm btn-light border rounded-pill px-3 text-muted disabled">
+                                            <i class="bi bi-check2-all me-1"></i> Task Done
                                         </button>
+                                        {% else %}
+                                        <button
+                                            class="btn btn-sm {% if task %}btn-outline-primary{% else %}btn-primary{% endif %} rounded-pill px-3 shadow-sm assign-btn"
+                                            data-booking-id="{{ booking.id }}" data-bs-toggle="modal"
+                                            data-bs-target="#assignStaffModal"
+                                            onclick="dashboard.openAssignModal('{{ booking.id }}', '{% if task %}{{ task.staff.id }}{% endif %}')">
+                                            <i class="bi bi-person-plus-fill me-1"></i> {% if task %}Reassign{% else %}Assign{% endif %}
+                                        </button>
+                                        {% endif %}
+                                        {% endwith %}
                                         {% else %}
                                         <button
                                             class="btn btn-sm btn-light border rounded-pill px-3 text-muted disabled">
@@ -288,7 +308,7 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{% static 'js/dashboard.js' %}"></script>
+    <script src="{% static 'js/dashboard.js' %}?v=2.0"></script>
 </body>
 
 </html>
