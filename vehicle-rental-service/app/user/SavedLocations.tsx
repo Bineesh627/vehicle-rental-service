@@ -13,7 +13,8 @@ import {
   Trash2,
   X,
 } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   Modal,
   ScrollView,
@@ -57,7 +58,7 @@ export default function SavedLocations() {
   const [isEditing, setIsEditing] = useState(false);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
-    null
+    null,
   );
   const [showOptionsModal, setShowOptionsModal] =
     useState<SavedLocation | null>(null);
@@ -68,27 +69,29 @@ export default function SavedLocations() {
     type: "other" as "home" | "work" | "favorite" | "other",
   });
 
-  // Load saved locations on component mount
-  useEffect(() => {
-    const loadLocations = async () => {
-      try {
-        setLoading(true);
-        const data = await profileManagementApi.getSavedLocations();
-        setLocations(data);
-      } catch (error) {
-        console.error("Failed to load saved locations:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to load saved locations",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Load saved locations on screen focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadLocations = async () => {
+        try {
+          setLoading(true);
+          const data = await profileManagementApi.getSavedLocations();
+          setLocations(data);
+        } catch (error) {
+          console.error("Failed to load saved locations:", error);
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Failed to load saved locations",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    loadLocations();
-  }, []);
+      loadLocations();
+    }, []),
+  );
 
   const resetForm = () => {
     setFormData({ name: "", address: "", type: "other" });
@@ -108,16 +111,16 @@ export default function SavedLocations() {
 
     try {
       setLoading(true);
-      
+
       if (isEditing && selectedLocationId) {
         const updatedLocation = await profileManagementApi.updateSavedLocation(
           selectedLocationId,
-          formData
+          formData,
         );
         setLocations((prev) =>
           prev.map((loc) =>
-            loc.id === selectedLocationId ? updatedLocation : loc
-          )
+            loc.id === selectedLocationId ? updatedLocation : loc,
+          ),
         );
         Toast.show({
           type: "success",
@@ -125,7 +128,8 @@ export default function SavedLocations() {
           text2: `${formData.name} has been updated.`,
         });
       } else {
-        const newLocation = await profileManagementApi.createSavedLocation(formData);
+        const newLocation =
+          await profileManagementApi.createSavedLocation(formData);
         setLocations((prev) => [...prev, newLocation]);
         Toast.show({
           type: "success",
@@ -133,7 +137,7 @@ export default function SavedLocations() {
           text2: `${formData.name} has been added.`,
         });
       }
-      
+
       setShowDialog(false);
       resetForm();
     } catch (error) {
@@ -162,7 +166,7 @@ export default function SavedLocations() {
 
   const deleteLocation = async (id: string) => {
     const location = locations.find((l) => l.id === id);
-    
+
     try {
       setLoading(true);
       await profileManagementApi.deleteSavedLocation(id);
@@ -243,19 +247,19 @@ export default function SavedLocations() {
                 location.type === "home"
                   ? "#2dd4bf" // Teal
                   : location.type === "work"
-                  ? "#a855f7" // Purple
-                  : location.type === "favorite"
-                  ? "#f97316" // Orange
-                  : "#94a3b8"; // Slate
+                    ? "#a855f7" // Purple
+                    : location.type === "favorite"
+                      ? "#f97316" // Orange
+                      : "#94a3b8"; // Slate
 
               const iconBg =
                 location.type === "home"
                   ? "rgba(45, 212, 191, 0.1)"
                   : location.type === "work"
-                  ? "rgba(168, 85, 247, 0.1)"
-                  : location.type === "favorite"
-                  ? "rgba(249, 115, 22, 0.1)"
-                  : "#334155";
+                    ? "rgba(168, 85, 247, 0.1)"
+                    : location.type === "favorite"
+                      ? "rgba(249, 115, 22, 0.1)"
+                      : "#334155";
 
               return (
                 <View key={location.id} style={styles.card}>

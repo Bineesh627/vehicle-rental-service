@@ -1,5 +1,6 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   Bell,
   ChevronRight,
@@ -45,36 +46,38 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadProfileData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // Load profile and stats in parallel
-        const [profileData, statsData] = await Promise.all([
-          profileApi.getUserProfile(),
-          profileApi.getUserStats(),
-        ]);
-        
-        setUserProfile(profileData);
-        setUserStats(statsData);
-      } catch (err) {
-        console.error('Failed to load profile data:', err);
-        setError('Failed to load profile data');
-        Toast.show({
-          type: "error",
-          text1: "Failed to load profile data",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadProfileData = async () => {
+        try {
+          setLoading(true);
+          setError(null);
 
-    if (user) {
-      loadProfileData();
-    }
-  }, [user]);
+          // Load profile and stats in parallel
+          const [profileData, statsData] = await Promise.all([
+            profileApi.getUserProfile(),
+            profileApi.getUserStats(),
+          ]);
+
+          setUserProfile(profileData);
+          setUserStats(statsData);
+        } catch (err) {
+          console.error("Failed to load profile data:", err);
+          setError("Failed to load profile data");
+          Toast.show({
+            type: "error",
+            text1: "Failed to load profile data",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      if (user) {
+        loadProfileData();
+      }
+    }, [user]),
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -87,9 +90,9 @@ export default function Profile() {
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -109,7 +112,9 @@ export default function Profile() {
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error || 'Profile data unavailable'}</Text>
+          <Text style={styles.errorText}>
+            {error || "Profile data unavailable"}
+          </Text>
         </View>
       </View>
     );
@@ -130,10 +135,14 @@ export default function Profile() {
           <View style={styles.profileCard}>
             <View style={styles.profileHeader}>
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{getInitials(userProfile.first_name || userProfile.username)}</Text>
+                <Text style={styles.avatarText}>
+                  {getInitials(userProfile.first_name || userProfile.username)}
+                </Text>
               </View>
               <View style={styles.profileInfo}>
-                <Text style={styles.profileName}>{userProfile.first_name || userProfile.username}</Text>
+                <Text style={styles.profileName}>
+                  {userProfile.first_name || userProfile.username}
+                </Text>
                 <Text style={styles.profileEmail}>{userProfile.email}</Text>
               </View>
             </View>
@@ -141,15 +150,21 @@ export default function Profile() {
             {/* Stats */}
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{userStats?.total_bookings || 0}</Text>
+                <Text style={styles.statValue}>
+                  {userStats?.total_bookings || 0}
+                </Text>
                 <Text style={styles.statLabel}>Total Booking</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>${userStats?.total_spent || 0}</Text>
+                <Text style={styles.statValue}>
+                  ${userStats?.total_spent || 0}
+                </Text>
                 <Text style={styles.statLabel}>Total Spent</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>{userStats?.saved_places || 0}</Text>
+                <Text style={styles.statValue}>
+                  {userStats?.saved_places || 0}
+                </Text>
                 <Text style={styles.statLabel}>Saved Places</Text>
               </View>
             </View>

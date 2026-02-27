@@ -9,7 +9,8 @@ import {
   Wallet,
   X,
 } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   Modal,
   ScrollView,
@@ -22,7 +23,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { profileManagementApi, PaymentMethod, PaymentMethodCreate } from "@/services/api";
+import {
+  profileManagementApi,
+  PaymentMethod,
+  PaymentMethodCreate,
+} from "@/services/api";
 
 const initialPaymentMethods: PaymentMethod[] = [
   {
@@ -70,33 +75,34 @@ export default function PaymentMethods() {
   const [showUpiDialog, setShowUpiDialog] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Load payment methods on component mount
-  useEffect(() => {
-    const loadPaymentMethods = async () => {
-      try {
-        setLoading(true);
-        const data = await profileManagementApi.getPaymentMethods();
-        setPaymentMethods(data);
-      } catch (error) {
-        console.error('Failed to load payment methods:', error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to load payment methods",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Load payment methods on screen focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadPaymentMethods = async () => {
+        try {
+          setLoading(true);
+          const data = await profileManagementApi.getPaymentMethods();
+          setPaymentMethods(data);
+        } catch (error) {
+          console.error("Failed to load payment methods:", error);
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Failed to load payment methods",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    loadPaymentMethods();
-  }, []);
+      loadPaymentMethods();
+    }, []),
+  );
 
   const resetForm = () =>
     setFormData({ cardNumber: "", cardHolder: "", expiryDate: "", cvv: "" });
 
-  const resetUpiForm = () =>
-    setUpiData({ upiId: "", upiAppName: "" });
+  const resetUpiForm = () => setUpiData({ upiId: "", upiAppName: "" });
 
   const handleAddUpi = async () => {
     if (!upiData.upiId) {
@@ -117,9 +123,10 @@ export default function PaymentMethods() {
         is_default: paymentMethods.length === 0,
       };
 
-      const createdMethod = await profileManagementApi.createPaymentMethod(newMethod);
+      const createdMethod =
+        await profileManagementApi.createPaymentMethod(newMethod);
       setPaymentMethods((prev) => [...prev, createdMethod]);
-      
+
       Toast.show({
         type: "success",
         text1: "UPI Added",
@@ -128,7 +135,7 @@ export default function PaymentMethods() {
       setShowUpiDialog(false);
       resetUpiForm();
     } catch (error) {
-      console.error('Failed to add UPI method:', error);
+      console.error("Failed to add UPI method:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -140,11 +147,7 @@ export default function PaymentMethods() {
   };
 
   const handleAddCard = async () => {
-    if (
-      !formData.cardNumber ||
-      !formData.cardHolder ||
-      !formData.expiryDate
-    ) {
+    if (!formData.cardNumber || !formData.cardHolder || !formData.expiryDate) {
       Toast.show({
         type: "error",
         text1: "Error",
@@ -166,9 +169,10 @@ export default function PaymentMethods() {
         is_default: paymentMethods.length === 0,
       };
 
-      const createdMethod = await profileManagementApi.createPaymentMethod(newMethod);
+      const createdMethod =
+        await profileManagementApi.createPaymentMethod(newMethod);
       setPaymentMethods((prev) => [...prev, createdMethod]);
-      
+
       Toast.show({
         type: "success",
         text1: "Card Added",
@@ -177,7 +181,7 @@ export default function PaymentMethods() {
       setShowAddDialog(false);
       resetForm();
     } catch (error) {
-      console.error('Failed to add payment method:', error);
+      console.error("Failed to add payment method:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -193,7 +197,7 @@ export default function PaymentMethods() {
       setLoading(true);
       await profileManagementApi.updatePaymentMethod(id, { is_default: true });
       setPaymentMethods((prev) =>
-        prev.map((pm) => ({ ...pm, is_default: pm.id === id }))
+        prev.map((pm) => ({ ...pm, is_default: pm.id === id })),
       );
       Toast.show({
         type: "success",
@@ -202,7 +206,7 @@ export default function PaymentMethods() {
       });
       setShowOptionsModal(null);
     } catch (error) {
-      console.error('Failed to set default payment method:', error);
+      console.error("Failed to set default payment method:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -235,7 +239,7 @@ export default function PaymentMethods() {
       });
       setShowOptionsModal(null);
     } catch (error) {
-      console.error('Failed to delete payment method:', error);
+      console.error("Failed to delete payment method:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -299,10 +303,7 @@ export default function PaymentMethods() {
             paymentMethods.map((method) => (
               <View
                 key={method.id}
-                style={[
-                  styles.card,
-                  method.is_default && styles.cardDefault,
-                ]}
+                style={[styles.card, method.is_default && styles.cardDefault]}
               >
                 <View style={styles.cardContent}>
                   <View style={styles.cardLeft}>
@@ -332,7 +333,9 @@ export default function PaymentMethods() {
                       <Text style={styles.methodDetails}>{method.details}</Text>
                     </View>
                   </View>
-                  <TouchableOpacity onPress={() => setShowOptionsModal(method.id)}>
+                  <TouchableOpacity
+                    onPress={() => setShowOptionsModal(method.id)}
+                  >
                     <MoreVertical size={20} color="#94a3b8" />
                   </TouchableOpacity>
                 </View>

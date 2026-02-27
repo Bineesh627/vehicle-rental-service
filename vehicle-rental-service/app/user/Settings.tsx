@@ -9,7 +9,8 @@ import {
   Mail,
   MessageSquare,
 } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   Platform,
   ScrollView,
@@ -40,34 +41,36 @@ export default function Settings() {
   const [loading, setLoading] = useState(false);
   const [processingKey, setProcessingKey] = useState<string | null>(null);
 
-  // Load settings on component mount
-  useEffect(() => {
-    const loadSettings = async () => {
-      try {
-        setLoading(true);
-        const data = await profileManagementApi.getUserSettings();
-        setSettings(data);
-      } catch (error) {
-        console.error('Failed to load settings:', error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to load settings",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Load settings on screen focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadSettings = async () => {
+        try {
+          setLoading(true);
+          const data = await profileManagementApi.getUserSettings();
+          setSettings(data);
+        } catch (error) {
+          console.error("Failed to load settings:", error);
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Failed to load settings",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    loadSettings();
-  }, []);
+      loadSettings();
+    }, []),
+  );
 
   const toggleSetting = async (key: keyof UserSettings) => {
     // Prevent multiple rapid clicks on same setting
     if (processingKey === key) return;
-    
+
     const newValue = !settings[key];
-    
+
     try {
       setProcessingKey(key);
       await profileManagementApi.updateUserSettings({ [key]: newValue });
@@ -75,10 +78,10 @@ export default function Settings() {
       Toast.show({
         type: "success",
         text1: "Settings Updated",
-        text2: `${key.replace(/_/g, ' ')} updated successfully`,
+        text2: `${key.replace(/_/g, " ")} updated successfully`,
       });
     } catch (error) {
-      console.error('Failed to update settings:', error);
+      console.error("Failed to update settings:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -90,7 +93,11 @@ export default function Settings() {
     }
   };
 
-  const renderSwitch = (value: boolean, onValueChange: () => void, settingKey: keyof UserSettings) => (
+  const renderSwitch = (
+    value: boolean,
+    onValueChange: () => void,
+    settingKey: keyof UserSettings,
+  ) => (
     <Switch
       value={value}
       onValueChange={onValueChange}
@@ -145,7 +152,11 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.push_notifications, () => toggleSetting("push_notifications"), "push_notifications")}
+                {renderSwitch(
+                  settings.push_notifications,
+                  () => toggleSetting("push_notifications"),
+                  "push_notifications",
+                )}
               </View>
 
               <View style={styles.settingRow}>
@@ -160,7 +171,11 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.email_notifications, () => toggleSetting("email_notifications"), "email_notifications")}
+                {renderSwitch(
+                  settings.email_notifications,
+                  () => toggleSetting("email_notifications"),
+                  "email_notifications",
+                )}
               </View>
 
               <View style={styles.settingRow}>
@@ -175,7 +190,11 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.sms_notifications, () => toggleSetting("sms_notifications"), "sms_notifications")}
+                {renderSwitch(
+                  settings.sms_notifications,
+                  () => toggleSetting("sms_notifications"),
+                  "sms_notifications",
+                )}
               </View>
             </View>
           </View>
@@ -202,7 +221,11 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.booking_updates, () => toggleSetting("booking_updates"), "booking_updates")}
+                {renderSwitch(
+                  settings.booking_updates,
+                  () => toggleSetting("booking_updates"),
+                  "booking_updates",
+                )}
               </View>
 
               <View style={styles.settingRow}>
@@ -217,7 +240,11 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.payment_alerts, () => toggleSetting("payment_alerts"), "payment_alerts")}
+                {renderSwitch(
+                  settings.payment_alerts,
+                  () => toggleSetting("payment_alerts"),
+                  "payment_alerts",
+                )}
               </View>
 
               <View style={styles.settingRow}>
@@ -232,7 +259,11 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.promotions, () => toggleSetting("promotions"), "promotions")}
+                {renderSwitch(
+                  settings.promotions,
+                  () => toggleSetting("promotions"),
+                  "promotions",
+                )}
               </View>
 
               <View style={styles.settingRow}>
@@ -247,7 +278,11 @@ export default function Settings() {
                     </Text>
                   </View>
                 </View>
-                {renderSwitch(settings.reminders, () => toggleSetting("reminders"), "reminders")}
+                {renderSwitch(
+                  settings.reminders,
+                  () => toggleSetting("reminders"),
+                  "reminders",
+                )}
               </View>
             </View>
           </View>

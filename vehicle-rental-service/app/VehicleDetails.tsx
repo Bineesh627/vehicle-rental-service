@@ -5,6 +5,7 @@ import {
   NavigationProp,
   useNavigation,
   useRoute,
+  useFocusEffect,
 } from "@react-navigation/native";
 import {
   ArrowLeft,
@@ -51,33 +52,35 @@ export default function VehicleDetails() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [pricingType, setPricingType] = useState<"hour" | "day">("hour");
 
-  useEffect(() => {
-    const fetchDetails = async () => {
-      try {
-        if (!id) throw new Error("No vehicle ID provided");
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchDetails = async () => {
+        try {
+          if (!id) throw new Error("No vehicle ID provided");
 
-        const vehicleData = await api.getVehicle(id);
-        setVehicle(vehicleData);
+          const vehicleData = await api.getVehicle(id);
+          setVehicle(vehicleData);
 
-        if (vehicleData.shopId) {
-          const shopData = await api.getRentalShop(vehicleData.shopId);
-          setShop(shopData);
+          if (vehicleData.shopId) {
+            const shopData = await api.getRentalShop(vehicleData.shopId);
+            setShop(shopData);
+          }
+        } catch (err) {
+          console.error("Failed to fetch vehicle details:", err);
+          setError("Failed to load vehicle details");
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Could not load vehicle details",
+          });
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error("Failed to fetch vehicle details:", err);
-        setError("Failed to load vehicle details");
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Could not load vehicle details",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchDetails();
-  }, [id]);
+      fetchDetails();
+    }, [id]),
+  );
 
   if (loading) {
     return (

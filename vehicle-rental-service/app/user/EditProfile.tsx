@@ -8,7 +8,8 @@ import {
   Phone,
   User,
 } from "lucide-react-native";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   KeyboardAvoidingView,
   Platform,
@@ -43,31 +44,33 @@ export default function EditProfile() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Load profile data on component mount
-  useEffect(() => {
-    const loadProfileData = async () => {
-      try {
-        setLoading(true);
-        const data = await profileManagementApi.getUserProfileExtended();
-        setProfileData({
-          name: data.first_name || "",
-          email: data.email || "",
-          address: data.address || "", // Now load address from backend
-        });
-      } catch (error) {
-        console.error('Failed to load profile:', error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to load profile data",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Load profile data on screen focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadProfileData = async () => {
+        try {
+          setLoading(true);
+          const data = await profileManagementApi.getUserProfileExtended();
+          setProfileData({
+            name: data.first_name || "",
+            email: data.email || "",
+            address: data.address || "", // Now load address from backend
+          });
+        } catch (error) {
+          console.error("Failed to load profile:", error);
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Failed to load profile data",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    loadProfileData();
-  }, []);
+      loadProfileData();
+    }, []),
+  );
 
   const handleProfileChange = (field: string, value: string) => {
     setProfileData((prev) => ({ ...prev, [field]: value }));
@@ -85,7 +88,7 @@ export default function EditProfile() {
         email: profileData.email,
         address: profileData.address, // Now include address
       });
-      
+
       Toast.show({
         type: "success",
         text1: "Profile Updated",
@@ -93,7 +96,7 @@ export default function EditProfile() {
       });
       setIsEditing(false);
     } catch (error) {
-      console.error('Failed to update profile:', error);
+      console.error("Failed to update profile:", error);
       Toast.show({
         type: "error",
         text1: "Error",
@@ -136,7 +139,7 @@ export default function EditProfile() {
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      
+
       Toast.show({
         type: "success",
         text1: "Password Changed",
@@ -148,8 +151,9 @@ export default function EditProfile() {
         confirmPassword: "",
       });
     } catch (error) {
-      console.error('Failed to change password:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to change password';
+      console.error("Failed to change password:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to change password";
       Toast.show({
         type: "error",
         text1: "Error",
@@ -168,7 +172,7 @@ export default function EditProfile() {
     fieldKey: string,
     isPassword = false,
     editable = true,
-    onChangeText: (text: string) => void
+    onChangeText: (text: string) => void,
   ) => (
     <View style={styles.inputGroup}>
       <View style={styles.labelContainer}>
@@ -223,7 +227,14 @@ export default function EditProfile() {
               <View style={styles.avatarContainer}>
                 <View style={styles.avatar}>
                   <Text style={styles.avatarText}>
-                    {profileData.name ? profileData.name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2) : 'JD'}
+                    {profileData.name
+                      ? profileData.name
+                          .split(" ")
+                          .map((word) => word[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2)
+                      : "JD"}
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -265,7 +276,7 @@ export default function EditProfile() {
                   "name",
                   false,
                   isEditing,
-                  (text) => handleProfileChange("name", text)
+                  (text) => handleProfileChange("name", text),
                 )}
 
                 {renderInput(
@@ -275,7 +286,7 @@ export default function EditProfile() {
                   "email",
                   false,
                   isEditing,
-                  (text) => handleProfileChange("email", text)
+                  (text) => handleProfileChange("email", text),
                 )}
 
                 {renderInput(
@@ -285,7 +296,7 @@ export default function EditProfile() {
                   "address",
                   false,
                   isEditing,
-                  (text) => handleProfileChange("address", text)
+                  (text) => handleProfileChange("address", text),
                 )}
               </View>
 
@@ -316,7 +327,7 @@ export default function EditProfile() {
                   "currentPassword",
                   true,
                   true,
-                  (text) => handlePasswordChange("currentPassword", text)
+                  (text) => handlePasswordChange("currentPassword", text),
                 )}
 
                 {renderInput(
@@ -326,7 +337,7 @@ export default function EditProfile() {
                   "newPassword",
                   true,
                   true,
-                  (text) => handlePasswordChange("newPassword", text)
+                  (text) => handlePasswordChange("newPassword", text),
                 )}
 
                 {renderInput(
@@ -336,7 +347,7 @@ export default function EditProfile() {
                   "confirmPassword",
                   true,
                   true,
-                  (text) => handlePasswordChange("confirmPassword", text)
+                  (text) => handlePasswordChange("confirmPassword", text),
                 )}
 
                 {/* Updated to Solid Teal Button */}

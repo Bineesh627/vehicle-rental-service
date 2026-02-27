@@ -3,7 +3,7 @@ import { ShopCard } from "@/components/ShopCard";
 import { api } from "@/services/api";
 import { RentalShop } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { useRouter } from "expo-router";
 import { Bell, MapPin, MessageCircle, Send } from "lucide-react-native";
@@ -36,30 +36,32 @@ export default function Home() {
   const [shops, setShops] = useState<RentalShop[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchShops = async () => {
-      try {
-        const data = await api.getRentalShops();
-        // Mock distance calculation for now
-        const shopsWithDistance = data.map((shop) => ({
-          ...shop,
-          distance: parseFloat((Math.random() * 5).toFixed(1)), // Random 0-5km
-        }));
-        setShops(shopsWithDistance);
-      } catch (error) {
-        console.error("Failed to fetch shops:", error);
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Failed to load rental shops",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchShops = async () => {
+        try {
+          const data = await api.getRentalShops();
+          // Mock distance calculation for now
+          const shopsWithDistance = data.map((shop) => ({
+            ...shop,
+            distance: parseFloat((Math.random() * 5).toFixed(1)), // Random 0-5km
+          }));
+          setShops(shopsWithDistance);
+        } catch (error) {
+          console.error("Failed to fetch shops:", error);
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Failed to load rental shops",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchShops();
-  }, []);
+      fetchShops();
+    }, []),
+  );
 
   const handleCurrentLocation = () => {
     setLocation("Current Location");

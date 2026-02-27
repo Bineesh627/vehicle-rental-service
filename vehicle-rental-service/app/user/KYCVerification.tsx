@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -54,43 +55,53 @@ export default function KYCVerification() {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const [isDocTypeModalVisible, setDocTypeModalVisible] = useState(false);
 
-  // Load KYC data on component mount
-  useEffect(() => {
-    const loadKYCData = async () => {
-      try {
-        setLoading(true);
-        const data = await profileManagementApi.getKYCDocument();
+  // Load KYC data on screen focus
+  useFocusEffect(
+    React.useCallback(() => {
+      const loadKYCData = async () => {
+        try {
+          setLoading(true);
+          const data = await profileManagementApi.getKYCDocument();
 
-        // Map backend data to frontend state
-        setKycData({
-          fullName: data.full_name || "",
-          dateOfBirth: data.date_of_birth || "",
-          address: data.address || "",
-          phone: data.phone || "",
-          email: data.email || "",
-          drivingLicenseNumber: data.driving_license_number || "",
-          drivingLicensePhoto: (data as any).driving_license_photo
-            ? { name: "License Photo", uri: (data as any).driving_license_photo }
-            : null,
-          secondaryDocType: mapBackendDocTypeToFrontend(data.secondary_doc_type || ""),
-          secondaryDocNumber: data.secondary_doc_number || "",
-          secondaryDocPhoto: (data as any).secondary_doc_photo
-            ? { name: "Secondary Document", uri: (data as any).secondary_doc_photo }
-            : null,
-        });
+          // Map backend data to frontend state
+          setKycData({
+            fullName: data.full_name || "",
+            dateOfBirth: data.date_of_birth || "",
+            address: data.address || "",
+            phone: data.phone || "",
+            email: data.email || "",
+            drivingLicenseNumber: data.driving_license_number || "",
+            drivingLicensePhoto: (data as any).driving_license_photo
+              ? {
+                  name: "License Photo",
+                  uri: (data as any).driving_license_photo,
+                }
+              : null,
+            secondaryDocType: mapBackendDocTypeToFrontend(
+              data.secondary_doc_type || "",
+            ),
+            secondaryDocNumber: data.secondary_doc_number || "",
+            secondaryDocPhoto: (data as any).secondary_doc_photo
+              ? {
+                  name: "Secondary Document",
+                  uri: (data as any).secondary_doc_photo,
+                }
+              : null,
+          });
 
-        setKycStatus(data.status);
-      } catch (error) {
-        console.error("Failed to load KYC data:", error);
-        // If no KYC data exists, keep default state
-        setKycStatus("not_submitted");
-      } finally {
-        setLoading(false);
-      }
-    };
+          setKycStatus(data.status);
+        } catch (error) {
+          console.error("Failed to load KYC data:", error);
+          // If no KYC data exists, keep default state
+          setKycStatus("not_submitted");
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    loadKYCData();
-  }, []);
+      loadKYCData();
+    }, []),
+  );
 
   const docTypes = [
     "Aadhar Card",
@@ -103,11 +114,11 @@ export default function KYCVerification() {
   // Map backend document types to frontend display names
   const mapBackendDocTypeToFrontend = (backendType: string) => {
     const typeMap: { [key: string]: string } = {
-      "aadhar": "Aadhar Card",
-      "voter": "Voter ID",
-      "passport": "Passport", 
-      "pan": "PAN Card",
-      "national_id": "National ID"
+      aadhar: "Aadhar Card",
+      voter: "Voter ID",
+      passport: "Passport",
+      pan: "PAN Card",
+      national_id: "National ID",
     };
     return typeMap[backendType] || backendType;
   };
@@ -148,10 +159,10 @@ export default function KYCVerification() {
       // Convert date format from DD/MM/YYYY to YYYY-MM-DD for backend
       const formatDate = (dateString: string) => {
         if (!dateString) return "";
-        const parts = dateString.split('/');
+        const parts = dateString.split("/");
         if (parts.length === 3) {
           const [day, month, year] = parts;
-          return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+          return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
         }
         return dateString;
       };
@@ -160,10 +171,10 @@ export default function KYCVerification() {
       const mapDocType = (docType: string) => {
         const typeMap: { [key: string]: string } = {
           "Aadhar Card": "aadhar",
-          "Voter ID": "voter", 
-          "Passport": "passport",
+          "Voter ID": "voter",
+          Passport: "passport",
           "PAN Card": "pan",
-          "National ID": "national_id"
+          "National ID": "national_id",
         };
         return typeMap[docType] || docType;
       };
@@ -179,9 +190,10 @@ export default function KYCVerification() {
         secondary_doc_number: kycData.secondaryDocNumber,
       };
 
-      console.log('Submitting KYC data:', kycSubmitData);
+      console.log("Submitting KYC data:", kycSubmitData);
 
-      const response = await profileManagementApi.submitKYCDocument(kycSubmitData);
+      const response =
+        await profileManagementApi.submitKYCDocument(kycSubmitData);
 
       // Update local state with response
       setKycData((prev) => ({ ...prev, ...response }));
@@ -194,7 +206,8 @@ export default function KYCVerification() {
       });
     } catch (error) {
       console.error("Failed to submit KYC:", error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       Toast.show({
         type: "error",
         text1: "Submission Failed",
@@ -212,7 +225,7 @@ export default function KYCVerification() {
     value: string,
     fieldKey: string,
     placeholder: string,
-    keyboardType: "default" | "email-address" | "phone-pad" = "default"
+    keyboardType: "default" | "email-address" | "phone-pad" = "default",
   ) => (
     <View style={styles.inputGroup}>
       <View style={styles.labelContainer}>
@@ -303,7 +316,7 @@ export default function KYCVerification() {
                     null,
                     kycData.fullName,
                     "fullName",
-                    "John Doe"
+                    "John Doe",
                   )}
 
                   <View style={styles.gridCols2}>
@@ -317,7 +330,7 @@ export default function KYCVerification() {
                         />,
                         kycData.dateOfBirth,
                         "dateOfBirth",
-                        "DD/MM/YYYY"
+                        "DD/MM/YYYY",
                       )}
                     </View>
                     <View style={styles.flex1}>
@@ -331,22 +344,18 @@ export default function KYCVerification() {
                         kycData.phone,
                         "phone",
                         "+1 234 567 8900",
-                        "phone-pad"
+                        "phone-pad",
                       )}
                     </View>
                   </View>
 
                   {renderInput(
                     "Email Address *",
-                    <Mail
-                      size={14}
-                      color="#94a3b8"
-                      style={styles.labelIcon}
-                    />,
+                    <Mail size={14} color="#94a3b8" style={styles.labelIcon} />,
                     kycData.email,
                     "email",
                     "john.doe@example.com",
-                    "email-address"
+                    "email-address",
                   )}
 
                   {renderInput(
@@ -358,7 +367,7 @@ export default function KYCVerification() {
                     />,
                     kycData.address,
                     "address",
-                    "123 Street Name, City"
+                    "123 Street Name, City",
                   )}
                 </View>
               </View>
@@ -379,7 +388,7 @@ export default function KYCVerification() {
                     null,
                     kycData.drivingLicenseNumber,
                     "drivingLicenseNumber",
-                    "Enter driving license number"
+                    "Enter driving license number",
                   )}
 
                   <View style={styles.inputGroup}>
@@ -451,7 +460,7 @@ export default function KYCVerification() {
                     null,
                     kycData.secondaryDocNumber,
                     "secondaryDocNumber",
-                    "Enter document number"
+                    "Enter document number",
                   )}
 
                   <View style={styles.inputGroup}>

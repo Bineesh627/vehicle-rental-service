@@ -3,6 +3,7 @@ import {
   NavigationProp,
   useNavigation,
   useRoute,
+  useFocusEffect,
 } from "@react-navigation/native";
 import { format } from "date-fns";
 import {
@@ -45,29 +46,31 @@ export default function BookingDetails() {
   const [error, setError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
-  useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      setError("No booking ID provided");
-      return;
-    }
-
-    const fetchBookingDetails = async () => {
-      try {
-        setLoading(true);
-        const data = await api.getBookingDetails(id);
-        setBooking(data);
-        setError(null);
-      } catch (err: any) {
-        console.error("Error fetching booking details:", err);
-        setError(err.message || "Failed to load booking details");
-      } finally {
+  useFocusEffect(
+    React.useCallback(() => {
+      if (!id) {
         setLoading(false);
+        setError("No booking ID provided");
+        return;
       }
-    };
 
-    fetchBookingDetails();
-  }, [id]);
+      const fetchBookingDetails = async () => {
+        try {
+          setLoading(true);
+          const data = await api.getBookingDetails(id);
+          setBooking(data);
+          setError(null);
+        } catch (err: any) {
+          console.error("Error fetching booking details:", err);
+          setError(err.message || "Failed to load booking details");
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchBookingDetails();
+    }, [id]),
+  );
 
   const handleCancelBooking = () => {
     Alert.alert(

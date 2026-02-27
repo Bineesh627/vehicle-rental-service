@@ -12,7 +12,8 @@ import {
   Truck,
   User,
 } from "lucide-react-native";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   RefreshControl,
@@ -88,9 +89,12 @@ export default function StaffDashboard() {
     }
   };
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
+  // Load tasks on screen focus
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchTasks();
+    }, []),
+  );
 
   const onRefresh = () => {
     setRefreshing(true);

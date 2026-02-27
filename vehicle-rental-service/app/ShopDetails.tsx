@@ -18,6 +18,7 @@ import {
   Star,
 } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   Image,
   ScrollView,
@@ -53,33 +54,35 @@ export default function ShopDetails() {
     "all",
   );
 
-  useEffect(() => {
-    const fetchShopDetails = async () => {
-      try {
-        setLoading(true);
-        const [shopData, vehiclesData] = await Promise.all([
-          api.getRentalShop(id),
-          api.getShopVehicles(id),
-        ]);
-        setShop(shopData);
-        setShopVehicles(vehiclesData);
-      } catch (err) {
-        console.error("Failed to fetch shop details:", err);
-        setError("Failed to load shop details");
-        Toast.show({
-          type: "error",
-          text1: "Error",
-          text2: "Could not load shop details",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchShopDetails = async () => {
+        try {
+          setLoading(true);
+          const [shopData, vehiclesData] = await Promise.all([
+            api.getRentalShop(id),
+            api.getShopVehicles(id),
+          ]);
+          setShop(shopData);
+          setShopVehicles(vehiclesData);
+        } catch (err) {
+          console.error("Failed to fetch shop details:", err);
+          setError("Failed to load shop details");
+          Toast.show({
+            type: "error",
+            text1: "Error",
+            text2: "Could not load shop details",
+          });
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    if (id) {
-      fetchShopDetails();
-    }
-  }, [id]);
+      if (id) {
+        fetchShopDetails();
+      }
+    }, [id]),
+  );
 
   if (loading) {
     return (

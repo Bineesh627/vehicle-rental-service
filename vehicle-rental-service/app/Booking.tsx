@@ -16,6 +16,7 @@ import {
   Wallet,
 } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   Alert,
@@ -69,42 +70,44 @@ export default function Booking() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [showDeliverySelector, setShowDeliverySelector] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        if (!id) throw new Error("No vehicle ID provided");
-        const vehicleData = await api.getVehicle(id);
-        setVehicle(vehicleData);
-        if (vehicleData.shopId) {
-          const shopData = await api.getRentalShop(vehicleData.shopId);
-          setShop(shopData);
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchData = async () => {
+        try {
+          if (!id) throw new Error("No vehicle ID provided");
+          const vehicleData = await api.getVehicle(id);
+          setVehicle(vehicleData);
+          if (vehicleData.shopId) {
+            const shopData = await api.getRentalShop(vehicleData.shopId);
+            setShop(shopData);
+          }
+
+          // Fetch payment and address databases
+          const [pmData, locData] = await Promise.all([
+            profileApi.getPaymentMethods(),
+            profileApi.getSavedLocations(),
+          ]);
+
+          setSavedPaymentMethods(pmData);
+          setSavedLocations(locData);
+
+          // Pre-select defaults
+          const defaultPm = pmData.find((pm) => pm.is_default);
+          if (defaultPm) setPaymentMethodId(defaultPm.id);
+          else if (pmData.length > 0) setPaymentMethodId(pmData[0].id);
+
+          const defaultLoc = locData.find((loc) => loc.type === "home");
+          if (defaultLoc) setDeliveryAddress(defaultLoc.address);
+        } catch (err) {
+          console.error("Failed to fetch booking data:", err);
+          setFetchError("Failed to load vehicle details");
+        } finally {
+          setLoading(false);
         }
-
-        // Fetch payment and address databases
-        const [pmData, locData] = await Promise.all([
-          profileApi.getPaymentMethods(),
-          profileApi.getSavedLocations(),
-        ]);
-
-        setSavedPaymentMethods(pmData);
-        setSavedLocations(locData);
-
-        // Pre-select defaults
-        const defaultPm = pmData.find((pm) => pm.is_default);
-        if (defaultPm) setPaymentMethodId(defaultPm.id);
-        else if (pmData.length > 0) setPaymentMethodId(pmData[0].id);
-
-        const defaultLoc = locData.find((loc) => loc.type === "home");
-        if (defaultLoc) setDeliveryAddress(defaultLoc.address);
-      } catch (err) {
-        console.error("Failed to fetch booking data:", err);
-        setFetchError("Failed to load vehicle details");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [id]);
+      };
+      fetchData();
+    }, [id]),
+  );
 
   if (loading) {
     return (

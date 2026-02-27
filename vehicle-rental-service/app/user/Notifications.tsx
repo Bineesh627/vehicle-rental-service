@@ -11,7 +11,8 @@ import {
   Trash2,
   RefreshCw,
 } from "lucide-react-native";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   ScrollView,
@@ -24,7 +25,10 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { notificationsApi, type Notification as AppNotification } from "@/services/api";
+import {
+  notificationsApi,
+  type Notification as AppNotification,
+} from "@/services/api";
 
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -66,14 +70,14 @@ const formatTime = (dateString: string) => {
   const diffMs = now.getTime() - date.getTime();
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
-  
+
   if (diffDays > 0) {
-    return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return `${diffDays} day${diffDays > 1 ? "s" : ""} ago`;
   } else if (diffHours > 0) {
-    return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    return `${diffHours} hour${diffHours > 1 ? "s" : ""} ago`;
   } else {
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''} ago`;
+    return `${diffMinutes} minute${diffMinutes > 1 ? "s" : ""} ago`;
   }
 };
 
@@ -90,9 +94,9 @@ export default function Notifications() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const token = await AsyncStorage.getItem('auth_token');
+        const token = await AsyncStorage.getItem("auth_token");
       } catch (error) {
-        console.log(' [Notifications] Error checking auth:', error);
+        console.log(" [Notifications] Error checking auth:", error);
       }
     };
     checkAuth();
@@ -106,8 +110,9 @@ export default function Notifications() {
       const data = await notificationsApi.getNotifications();
       setNotifications(data);
     } catch (err) {
-      console.log(' [Notifications Component] Error:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load notifications';
+      console.log(" [Notifications Component] Error:", err);
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load notifications";
       setError(errorMessage);
       Toast.show({
         type: "error",
@@ -121,9 +126,11 @@ export default function Notifications() {
     }
   }, []);
 
-  useEffect(() => {
-    loadNotifications();
-  }, [loadNotifications]);
+  useFocusEffect(
+    useCallback(() => {
+      loadNotifications();
+    }, [loadNotifications]),
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -134,18 +141,21 @@ export default function Notifications() {
     try {
       // Optimistic update
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
       );
-      
+
       // API call
       await notificationsApi.markNotificationRead(id);
     } catch (err) {
       // Revert optimistic update on error
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: false } : n))
+        prev.map((n) => (n.id === id ? { ...n, is_read: false } : n)),
       );
-      
-      const errorMessage = err instanceof Error ? err.message : 'Failed to mark notification as read';
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to mark notification as read";
       Toast.show({
         type: "error",
         text1: "Error",
@@ -158,10 +168,10 @@ export default function Notifications() {
     try {
       // Optimistic update - remove from UI
       setNotifications((prev) => prev.filter((n) => n.id !== id));
-      
+
       // API call to delete from backend
       await notificationsApi.deleteNotification(id);
-      
+
       Toast.show({
         type: "success",
         text1: "Success",
@@ -171,8 +181,9 @@ export default function Notifications() {
     } catch (err) {
       // Revert optimistic update on error
       await loadNotifications(); // Reload from server
-      
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete notification';
+
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to delete notification";
       Toast.show({
         type: "error",
         text1: "Error",
@@ -185,7 +196,7 @@ export default function Notifications() {
   const markAllAsRead = async () => {
     // Prevent multiple rapid clicks
     if (isProcessing) return;
-    
+
     const allRead = notifications.every((n) => n.is_read);
     if (allRead) {
       Toast.show({
@@ -195,18 +206,16 @@ export default function Notifications() {
       });
       return;
     }
-    
+
     try {
       setIsProcessing(true);
-      
+
       // Optimistic update
-      setNotifications((prev) =>
-        prev.map((n) => ({ ...n, is_read: true }))
-      );
-      
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+
       // API call
       await notificationsApi.markAllNotificationsRead();
-      
+
       Toast.show({
         type: "success",
         text1: "All notifications marked as read",
@@ -215,8 +224,11 @@ export default function Notifications() {
     } catch (err) {
       // Revert optimistic update on error
       await loadNotifications(); // Reload from server
-      
-      const errorMessage = err instanceof Error ? err.message : 'Failed to mark all notifications as read';
+
+      const errorMessage =
+        err instanceof Error
+          ? err.message
+          : "Failed to mark all notifications as read";
       Toast.show({
         type: "error",
         text1: "Error",
@@ -256,11 +268,19 @@ export default function Notifications() {
           {unreadCount > 0 && (
             <TouchableOpacity
               onPress={markAllAsRead}
-              style={[styles.markReadButton, isProcessing && styles.buttonDisabled]}
+              style={[
+                styles.markReadButton,
+                isProcessing && styles.buttonDisabled,
+              ]}
               disabled={isProcessing}
             >
-              <Text style={[styles.markReadText, isProcessing && styles.textDisabled]}>
-                {isProcessing ? 'Marking...' : 'Mark All Read'}
+              <Text
+                style={[
+                  styles.markReadText,
+                  isProcessing && styles.textDisabled,
+                ]}
+              >
+                {isProcessing ? "Marking..." : "Mark All Read"}
               </Text>
             </TouchableOpacity>
           )}
@@ -270,7 +290,11 @@ export default function Notifications() {
           style={styles.content}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2dd4bf" />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#2dd4bf"
+            />
           }
         >
           {notifications.length === 0 ? (
@@ -329,13 +353,12 @@ export default function Notifications() {
                                 <Trash2 size={16} color="#94a3b8" />
                               </TouchableOpacity>
                             </View>
-                            <Text
-                              style={styles.message}
-                              numberOfLines={2}
-                            >
+                            <Text style={styles.message} numberOfLines={2}>
                               {notification.message}
                             </Text>
-                            <Text style={styles.time}>{formatTime(notification.created_at)}</Text>
+                            <Text style={styles.time}>
+                              {formatTime(notification.created_at)}
+                            </Text>
                           </View>
                         </View>
                       </View>
