@@ -508,7 +508,7 @@ def reviews_view(request):
                     messages.error(request, f"Error posting reply: {e}")
         return redirect('owner_reviews')
 
-    all_reviews = Review.objects.filter(shop=shop).select_related('user', 'booking')
+    all_reviews = Review.objects.filter(shop=shop).select_related('user')
 
     # Compute average rating
     total = all_reviews.count()

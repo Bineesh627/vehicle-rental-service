@@ -130,6 +130,55 @@ export const api = {
   },
 };
 
+// ── Review Types & API ────────────────────────────────────────────────────────
+
+export interface ShopReview {
+  id: string;
+  username: string;
+  user_initials: string;
+  rating: number;
+  comment: string;
+  owner_reply: string | null;
+  replied_at: string | null;
+  created_at: string;
+}
+
+export interface ShopReviewsResponse {
+  reviews: ShopReview[];
+  user_has_reviewed: boolean;
+  user_review: ShopReview | null;
+  avg_rating: number;
+  review_count: number;
+}
+
+export const reviewApi = {
+  async getShopReviews(shopId: string, token: string): Promise<ShopReviewsResponse> {
+    const response = await fetch(`${API_BASE_URL}/shops/${shopId}/reviews/`, {
+      headers: { Authorization: `Token ${token}`, "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to fetch reviews");
+    return await response.json();
+  },
+
+  async submitReview(
+    shopId: string,
+    rating: number,
+    comment: string,
+    token: string,
+  ): Promise<ShopReview> {
+    const response = await fetch(`${API_BASE_URL}/shops/${shopId}/reviews/`, {
+      method: "POST",
+      headers: { Authorization: `Token ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ rating, comment }),
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error || "Failed to submit review");
+    }
+    return await response.json();
+  },
+};
+
 const mapBackendBookingToFrontend = (data: any): Booking => {
   return {
     id: data.id.toString(),

@@ -6,14 +6,14 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .models import RentalShop, Vehicle, Booking, Conversation, Message, UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile, Notification
+from .models import RentalShop, Vehicle, Booking, Conversation, Message, UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile, Notification, Review
 from .serializers import (
     RentalShopSerializer, VehicleSerializer, BookingSerializer, BookingCreateSerializer,
     UserSerializer, ConversationSerializer, MessageSerializer,
     UserProfileSerializer, UserStatsSerializer,
     UserSettingsSerializer, PaymentMethodSerializer, PaymentMethodCreateSerializer,
     SavedLocationSerializer, KYCDocumentSerializer, KYCDocumentCreateSerializer,
-    UserProfileUpdateSerializer, NotificationSerializer,
+    UserProfileUpdateSerializer, NotificationSerializer, ReviewSerializer,
 )
 
 @api_view(['POST'])
@@ -172,6 +172,57 @@ def create_booking(request):
     
     print("CREATE BOOKING VALIDATION ERRORS:", serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ── Reviews Views ────────────────────────────────────────────────────────────
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def shop_reviews(request, shop_id):
+    """
+    GET  /api/shops/<shop_id>/reviews/
+        Returns all reviews for the shop plus user_has_reviewed flag.
+
+    POST /api/shops/<shop_id>/reviews/
+        Body: { "rating": 1-5, "comment": "..." }
+        Creates or updates the user's review. One review per user per shop.
+    """
+    shop = get_object_or_404(RentalShop, id=shop_id)
+
+    if request.method == 'GET':
+        reviews = Review.objects.filter(shop=shop).select_related('user')
+        user_has_reviewed = reviews.filter(user=request.user).exists()
+        user_review = reviews.filter(user=request.user).first()
+        return Response({
+            'reviews': ReviewSerializer(reviews, many=True).data,
+            'user_has_reviewed': user_has_reviewed,
+            'user_review': ReviewSerializer(user_review).data if user_review else None,
+            'avg_rating': shop.rating,
+            'review_count': shop.review_count,
+        })
+
+    # POST – upsert
+    rating = request.data.get('rating')
+    comment = request.data.get('comment', '').strip()
+    if not rating:
+        return Response({'error': 'Rating is required.'}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        rating = int(rating)
+        if not (1 <= rating <= 5):
+            raise ValueError
+    except (ValueError, TypeError):
+        return Response({'error': 'Rating must be 1–5.'}, status=status.HTTP_400_BAD_REQUEST)
+    if not comment:
+        return Response({'error': 'Comment cannot be empty.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    review, created = Review.objects.update_or_create(
+        user=request.user, shop=shop,
+        defaults={'rating': rating, 'comment': comment},
+    )
+    return Response(
+        ReviewSerializer(review).data,
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
 
 
 # ── Profile Views ───────────────────────────────────────────────────────────

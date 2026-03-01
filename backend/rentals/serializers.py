@@ -3,7 +3,7 @@ from rest_framework.validators import UniqueValidator
 from django.contrib.auth.models import User
 from .models import (
     RentalShop, Vehicle, Booking, Conversation, Message,
-    UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile, Notification
+    UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile, Notification, Review
 )
 
 class UserSerializer(serializers.ModelSerializer):
@@ -41,6 +41,36 @@ class RentalShopSerializer(serializers.ModelSerializer):
         cars = obj.vehicles.filter(type='car').count()
         bikes = obj.vehicles.filter(type='bike').count()
         return {'cars': cars, 'bikes': bikes}
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """Serializes a shop review for the mobile API."""
+    username = serializers.SerializerMethodField()
+    user_initials = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Review
+        fields = [
+            'id', 'username', 'user_initials', 'rating',
+            'comment', 'owner_reply', 'replied_at', 'created_at',
+        ]
+        read_only_fields = ['id', 'username', 'user_initials', 'owner_reply', 'replied_at', 'created_at']
+
+    def get_username(self, obj):
+        first = obj.user.first_name.strip()
+        last = obj.user.last_name.strip()
+        if first or last:
+            return f"{first} {last}".strip()
+        return obj.user.username
+
+    def get_user_initials(self, obj):
+        first = obj.user.first_name.strip()
+        last = obj.user.last_name.strip()
+        if first and last:
+            return f"{first[0]}{last[0]}".upper()
+        if first:
+            return first[0].upper()
+        return obj.user.username[0].upper()
+
 
 class VehicleSerializer(serializers.ModelSerializer):
     class Meta:

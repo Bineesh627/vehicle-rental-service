@@ -37,4 +37,5 @@ export type UserStackParamList = {
   PrivacySecurity: undefined;
   CustomerComplaint: { bookingId: string };
   StaffComplaint: undefined;
+  ShopReviews: { shopId: string; shopName: string };
 };

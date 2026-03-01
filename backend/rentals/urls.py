@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     RentalShopViewSet, VehicleViewSet, BookingViewSet,
     register, login, create_booking,
+    shop_reviews,
     conversation_list, message_list,
     user_profile, user_stats,
     user_profile_update, user_settings_view,
@@ -33,6 +34,7 @@ router.register(r'bookings', BookingViewSet)
 # POST /api/chat/conversations/<id>/messages/ -> send a message
 urlpatterns = [
     path('bookings/create/', create_booking, name='create-booking'),
+    path('shops/<int:shop_id>/reviews/', shop_reviews, name='shop-reviews'),
     path('', include(router.urls)),
     # Auth
     path('register/', register, name='register'),

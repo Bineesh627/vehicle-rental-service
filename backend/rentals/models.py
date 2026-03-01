@@ -287,7 +287,6 @@ class Review(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_reviews')
     shop = models.ForeignKey(RentalShop, on_delete=models.CASCADE, related_name='shop_reviews')
-    booking = models.ForeignKey('Booking', on_delete=models.SET_NULL, null=True, blank=True, related_name='booking_reviews')
     rating = models.IntegerField(choices=RATING_CHOICES)
     comment = models.TextField()
     owner_reply = models.TextField(blank=True, null=True)
@@ -296,9 +295,20 @@ class Review(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        unique_together = ('user', 'shop')
 
     def __str__(self):
         return f"Review by {self.user.username} — {self.rating}★"
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Recalculate shop rating and review_count after every save
+        from django.db.models import Avg
+        shop = self.shop
+        agg = Review.objects.filter(shop=shop).aggregate(avg=Avg('rating'))
+        shop.rating = round(agg['avg'] or 0, 1)
+        shop.review_count = Review.objects.filter(shop=shop).count()
+        shop.save(update_fields=['rating', 'review_count'])
 
 
 class Complaint(models.Model):

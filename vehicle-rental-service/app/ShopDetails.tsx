@@ -161,13 +161,23 @@ export default function ShopDetails() {
             <Text className="text-2xl font-bold text-white flex-1 mr-4">
               {shop.name}
             </Text>
-            <View className="bg-[#0F1C23] px-3 py-1.5 rounded-full flex-row items-center gap-1.5 border border-slate-700">
-              <Star fill="#F59E0B" color="#F59E0B" size={14} />
-              <Text className="font-bold text-white">{shop.rating}</Text>
-              <Text className="text-xs text-slate-400">
-                ({shop.reviewCount})
-              </Text>
-            </View>
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("ShopReviews", {
+                  shopId: id,
+                  shopName: shop.name,
+                })
+              }
+              activeOpacity={0.75}
+            >
+              <View className="bg-[#0F1C23] px-3 py-1.5 rounded-full flex-row items-center gap-1.5 border border-slate-700">
+                <Star fill="#F59E0B" color="#F59E0B" size={14} />
+                <Text className="font-bold text-white">{shop.rating}</Text>
+                <Text className="text-xs text-slate-400">
+                  ({shop.reviewCount})
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <View className="mb-6 space-y-3">

@@ -9,6 +9,7 @@ import Profile from "../app/(tabs)/profile";
 import Booking from "../app/Booking";
 import BookingDetails from "../app/BookingDetails";
 import ShopDetails from "../app/ShopDetails";
+import ShopReviews from "../app/ShopReviews";
 import Notifications from "../app/user/Notifications";
 import VehicleDetails from "../app/VehicleDetails";
 
@@ -74,6 +75,7 @@ export const UserNavigator = () => {
       <Stack.Screen name="Booking" component={Booking} />
       <Stack.Screen name="BookingDetails" component={BookingDetails} />
       <Stack.Screen name="Notifications" component={Notifications} />
+      <Stack.Screen name="ShopReviews" component={ShopReviews} />
     </Stack.Navigator>
   );
 };

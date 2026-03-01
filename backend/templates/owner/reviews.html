@@ -241,9 +241,6 @@
                                     </td>
                                     <td>
                                         <div class="small text-dark">{{ review.created_at|date:"M d, Y" }}</div>
-                                        {% if review.booking %}
-                                        <div class="small text-muted">Booking #{{ review.booking.id }}</div>
-                                        {% endif %}
                                     </td>
                                     <td>
                                         {% if review.owner_reply %}
