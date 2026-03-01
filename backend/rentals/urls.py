@@ -10,6 +10,9 @@ from .views import (
     payment_methods_view, saved_locations_view, kyc_document_view,
     change_password,
     notification_list, mark_notification_read, delete_notification, create_notification,
+    complaints_view,
+    staff_assigned_complaints_view,
+    favorites_view,
 )
 
 router = DefaultRouter()
@@ -39,6 +42,11 @@ urlpatterns = [
     # Auth
     path('register/', register, name='register'),
     path('login/', login, name='login'),
+    # Complaints
+    path('complaints/', complaints_view, name='complaints'),
+    path('staff-complaints/', staff_assigned_complaints_view, name='staff-complaints'),
+    # Favorites
+    path('favorites/', favorites_view, name='favorites'),
     # Profile
     path('profile/', user_profile, name='user-profile'),
     path('profile/stats/', user_stats, name='user-stats'),

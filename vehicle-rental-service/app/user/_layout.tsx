@@ -11,6 +11,7 @@ export default function UserLayout() {
       <Stack.Screen name="Settings" />
       <Stack.Screen name="HelpSupport" />
       <Stack.Screen name="PrivacySecurity" />
+      <Stack.Screen name="Favorites" />
     </Stack>
   );
 }

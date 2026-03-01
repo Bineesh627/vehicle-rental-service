@@ -338,6 +338,20 @@ class Complaint(models.Model):
         return f"Complaint #{self.id} by {self.user.username} — {self.status}"
 
 
+class FavoriteShop(models.Model):
+    """A user's saved/favourite rental shop."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorite_shops')
+    shop = models.ForeignKey('RentalShop', on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'shop')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} ♥ {self.shop.name}"
+
+
 class Notification(models.Model):
     """User notifications for mobile app"""
     NOTIFICATION_TYPES = [

@@ -15,6 +15,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { complaintApi } from "@/services/api";
+import Toast from "react-native-toast-message";
 
 type CustomerComplaintScreenRouteProp = RouteProp<
   UserStackParamList,
@@ -30,12 +32,35 @@ export default function CustomerComplaint() {
 
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = () => {
-    // Here you would typically send the complaint to a backend service
-    console.log("Complaint Submitted:", { bookingId, subject, details });
-    // Go back to the previous screen
-    navigation.goBack();
+  const handleSubmit = async () => {
+    if (!subject || !details) return;
+
+    setLoading(true);
+    try {
+      await complaintApi.submitComplaint(
+        subject,
+        details,
+        undefined,
+        bookingId ? bookingId.toString() : undefined,
+      );
+      Toast.show({
+        type: "success",
+        text1: "Complaint Submitted",
+        text2: "We have received your complaint and will look into it.",
+      });
+      navigation.goBack();
+    } catch (error: any) {
+      console.error(error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: error.message || "Failed to submit complaint.",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -86,13 +111,16 @@ export default function CustomerComplaint() {
             <TouchableOpacity
               style={[
                 styles.submitButton,
-                (!subject || !details) && styles.submitButtonDisabled,
+                (!subject || !details || loading) &&
+                  styles.submitButtonDisabled,
               ]}
               onPress={handleSubmit}
-              disabled={!subject || !details}
+              disabled={!subject || !details || loading}
             >
               <Send size={20} color="#0f172a" style={{ marginRight: 8 }} />
-              <Text style={styles.submitButtonText}>Submit Complaint</Text>
+              <Text style={styles.submitButtonText}>
+                {loading ? "Submitting..." : "Submit Complaint"}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>

@@ -2,10 +2,10 @@ import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import {
-  Bell,
   ChevronRight,
   CreditCard,
   FileText,
+  Heart,
   HelpCircle,
   LogOut,
   MapPin,
@@ -24,14 +24,19 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { profileApi, UserProfile, UserStats } from "@/services/api";
+import {
+  profileApi,
+  favoritesApi,
+  UserProfile,
+  UserStats,
+} from "@/services/api";
 
 const menuItems = [
   { icon: User, label: "Edit Profile", path: "EditProfile" },
   { icon: FileText, label: "KYC Verification", path: "KYCVerification" },
+  { icon: Heart, label: "Favorites", path: "Favorites" },
   { icon: MapPin, label: "Saved Locations", path: "SavedLocations" },
   { icon: CreditCard, label: "Payment Methods", path: "PaymentMethods" },
-  { icon: Bell, label: "Notifications", path: "Notifications" },
   { icon: Settings, label: "Settings", path: "Settings" },
   { icon: HelpCircle, label: "Help & Support", path: "HelpSupport" },
   { icon: Shield, label: "Privacy & Security", path: "PrivacySecurity" },
@@ -43,6 +48,7 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,6 +67,12 @@ export default function Profile() {
 
           setUserProfile(profileData);
           setUserStats(statsData);
+
+          // Load favorites count separately (non-critical)
+          try {
+            const favs = await favoritesApi.getFavorites();
+            setFavoritesCount(favs.length);
+          } catch {}
         } catch (err) {
           console.error("Failed to load profile data:", err);
           setError("Failed to load profile data");
@@ -162,10 +174,8 @@ export default function Profile() {
                 <Text style={styles.statLabel}>Total Spent</Text>
               </View>
               <View style={styles.statItem}>
-                <Text style={styles.statValue}>
-                  {userStats?.saved_places || 0}
-                </Text>
-                <Text style={styles.statLabel}>Saved Places</Text>
+                <Text style={styles.statValue}>{favoritesCount}</Text>
+                <Text style={styles.statLabel}>Favorites</Text>
               </View>
             </View>
           </View>

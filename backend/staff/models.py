@@ -27,12 +27,4 @@ class StaffTask(models.Model):
     def __str__(self):
         return f"Task #{self.id} - {self.type} - {self.staff.username}"
 
-class StaffComplaint(models.Model):
-    staff = models.ForeignKey(User, on_delete=models.CASCADE, related_name='complaints')
-    subject = models.CharField(max_length=255)
-    details = models.TextField()
-    is_resolved = models.BooleanField(default=False)
-    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"Complaint by {self.staff.username}: {self.subject}"

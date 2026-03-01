@@ -1,5 +1,5 @@
 import { VehicleCard } from "@/components/VehicleCard";
-import { api, chatApi } from "@/services/api";
+import { api, chatApi, favoritesApi } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { RentalShop, Vehicle } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
@@ -11,6 +11,7 @@ import {
   Bike,
   Car,
   Clock,
+  Heart,
   MapPin,
   MessageCircle,
   Phone,
@@ -53,6 +54,8 @@ export default function ShopDetails() {
   const [activeFilter, setActiveFilter] = useState<"all" | "car" | "bike">(
     "all",
   );
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -65,6 +68,11 @@ export default function ShopDetails() {
           ]);
           setShop(shopData);
           setShopVehicles(vehiclesData);
+          // Check if this shop is already favorited
+          try {
+            const faved = await favoritesApi.checkFavorite(id);
+            setIsFavorited(faved);
+          } catch {}
         } catch (err) {
           console.error("Failed to fetch shop details:", err);
           setError("Failed to load shop details");
@@ -123,6 +131,25 @@ export default function ShopDetails() {
     // Implement maps intent
   };
 
+  const handleToggleFavorite = async () => {
+    if (favoriteLoading) return;
+    setFavoriteLoading(true);
+    try {
+      const result = await favoritesApi.toggleFavorite(id);
+      setIsFavorited(result.favorited);
+      Toast.show({
+        type: "success",
+        text1: result.favorited
+          ? "Added to favorites"
+          : "Removed from favorites",
+      });
+    } catch {
+      Toast.show({ type: "error", text1: "Failed to update favorites" });
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-[#0F1C23]">
       <StatusBar barStyle="light-content" />
@@ -146,12 +173,26 @@ export default function ShopDetails() {
             >
               <ArrowLeft color="#fff" size={24} />
             </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleShare}
-              className="bg-[#1E293B]/80 p-3 rounded-full"
-            >
-              <Share2 color="#fff" size={20} />
-            </TouchableOpacity>
+            {/* Right-side buttons grouped together */}
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <TouchableOpacity
+                onPress={handleToggleFavorite}
+                disabled={favoriteLoading}
+                className="bg-[#1E293B]/80 p-3 rounded-full"
+              >
+                <Heart
+                  size={20}
+                  color={isFavorited ? "#ef4444" : "#fff"}
+                  fill={isFavorited ? "#ef4444" : "transparent"}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleShare}
+                className="bg-[#1E293B]/80 p-3 rounded-full"
+              >
+                <Share2 color="#fff" size={20} />
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
 

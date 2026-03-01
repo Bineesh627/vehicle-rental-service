@@ -76,10 +76,18 @@ class RentalShopViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """
-        Optionally restricts the returned shops, 
-        but currently returns all shops.
+        Returns all shops, optionally filtered by a ?search= query param.
+        Matches against name and address (case-insensitive).
+        Example: GET /api/shops/?search=speedwheels
         """
-        return RentalShop.objects.all()
+        queryset = RentalShop.objects.all()
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(name__icontains=search) | Q(address__icontains=search)
+            )
+        return queryset
 
 class VehicleViewSet(viewsets.ModelViewSet):
     """
@@ -172,6 +180,138 @@ def create_booking(request):
     
     print("CREATE BOOKING VALIDATION ERRORS:", serializer.errors)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def complaints_view(request):
+    """
+    POST /api/complaints/
+    Body: { "subject": "...", "description": "...", "shop_id": <int> (optional), "booking_id": <int> (optional) }
+    Creates a new complaint for the user.
+    """
+    from .models import Complaint, RentalShop, Booking
+    
+    subject = request.data.get('subject')
+    description = request.data.get('description')
+    shop_id = request.data.get('shop_id')
+    booking_id = request.data.get('booking_id')
+    
+    if not subject or not description:
+        return Response({'error': 'Subject and description are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    shop = None
+    booking = None
+    
+    if booking_id:
+        from django.shortcuts import get_object_or_404
+        try:
+            booking_id = int(booking_id)
+        except ValueError:
+            return Response({'error': 'Invalid booking_id format.'}, status=status.HTTP_400_BAD_REQUEST)
+        booking = get_object_or_404(Booking, id=booking_id)
+        shop = booking.shop
+    elif shop_id:
+        from django.shortcuts import get_object_or_404
+        try:
+            shop_id = int(shop_id)
+        except ValueError:
+            return Response({'error': 'Invalid shop_id format.'}, status=status.HTTP_400_BAD_REQUEST)
+        shop = get_object_or_404(RentalShop, id=shop_id)
+    else:
+        return Response({'error': 'Either shop_id or booking_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+    complaint = Complaint.objects.create(
+        user=request.user,
+        shop=shop,
+        booking=booking,
+        subject=subject,
+        description=description,
+        status='open'
+    )
+    
+    return Response({
+        'id': complaint.id,
+        'subject': complaint.subject,
+        'status': complaint.status,
+        'message': 'Complaint submitted successfully'
+    }, status=status.HTTP_201_CREATED)
+
+
+# ── Staff Complaints View (for assigned complaints) ─────────────────────────
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def staff_assigned_complaints_view(request):
+    """
+    GET /api/staff-complaints/
+    Returns all complaints assigned to the currently logged-in staff member.
+    """
+    from .models import Complaint
+    complaints = Complaint.objects.filter(assigned_to=request.user).select_related('user', 'shop', 'booking')
+    data = []
+    for c in complaints:
+        data.append({
+            'id': c.id,
+            'subject': c.subject,
+            'description': c.description,
+            'status': c.status,
+            'customer_name': c.user.first_name or c.user.username,
+            'shop_name': c.shop.name if c.shop else '',
+            'booking_id': c.booking.id if c.booking else None,
+            'created_at': c.created_at.isoformat(),
+        })
+    return Response(data)
+
+
+@api_view(['GET', 'POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def favorites_view(request):
+    """
+    GET    /api/favorites/            → list user's favourite shops
+    POST   /api/favorites/            → { "shop_id": <int> } toggle favorite
+    DELETE /api/favorites/?shop_id=X  → remove a favorite
+    """
+    from .models import FavoriteShop, RentalShop
+
+    if request.method == 'GET':
+        favs = FavoriteShop.objects.filter(user=request.user).select_related('shop')
+        data = []
+        for fav in favs:
+            s = fav.shop
+            data.append({
+                'id': fav.id,
+                'shop_id': s.id,
+                'name': s.name,
+                'address': s.address,
+                'image': s.image,
+                'rating': float(s.rating) if s.rating else 0,
+                'is_open': s.is_open,
+            })
+        return Response(data)
+
+    if request.method == 'POST':
+        shop_id = request.data.get('shop_id')
+        if not shop_id:
+            return Response({'error': 'shop_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            shop_id = int(shop_id)
+        except (ValueError, TypeError):
+            return Response({'error': 'Invalid shop_id.'}, status=status.HTTP_400_BAD_REQUEST)
+        from django.shortcuts import get_object_or_404
+        shop = get_object_or_404(RentalShop, id=shop_id)
+        fav, created = FavoriteShop.objects.get_or_create(user=request.user, shop=shop)
+        if not created:
+            # Toggle off — already favorited → remove
+            fav.delete()
+            return Response({'favorited': False})
+        return Response({'favorited': True}, status=status.HTTP_201_CREATED)
+
+    if request.method == 'DELETE':
+        shop_id = request.query_params.get('shop_id')
+        if not shop_id:
+            return Response({'error': 'shop_id query param required.'}, status=status.HTTP_400_BAD_REQUEST)
+        FavoriteShop.objects.filter(user=request.user, shop_id=shop_id).delete()
+        return Response({'favorited': False})
 
 
 # ── Reviews Views ────────────────────────────────────────────────────────────
@@ -621,17 +761,20 @@ def register(request):
 class RentalShopViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows rental shops to be viewed or edited.
-    PRO TIP: ModelViewSet handles GET, POST, PUT, PATCH, DELETE automatically.
+    Supports filtering by name/address: GET /api/shops/?search=<term>
     """
     queryset = RentalShop.objects.all()
     serializer_class = RentalShopSerializer
 
     def get_queryset(self):
-        """
-        Optionally restricts the returned shops, 
-        but currently returns all shops.
-        """
-        return RentalShop.objects.all()
+        queryset = RentalShop.objects.all()
+        search = self.request.query_params.get('search', '').strip()
+        if search:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(name__icontains=search) | Q(address__icontains=search)
+            )
+        return queryset
 
 class VehicleViewSet(viewsets.ModelViewSet):
     """

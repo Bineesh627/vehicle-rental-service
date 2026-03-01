@@ -38,4 +38,5 @@ export type UserStackParamList = {
   CustomerComplaint: { bookingId: string };
   StaffComplaint: undefined;
   ShopReviews: { shopId: string; shopName: string };
+  Favorites: undefined;
 };

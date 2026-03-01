@@ -166,7 +166,7 @@
                     <div class="card border-0 shadow-sm h-100" style="border-radius: var(--radius-xl);">
                         <div class="card-body d-flex flex-column justify-content-center">
                             <div class="text-muted small mb-1">Replied</div>
-                            <div class="display-6 fw-bold text-success">{{ reviews|dictsortreversed:"replied_at"|length }}</div>
+                            <div class="display-6 fw-bold text-success">{{ replied_count }}</div>
                         </div>
                     </div>
                 </div>
@@ -174,10 +174,7 @@
                     <div class="card border-0 shadow-sm h-100" style="border-radius: var(--radius-xl);">
                         <div class="card-body d-flex flex-column justify-content-center">
                             <div class="text-muted small mb-1">Pending Reply</div>
-                            <div class="display-6 fw-bold text-warning">
-                                {% with count=0 %}{% for r in reviews %}{% if not r.owner_reply %}{% with count=count|add:1 %}{% endwith %}{% endif %}{% endfor %}{% endwith %}
-                                {{ reviews|length }}
-                            </div>
+                            <div class="display-6 fw-bold text-warning">{{ pending_count }}</div>
                         </div>
                     </div>
                 </div>

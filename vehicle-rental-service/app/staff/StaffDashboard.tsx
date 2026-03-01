@@ -11,6 +11,7 @@ import {
   Phone,
   Truck,
   User,
+  AlertCircle,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -24,7 +25,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
-import { staffApi, StaffTask } from "@/services/api";
+import { staffApi, StaffTask, StaffComplaint } from "@/services/api";
 import { chatApi } from "@/services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -66,16 +67,21 @@ export default function StaffDashboard() {
   const [deliveryTasks, setDeliveryTasks] = useState<StaffTask[]>([]);
   const [pickupTasks, setPickupTasks] = useState<StaffTask[]>([]);
   const [completedCount, setCompletedCount] = useState(0);
+  const [complaints, setComplaints] = useState<StaffComplaint[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchTasks = async () => {
     try {
-      const data = await staffApi.getAssignedTasks();
+      const [data, complaintsData] = await Promise.all([
+        staffApi.getAssignedTasks(),
+        staffApi.getAssignedComplaints(),
+      ]);
       const active = data.filter((t) => t.status !== "completed");
       setCompletedCount(data.filter((t) => t.status === "completed").length);
       setDeliveryTasks(active.filter((t) => t.type === "delivery"));
       setPickupTasks(active.filter((t) => t.type === "pickup"));
+      setComplaints(complaintsData.filter((c) => c.status !== "resolved"));
     } catch (error) {
       console.error(error);
       Toast.show({
@@ -337,6 +343,63 @@ export default function StaffDashboard() {
     </View>
   );
 
+  const complaintStatusColor = (s: string) => {
+    if (s === "assigned") return "#F59E0B";
+    if (s === "resolved") return "#22C55E";
+    return COLORS.primary;
+  };
+
+  const ComplaintCard = ({ complaint }: { complaint: StaffComplaint }) => (
+    <View
+      className="p-5 rounded-2xl mb-4"
+      style={{ backgroundColor: COLORS.card }}
+    >
+      {/* Header */}
+      <View className="flex-row items-center justify-between mb-3">
+        <View
+          className="flex-row items-center gap-2 px-3 py-1 rounded-full"
+          style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
+        >
+          <AlertCircle size={13} color="#EF4444" style={{ marginRight: 4 }} />
+          <Text className="text-xs font-semibold" style={{ color: "#EF4444" }}>
+            Complaint
+          </Text>
+        </View>
+        <View
+          className="px-2 py-0.5 rounded-full"
+          style={{
+            backgroundColor: `${complaintStatusColor(complaint.status)}20`,
+          }}
+        >
+          <Text
+            className="text-xs font-semibold capitalize"
+            style={{ color: complaintStatusColor(complaint.status) }}
+          >
+            {complaint.status}
+          </Text>
+        </View>
+      </View>
+
+      {/* Subject */}
+      <Text className="text-lg font-bold text-white mb-1">
+        {complaint.subject}
+      </Text>
+      <Text className="text-sm text-gray-400 mb-3" numberOfLines={2}>
+        {complaint.description}
+      </Text>
+
+      {/* Meta */}
+      <View className="flex-row items-center gap-2 mb-1">
+        <User size={13} color="#6B7280" />
+        <Text className="text-xs text-gray-400">{complaint.customer_name}</Text>
+      </View>
+      <View className="flex-row items-center gap-2">
+        <MapPin size={13} color="#6B7280" />
+        <Text className="text-xs text-gray-400">{complaint.shop_name}</Text>
+      </View>
+    </View>
+  );
+
   return (
     <SafeAreaView
       className="flex-1"
@@ -356,15 +419,6 @@ export default function StaffDashboard() {
             </View>
           </View>
           <View className="flex-row items-center gap-1">
-            <TouchableOpacity
-              onPress={() => router.push("/staff/StaffComplaint")}
-            >
-              <View className="mr-4 px-3 py-1.5 bg-[#1E293B] rounded-full border border-gray-700">
-                <Text className="text-gray-300 text-xs font-medium">
-                  Report Issue
-                </Text>
-              </View>
-            </TouchableOpacity>
             <TouchableOpacity
               onPress={() => router.push("/staff/StaffProfile")}
             >
@@ -469,6 +523,34 @@ export default function StaffDashboard() {
               ))
             )}
           </View>
+
+          {/* Complaints Section */}
+          {complaints.length > 0 && (
+            <View className="mb-6">
+              <View className="flex-row items-center justify-between mb-4">
+                <View className="flex-row items-center gap-2">
+                  <AlertCircle size={18} color="#EF4444" />
+                  <Text className="text-lg font-bold text-white">
+                    Assigned Complaints
+                  </Text>
+                </View>
+                <View
+                  className="px-2 py-0.5 rounded-full"
+                  style={{ backgroundColor: "rgba(239,68,68,0.15)" }}
+                >
+                  <Text
+                    className="text-xs font-bold"
+                    style={{ color: "#EF4444" }}
+                  >
+                    {complaints.length}
+                  </Text>
+                </View>
+              </View>
+              {complaints.map((complaint) => (
+                <ComplaintCard key={complaint.id} complaint={complaint} />
+              ))}
+            </View>
+          )}
 
           {/* Map Section */}
           <View

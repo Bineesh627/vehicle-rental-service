@@ -28,8 +28,11 @@ export const api = {
     return mapBackendVehicleToFrontend(data);
   },
 
-  async getRentalShops(): Promise<RentalShop[]> {
-    const response = await fetch(`${API_BASE_URL}/shops/`);
+  async getRentalShops(search?: string): Promise<RentalShop[]> {
+    const url = search
+      ? `${API_BASE_URL}/shops/?search=${encodeURIComponent(search)}`
+      : `${API_BASE_URL}/shops/`;
+    const response = await fetch(url);
     if (!response.ok) throw new Error("Failed to fetch shops");
     const data = await response.json();
     return data.map(mapBackendShopToFrontend);
@@ -117,11 +120,14 @@ export const api = {
     const token = await getAuthToken();
     if (!token) throw new Error("No authentication token found");
 
-    const response = await fetch(`${API_BASE_URL}/bookings/${id}/request_pickup/`, {
-      method: "POST",
-      headers: authHeaders(token),
-      body: JSON.stringify({ return_location: returnLocation }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/bookings/${id}/request_pickup/`,
+      {
+        method: "POST",
+        headers: authHeaders(token),
+        body: JSON.stringify({ return_location: returnLocation }),
+      },
+    );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -152,9 +158,15 @@ export interface ShopReviewsResponse {
 }
 
 export const reviewApi = {
-  async getShopReviews(shopId: string, token: string): Promise<ShopReviewsResponse> {
+  async getShopReviews(
+    shopId: string,
+    token: string,
+  ): Promise<ShopReviewsResponse> {
     const response = await fetch(`${API_BASE_URL}/shops/${shopId}/reviews/`, {
-      headers: { Authorization: `Token ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Token ${token}`,
+        "Content-Type": "application/json",
+      },
     });
     if (!response.ok) throw new Error("Failed to fetch reviews");
     return await response.json();
@@ -168,7 +180,10 @@ export const reviewApi = {
   ): Promise<ShopReview> {
     const response = await fetch(`${API_BASE_URL}/shops/${shopId}/reviews/`, {
       method: "POST",
-      headers: { Authorization: `Token ${token}`, "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Token ${token}`,
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({ rating, comment }),
     });
     if (!response.ok) {
@@ -975,6 +990,17 @@ export interface StaffTask {
   bookingId: string;
 }
 
+export interface StaffComplaint {
+  id: string;
+  subject: string;
+  description: string;
+  status: "open" | "assigned" | "resolved";
+  customer_name: string;
+  shop_name: string;
+  booking_id: string | null;
+  created_at: string;
+}
+
 export const staffApi = {
   async getAssignedTasks(): Promise<StaffTask[]> {
     const token = await getAuthToken();
@@ -1004,16 +1030,105 @@ export const staffApi = {
     return await response.json();
   },
 
-  async submitComplaint(subject: string, details: string): Promise<any> {
+  async getAssignedComplaints(): Promise<StaffComplaint[]> {
     const token = await getAuthToken();
     if (!token) throw new Error("No authentication token found");
 
-    const response = await fetch(`${API_BASE_URL}/staff/complaints/`, {
+    const response = await fetch(`${API_BASE_URL}/staff-complaints/`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new Error("Failed to fetch assigned complaints");
+    const data = await response.json();
+    return data.map((c: any) => ({
+      id: c.id.toString(),
+      subject: c.subject,
+      description: c.description,
+      status: c.status,
+      customer_name: c.customer_name,
+      shop_name: c.shop_name,
+      booking_id: c.booking_id ? c.booking_id.toString() : null,
+      created_at: c.created_at,
+    }));
+  },
+};
+
+// ── Complaint API ───────────────────────────────────────────────────────────
+
+export const complaintApi = {
+  async submitComplaint(
+    subject: string,
+    description: string,
+    shopId?: string,
+    bookingId?: string,
+  ): Promise<any> {
+    const token = await getAuthToken();
+    if (!token) throw new Error("No authentication token found");
+
+    const body: Record<string, string> = { subject, description };
+    if (shopId) body.shop_id = shopId;
+    if (bookingId) body.booking_id = bookingId;
+
+    const response = await fetch(`${API_BASE_URL}/complaints/`, {
       method: "POST",
       headers: authHeaders(token),
-      body: JSON.stringify({ subject, details }),
+      body: JSON.stringify(body),
     });
-    if (!response.ok) throw new Error("Failed to submit complaint");
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to submit complaint");
+    }
+
     return await response.json();
+  },
+};
+
+// ── Favorites API ──────────────────────────────────────────────────────────
+
+export interface FavoriteShop {
+  id: string;
+  shop_id: string;
+  name: string;
+  address: string;
+  image: string;
+  rating: number;
+  is_open: boolean;
+}
+
+export const favoritesApi = {
+  async getFavorites(): Promise<FavoriteShop[]> {
+    const token = await getAuthToken();
+    if (!token) throw new Error("No authentication token found");
+    const response = await fetch(`${API_BASE_URL}/favorites/`, {
+      headers: authHeaders(token),
+    });
+    if (!response.ok) throw new Error("Failed to fetch favorites");
+    const data = await response.json();
+    return data.map((f: any) => ({
+      id: f.id.toString(),
+      shop_id: f.shop_id.toString(),
+      name: f.name,
+      address: f.address,
+      image: f.image,
+      rating: f.rating,
+      is_open: f.is_open,
+    }));
+  },
+
+  async toggleFavorite(shopId: string): Promise<{ favorited: boolean }> {
+    const token = await getAuthToken();
+    if (!token) throw new Error("No authentication token found");
+    const response = await fetch(`${API_BASE_URL}/favorites/`, {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify({ shop_id: shopId }),
+    });
+    if (!response.ok) throw new Error("Failed to toggle favorite");
+    return await response.json();
+  },
+
+  async checkFavorite(shopId: string): Promise<boolean> {
+    const favs = await this.getFavorites();
+    return favs.some((f) => f.shop_id === shopId);
   },
 };

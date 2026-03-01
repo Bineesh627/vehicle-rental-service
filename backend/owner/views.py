@@ -516,10 +516,15 @@ def reviews_view(request):
     if total:
         avg_rating = round(sum(r.rating for r in all_reviews) / total, 1)
 
+    replied_count = all_reviews.filter(owner_reply__isnull=False).exclude(owner_reply='').count()
+    pending_count = all_reviews.filter(owner_reply__isnull=True).count() + all_reviews.filter(owner_reply='').count()
+
     return render(request, 'owner/reviews.html', {
         'reviews': all_reviews,
         'avg_rating': avg_rating,
         'total_reviews': total,
+        'replied_count': replied_count,
+        'pending_count': pending_count,
     })
 
 

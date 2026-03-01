@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import StaffTask, StaffComplaint
+from .models import StaffTask
 from rentals.serializers import BookingSerializer
 
 class StaffTaskSerializer(serializers.ModelSerializer):
@@ -38,9 +38,4 @@ class StaffTaskSerializer(serializers.ModelSerializer):
             return obj.scheduled_time.strftime("%I:%M %p")
         return ""
 
-class StaffComplaintSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StaffComplaint
-        fields = ['id', 'subject', 'details', 'is_resolved', 'created_at']
-        read_only_fields = ['id', 'is_resolved', 'created_at']
 
