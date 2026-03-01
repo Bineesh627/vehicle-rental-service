@@ -43,5 +43,8 @@ export interface Booking {
   startDate: string;
   endDate: string;
   totalPrice: number;
-  status: "active" | "completed" | "cancelled" | "upcoming";
+  status: "active" | "completed" | "cancelled" | "upcoming" | "pickup_requested";
+  deliveryOption?: "pickup" | "delivery";
+  deliveryAddress?: string;
+  returnLocation?: string;
 }

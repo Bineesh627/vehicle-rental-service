@@ -117,6 +117,23 @@ class BookingViewSet(viewsets.ModelViewSet):
         """Set user when creating booking"""
         serializer.save(user=self.request.user)
 
+    @action(detail=True, methods=['POST'])
+    def request_pickup(self, request, pk=None):
+        booking = self.get_object()
+        
+        if booking.status != 'active':
+            return Response({'error': 'Only active bookings can request pickup.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        return_location = request.data.get('return_location')
+        if not return_location:
+            return Response({'error': 'Return location is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        booking.status = 'pickup_requested'
+        booking.return_location = return_location
+        booking.save()
+        
+        return Response({'success': True, 'status': booking.status})
+
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

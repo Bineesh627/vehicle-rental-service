@@ -24,10 +24,10 @@ class StaffTaskViewSet(viewsets.ModelViewSet):
             
             # Update the associated booking status if the task was completed
             if new_status == 'completed' and task.booking:
-                print(f"[StaffTaskViewSet] Triggering booking status update for Booking #{task.booking.id} Type: {task.type}")
-                if task.type == 'delivery':
-                    task.booking.status = 'completed'
-                elif task.type == 'pickup':
+                print(f"[StaffTaskViewSet] Triggering booking status update for Booking #{task.booking.id} Type: {task.type} Current Status: {task.booking.status}")
+                if task.booking.status == 'upcoming':
+                    task.booking.status = 'active'
+                elif task.booking.status == 'pickup_requested':
                     task.booking.status = 'completed'
                 task.booking.save()
                 print(f"[StaffTaskViewSet] Booking #{task.booking.id} status is now {task.booking.status}")

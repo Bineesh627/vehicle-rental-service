@@ -109,18 +109,17 @@ def booking_management_view(request):
                 StaffTask.objects.filter(booking=booking).delete()
                 
                 # Create new Staff Task for the newly assigned staff member
+                task_type = 'pickup' if booking.status == 'pickup_requested' else ('delivery' if booking.delivery_option == 'delivery' else 'pickup')
                 task = StaffTask.objects.create(
                     booking=booking,
                     staff=staff_member,
-                    type='delivery' if booking.delivery_option == 'delivery' else 'pickup',
+                    type=task_type,
                     scheduled_time=booking.start_date,
                     status='pending'
                 )
                 
-                # Update booking status to active since it's assigned
-                if booking.status == 'upcoming':
-                    booking.status = 'active'
-                    booking.save()
+                # Note: Booking status remains the same since assignment shouldn't make it active.
+                # It will be marked active or completed when staff completes the task.
                     
                 messages.success(request, f"Assigned {staff_member.first_name} to Booking #{booking.id}")
             except Exception as e:
@@ -233,7 +232,6 @@ def vehicle_management_view(request):
                     brand=request.POST.get('brand'),
                     model=request.POST.get('model'),
                     number=request.POST.get('number'),
-                    vehicle_number=request.POST.get('vehicle_number', ''),
                     price_per_hour=request.POST.get('price_per_hour'),
                     price_per_day=request.POST.get('price_per_day'),
                     fuel_type=request.POST.get('fuel_type'),
@@ -256,7 +254,6 @@ def vehicle_management_view(request):
                 vehicle.brand = request.POST.get('brand')
                 vehicle.model = request.POST.get('model')
                 vehicle.number = request.POST.get('number')
-                vehicle.vehicle_number = request.POST.get('vehicle_number', '')
                 vehicle.price_per_hour = request.POST.get('price_per_hour')
                 vehicle.price_per_day = request.POST.get('price_per_day')
                 vehicle.fuel_type = request.POST.get('fuel_type')
@@ -420,3 +417,160 @@ def staff_api(request):
             return JsonResponse({'success': True})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+
+
+# ── Chat View ──────────────────────────────────────────────────────────────────
+
+@login_required(login_url='/login.html')
+def chat_view(request):
+    if not is_owner(request.user):
+        return redirect('/login.html')
+
+    from rentals.models import Conversation, Message, RentalShop
+
+    shop = RentalShop.objects.annotate(v_count=models.Count('vehicles')).first()
+    if not shop:
+        shop = RentalShop.objects.create(
+            name=f"{request.user.username}'s Shop", address="123 Main St", latitude=0, longitude=0
+        )
+
+    selected_conversation = None
+    conversation_messages = []
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'send_message':
+            conv_id = request.POST.get('conversation_id')
+            text = request.POST.get('text', '').strip()
+            if conv_id and text:
+                try:
+                    conv = Conversation.objects.get(id=conv_id, shop=shop)
+                    Message.objects.create(
+                        conversation=conv,
+                        sender=request.user,
+                        sender_role='owner',
+                        text=text,
+                    )
+                except Exception as e:
+                    messages.error(request, f"Error sending message: {e}")
+        return redirect(f'/chat.html?conv={request.POST.get("conversation_id", "")}')
+
+    conv_id = request.GET.get('conv')
+    conversations = Conversation.objects.filter(shop=shop).select_related('user').order_by('-updated_at')
+
+    if conv_id:
+        try:
+            selected_conversation = conversations.get(id=conv_id)
+            conversation_messages = selected_conversation.messages.all().order_by('created_at')
+            # Mark messages as read
+            selected_conversation.messages.filter(is_read=False).exclude(sender=request.user).update(is_read=True)
+        except Conversation.DoesNotExist:
+            pass
+
+    return render(request, 'owner/chat.html', {
+        'conversations': conversations,
+        'selected_conversation': selected_conversation,
+        'conversation_messages': conversation_messages,
+    })
+
+
+# ── Reviews View ───────────────────────────────────────────────────────────────
+
+@login_required(login_url='/login.html')
+def reviews_view(request):
+    if not is_owner(request.user):
+        return redirect('/login.html')
+
+    from rentals.models import Review, RentalShop
+    from django.utils import timezone
+
+    shop = RentalShop.objects.annotate(v_count=models.Count('vehicles')).first()
+    if not shop:
+        shop = RentalShop.objects.create(
+            name=f"{request.user.username}'s Shop", address="123 Main St", latitude=0, longitude=0
+        )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'reply':
+            review_id = request.POST.get('review_id')
+            reply_text = request.POST.get('reply_text', '').strip()
+            if review_id and reply_text:
+                try:
+                    review = Review.objects.get(id=review_id, shop=shop)
+                    review.owner_reply = reply_text
+                    review.replied_at = timezone.now()
+                    review.save()
+                    messages.success(request, "Reply posted successfully!")
+                except Review.DoesNotExist:
+                    messages.error(request, "Review not found.")
+                except Exception as e:
+                    messages.error(request, f"Error posting reply: {e}")
+        return redirect('owner_reviews')
+
+    all_reviews = Review.objects.filter(shop=shop).select_related('user', 'booking')
+
+    # Compute average rating
+    total = all_reviews.count()
+    avg_rating = 0
+    if total:
+        avg_rating = round(sum(r.rating for r in all_reviews) / total, 1)
+
+    return render(request, 'owner/reviews.html', {
+        'reviews': all_reviews,
+        'avg_rating': avg_rating,
+        'total_reviews': total,
+    })
+
+
+# ── Complaints View ────────────────────────────────────────────────────────────
+
+@login_required(login_url='/login.html')
+def complaints_view(request):
+    if not is_owner(request.user):
+        return redirect('/login.html')
+
+    from rentals.models import Complaint, RentalShop
+
+    shop = RentalShop.objects.annotate(v_count=models.Count('vehicles')).first()
+    if not shop:
+        shop = RentalShop.objects.create(
+            name=f"{request.user.username}'s Shop", address="123 Main St", latitude=0, longitude=0
+        )
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'assign_staff':
+            complaint_id = request.POST.get('complaint_id')
+            staff_id = request.POST.get('staff_id')
+            try:
+                complaint = Complaint.objects.get(id=complaint_id, shop=shop)
+                staff_member = User.objects.get(id=staff_id, user_profile__role='staff')
+                complaint.assigned_to = staff_member
+                complaint.status = 'assigned'
+                complaint.save()
+                messages.success(request, f"Complaint #{complaint_id} assigned to {staff_member.first_name}.")
+            except Complaint.DoesNotExist:
+                messages.error(request, "Complaint not found.")
+            except User.DoesNotExist:
+                messages.error(request, "Staff member not found.")
+            except Exception as e:
+                messages.error(request, f"Error assigning complaint: {e}")
+        elif action == 'resolve':
+            complaint_id = request.POST.get('complaint_id')
+            try:
+                complaint = Complaint.objects.get(id=complaint_id, shop=shop)
+                complaint.status = 'resolved'
+                complaint.save()
+                messages.success(request, f"Complaint #{complaint_id} marked as resolved.")
+            except Exception as e:
+                messages.error(request, f"Error resolving complaint: {e}")
+        return redirect('owner_complaints')
+
+    all_complaints = Complaint.objects.filter(shop=shop).select_related('user', 'booking', 'assigned_to')
+    staff_members = User.objects.filter(user_profile__role='staff', is_active=True).select_related('user_profile')
+
+    return render(request, 'owner/complaints.html', {
+        'complaints': all_complaints,
+        'staff_members': staff_members,
+    })

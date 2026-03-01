@@ -112,6 +112,22 @@ export const api = {
       throw new Error(errorData.status || "Failed to cancel booking");
     }
   },
+
+  async requestPickup(id: string, returnLocation: string): Promise<void> {
+    const token = await getAuthToken();
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await fetch(`${API_BASE_URL}/bookings/${id}/request_pickup/`, {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify({ return_location: returnLocation }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Failed to request pickup");
+    }
+  },
 };
 
 const mapBackendBookingToFrontend = (data: any): Booking => {
@@ -128,6 +144,9 @@ const mapBackendBookingToFrontend = (data: any): Booking => {
     endDate: data.end_date,
     totalPrice: parseFloat(data.total_price),
     status: data.status,
+    deliveryOption: data.delivery_option,
+    deliveryAddress: data.delivery_address,
+    returnLocation: data.return_location,
   } as Booking;
 };
 

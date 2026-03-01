@@ -14,4 +14,7 @@ urlpatterns = [
     path('Profile.html', views.profile_view, name='owner_profile'),
     path('logout/', views.logout_view, name='owner_logout'),
     path('api/staff/', views.staff_api, name='owner_staff_api'),
+    path('chat.html', views.chat_view, name='owner_chat'),
+    path('reviews.html', views.reviews_view, name='owner_reviews'),
+    path('complaints.html', views.complaints_view, name='owner_complaints'),
 ]

@@ -36,7 +36,6 @@ class Vehicle(models.Model):
     seating = models.IntegerField(null=True, blank=True)
     is_available = models.BooleanField(default=True)
     features = models.JSONField(default=list) # List of features
-    vehicle_number = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return f"{self.brand} {self.model} ({self.number})"
@@ -47,6 +46,7 @@ class Booking(models.Model):
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
         ('upcoming', 'Upcoming'),
+        ('pickup_requested', 'Pickup Requested'),
     ]
     
     BOOKING_TYPES = [
@@ -84,6 +84,7 @@ class Booking(models.Model):
     # Delivery details
     delivery_option = models.CharField(max_length=10, choices=DELIVERY_OPTIONS, default='pickup')
     delivery_address = models.TextField(blank=True, null=True)
+    return_location = models.TextField(blank=True, null=True)
     
     # Payment details
     payment_method = models.CharField(max_length=10, choices=PAYMENT_METHODS)
@@ -278,6 +279,53 @@ def create_user_profile(sender, instance, created, **kwargs):
 def save_user_profile(sender, instance, **kwargs):
     if hasattr(instance, 'user_profile'):
         instance.user_profile.save()
+
+
+class Review(models.Model):
+    """Customer review for the rental shop, with optional owner reply."""
+    RATING_CHOICES = [(i, str(i)) for i in range(1, 6)]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_reviews')
+    shop = models.ForeignKey(RentalShop, on_delete=models.CASCADE, related_name='shop_reviews')
+    booking = models.ForeignKey('Booking', on_delete=models.SET_NULL, null=True, blank=True, related_name='booking_reviews')
+    rating = models.IntegerField(choices=RATING_CHOICES)
+    comment = models.TextField()
+    owner_reply = models.TextField(blank=True, null=True)
+    replied_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Review by {self.user.username} — {self.rating}★"
+
+
+class Complaint(models.Model):
+    """User complaint that can be assigned to a staff member by the owner."""
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('assigned', 'Assigned'),
+        ('resolved', 'Resolved'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_complaints')
+    shop = models.ForeignKey(RentalShop, on_delete=models.CASCADE, related_name='shop_complaints')
+    booking = models.ForeignKey('Booking', on_delete=models.SET_NULL, null=True, blank=True, related_name='booking_complaints')
+    subject = models.CharField(max_length=255)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    assigned_to = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_complaints'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Complaint #{self.id} by {self.user.username} — {self.status}"
 
 
 class Notification(models.Model):

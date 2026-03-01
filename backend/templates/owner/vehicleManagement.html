@@ -32,6 +32,15 @@
             <a href="bookingManagement.html" class="sidebar-item" data-section="bookings">
                 <i class="bi bi-calendar-check"></i> Bookings
             </a>
+            <a href="chat.html" class="sidebar-item" data-section="chat">
+                <i class="bi bi-chat-dots"></i> Chat
+            </a>
+            <a href="reviews.html" class="sidebar-item" data-section="reviews">
+                <i class="bi bi-star-half"></i> Reviews
+            </a>
+            <a href="complaints.html" class="sidebar-item" data-section="complaints">
+                <i class="bi bi-exclamation-triangle"></i> Complaints
+            </a>
             <a href="Profile.html" class="sidebar-item" data-section="profile">
                 <i class="bi bi-person-gear"></i> Settings
             </a>
@@ -137,7 +146,6 @@
                                         data-id="{{ vehicle.id }}" data-type="{{ vehicle.type }}"
                                         data-name="{{ vehicle.name }}" data-brand="{{ vehicle.brand }}"
                                         data-model="{{ vehicle.model }}" data-number="{{ vehicle.number }}"
-                                        data-vehicle_number="{{ vehicle.vehicle_number }}"
                                         data-price_per_hour="{{ vehicle.price_per_hour }}"
                                         data-price_per_day="{{ vehicle.price_per_day }}"
                                         data-fuel_type="{{ vehicle.fuel_type }}"
@@ -217,11 +225,6 @@
                                 <label for="vehicleRegNumber" class="form-label">Registration Number</label>
                                 <input type="text" name="number" class="form-control" id="vehicleRegNumber"
                                     placeholder="e.g. ABC 1234" required>
-                            </div>
-                            <div class="col-sm-6 form-group mb-3">
-                                <label for="vehicleNumber" class="form-label">Stock/Fleet Number (Optional)</label>
-                                <input type="text" name="vehicle_number" class="form-control" id="vehicleNumber"
-                                    placeholder="e.g. V-104">
                             </div>
                         </div>
                         <div class="row g-3">
@@ -321,10 +324,6 @@
                                 <input type="text" name="number" class="form-control" id="editVehicleRegNumber"
                                     required>
                             </div>
-                            <div class="col-sm-6 form-group mb-3">
-                                <label for="editVehicleNumber" class="form-label">Stock/Fleet Number (Optional)</label>
-                                <input type="text" name="vehicle_number" class="form-control" id="editVehicleNumber">
-                            </div>
                         </div>
                         <div class="row g-3">
                             <div class="col-sm-6 form-group mb-3">
@@ -382,14 +381,13 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="{% static 'js/dashboard.js' %}"></script>
     <script>
-        function openEditVehicleModal(id, type, name, brand, model, number, vehicleNumber, priceHour, priceDay, fuel, transmission, seating, features, images, isAvailable) {
+        function openEditVehicleModal(id, type, name, brand, model, number, priceHour, priceDay, fuel, transmission, seating, features, images, isAvailable) {
             document.getElementById('editVehicleId').value = id;
             document.getElementById('editVehicleType').value = type;
             document.getElementById('editVehicleName').value = name;
             document.getElementById('editVehicleBrand').value = brand;
             document.getElementById('editVehicleModel').value = model;
             document.getElementById('editVehicleRegNumber').value = number;
-            document.getElementById('editVehicleNumber').value = vehicleNumber;
             document.getElementById('editPricePerHour').value = priceHour;
             document.getElementById('editPricePerDay').value = priceDay;
             document.getElementById('editFuelType').value = fuel;
@@ -428,7 +426,6 @@
                     this.dataset.brand,
                     this.dataset.model,
                     this.dataset.number,
-                    this.dataset.vehicle_number,
                     this.dataset.price_per_hour,
                     this.dataset.price_per_day,
                     this.dataset.fuel_type,

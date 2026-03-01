@@ -30,8 +30,9 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { api } from "@/services/api";
+import { api, profileApi, SavedLocation } from "@/services/api";
 import { Booking } from "@/types";
+import { DeliveryLocationSelector } from "@/components/user/DeliveryLocationSelector";
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -45,6 +46,9 @@ export default function BookingDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+  const [showPickupSelector, setShowPickupSelector] = useState(false);
+  const [savedLocations, setSavedLocations] = useState<SavedLocation[]>([]);
+  const [isRequestingPickup, setIsRequestingPickup] = useState(false);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -60,6 +64,13 @@ export default function BookingDetails() {
           const data = await api.getBookingDetails(id);
           setBooking(data);
           setError(null);
+
+          try {
+            const locs = await profileApi.getSavedLocations();
+            setSavedLocations(locs);
+          } catch (e) {
+            console.log("Failed to load saved locations");
+          }
         } catch (err: any) {
           console.error("Error fetching booking details:", err);
           setError(err.message || "Failed to load booking details");
@@ -172,6 +183,12 @@ export default function BookingDetails() {
           bg: styles.statusBgActive,
           text: styles.statusTextActive,
           label: "Active Rental",
+        };
+      case "pickup_requested":
+        return {
+          bg: styles.statusBgUpcoming,
+          text: styles.statusTextUpcoming,
+          label: "Pending Return",
         };
       default:
         return {
@@ -403,9 +420,34 @@ export default function BookingDetails() {
 
               <TouchableOpacity
                 style={styles.footerPrimaryButton}
-                onPress={() => console.log("Return to shop")}
+                onPress={() => setShowPickupSelector(true)}
+                disabled={isRequestingPickup}
               >
-                <Text style={styles.footerPrimaryText}>Return to Shop</Text>
+                <Text style={styles.footerPrimaryText}>
+                  {isRequestingPickup ? "Requesting..." : "Request Pickup"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {booking.status === "pickup_requested" && (
+            <View style={styles.activeFooterContent}>
+              <TouchableOpacity
+                style={styles.footerOutlineButton}
+                onPress={() =>
+                  navigation.navigate("CustomerComplaint", {
+                    bookingId: booking.id,
+                  })
+                }
+              >
+                <Text style={styles.footerOutlineText}>Complaint</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.footerPrimaryButton, { opacity: 0.7 }]}
+                disabled
+              >
+                <Text style={styles.footerPrimaryText}>Return Pending</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -433,6 +475,33 @@ export default function BookingDetails() {
           )}
         </View>
       </View>
+
+      {booking && (
+        <DeliveryLocationSelector
+          visible={showPickupSelector}
+          type="delivery"
+          currentAddress={booking.deliveryAddress || booking.shop.address}
+          locations={savedLocations}
+          onSelect={async (address) => {
+            setShowPickupSelector(false);
+            try {
+              setIsRequestingPickup(true);
+              await api.requestPickup(id, address);
+              const data = await api.getBookingDetails(id);
+              setBooking(data);
+              Alert.alert(
+                "Success",
+                "Pickup has been requested. Staff will contact you shortly.",
+              );
+            } catch (err: any) {
+              Alert.alert("Error", err.message || "Failed to request pickup");
+            } finally {
+              setIsRequestingPickup(false);
+            }
+          }}
+          onClose={() => setShowPickupSelector(false)}
+        />
+      )}
     </View>
   );
 }
