@@ -154,7 +154,7 @@
                             <input type="text" name="transmission" class="form-control" id="transmission"
                                 placeholder="Auto / Manual" required>
                         </div>
-                        <div class="col-sm-4 form-group mb-3">
+                        <div class="col-sm-4 form-group mb-3" id="seatingField">
                             <label for="seating" class="form-label">Seating</label>
                             <input type="number" name="seating" class="form-control" id="seating" placeholder="5">
                         </div>
@@ -239,7 +239,7 @@
                             <label for="editTransmission" class="form-label">Transmission</label>
                             <input type="text" name="transmission" class="form-control" id="editTransmission" required>
                         </div>
-                        <div class="col-sm-4 form-group mb-3">
+                        <div class="col-sm-4 form-group mb-3" id="editSeatingField">
                             <label for="editSeating" class="form-label">Seating</label>
                             <input type="number" name="seating" class="form-control" id="editSeating">
                         </div>
@@ -269,6 +269,45 @@
 
 {% block extra_js %}
 <script>
+    function toggleSeatingField(selectId, fieldId) {
+        const vehicleType = document.getElementById(selectId).value;
+        const seatingField = document.getElementById(fieldId);
+        if (vehicleType === 'car') {
+            seatingField.style.display = 'block';
+        } else {
+            seatingField.style.display = 'none';
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add vehicle modal
+        const vehicleTypeSelect = document.getElementById('vehicleType');
+        if (vehicleTypeSelect) {
+            vehicleTypeSelect.addEventListener('change', function() {
+                toggleSeatingField('vehicleType', 'seatingField');
+            });
+            // Set initial state
+            toggleSeatingField('vehicleType', 'seatingField');
+        }
+
+        // Edit vehicle modal
+        const editVehicleTypeSelect = document.getElementById('editVehicleType');
+        if (editVehicleTypeSelect) {
+            editVehicleTypeSelect.addEventListener('change', function() {
+                toggleSeatingField('editVehicleType', 'editSeatingField');
+            });
+            // Set initial state when modal opens
+            document.querySelectorAll('.edit-vehicle-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    setTimeout(() => {
+                        toggleSeatingField('editVehicleType', 'editSeatingField');
+                    }, 100);
+                });
+            });
+        }
+    });
+
     function confirmDelete(id, name) {
         Swal.fire({ title: 'Are you sure?', text: `Do you want to delete ${name}?`, icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', cancelButtonColor: '#6c757d', confirmButtonText: 'Yes, delete it!' }).then(r => {
             if (r.isConfirmed) document.getElementById(`deleteForm-${id}`).submit();

@@ -40,11 +40,6 @@
             data-section="complaints">
             <i class="bi bi-exclamation-triangle"></i> Complaints
         </a>
-        <a href="{% url 'owner_kyc' %}"
-            class="sidebar-item {% if request.resolver_match.url_name == 'owner_kyc' %}active{% endif %}"
-            data-section="kyc">
-            <i class="bi bi-person-vcard"></i> KYC Verification
-        </a>
         <a href="{% url 'owner_profile' %}"
             class="sidebar-item {% if request.resolver_match.url_name == 'owner_profile' %}active{% endif %}"
             data-section="profile">
