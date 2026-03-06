@@ -1,0 +1,112 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Payments{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Payments</h1>
+    <div class="actions-group">
+        <div class="filters-bar">
+            <!-- Filters -->
+            <select class="filter-select" data-filter name="payment_status">
+                <option value="">Status (All)</option>
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+                <option value="refunded">Refunded</option>
+            </select>
+            <select class="filter-select" data-filter name="payment_method">
+                <option value="">Method (All)</option>
+                <option value="card">Card</option>
+                <option value="upi">UPI</option>
+                <option value="wallet">Wallet</option>
+                <option value="cash">Cash</option>
+            </select>
+            <!-- Sort -->
+            <select class="filter-select" data-sort name="sort">
+                <option value="">Sort By</option>
+                <option value="-created_at">Date (Newest)</option>
+                <option value="created_at">Date (Oldest)</option>
+                <option value="-total_price">Amount (High-Low)</option>
+                <option value="total_price">Amount (Low-High)</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="data-table-container">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Ref / Booking ID</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Payment Method</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Breakdown</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for payment in payments %}
+                <tr>
+                    <td>
+                        <span style="font-family: monospace; font-weight: 600;">#{{ payment.id }}</span>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.25rem;">
+                            Booking #{{ payment.id }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--text-main);">{{ payment.user.username }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ payment.user.email }}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.85rem;">{{ payment.created_at|date:"M d, Y" }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ payment.created_at|date:"H:i A" }}
+                        </div>
+                    </td>
+                    <td>
+                        <div
+                            style="display: flex; align-items: center; gap: 0.5rem; font-weight: 500; text-transform: uppercase; font-size: 0.8rem;">
+                            {% if payment.payment_method == 'card' %}
+                            <i class="fas fa-credit-card" style="color: var(--primary);"></i>
+                            {% elif payment.payment_method == 'upi' %}
+                            <i class="fas fa-mobile-alt" style="color: var(--info);"></i>
+                            {% elif payment.payment_method == 'wallet' %}
+                            <i class="fas fa-wallet" style="color: var(--warning);"></i>
+                            {% else %}
+                            <i class="fas fa-money-bill-wave" style="color: var(--success);"></i>
+                            {% endif %}
+                            {{ payment.payment_method }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-main); font-size: 1.1rem;">₹{{ payment.total_price }}</div>
+                    </td>
+                    <td>
+                        <span
+                            class="status-badge status-{% if payment.payment_status == 'completed' %}success{% elif payment.payment_status == 'pending' %}warning{% else %}danger{% endif %} text-uppercase">
+                            {{ payment.payment_status }}
+                        </span>
+                    </td>
+                    <td>
+                        <div
+                            style="font-size: 0.75rem; color: var(--text-muted); display: grid; grid-template-columns: 1fr auto; gap: 0.25rem; max-width: 150px;">
+                            <span>Base:</span> <span style="font-weight: 600;">₹{{ payment.base_price }}</span>
+                            <span>Service:</span> <span style="font-weight: 600;">₹{{ payment.service_fee }}</span>
+                            <span>Delivery:</span> <span style="font-weight: 600;">₹{{ payment.delivery_fee }}</span>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No payment
+                        records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

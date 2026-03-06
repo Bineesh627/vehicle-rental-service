@@ -1,0 +1,48 @@
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <i class="fas fa-car-side" style="margin-right: 10px; color: var(--primary);"></i>
+        RentalAdmin
+    </div>
+
+    <nav class="sidebar-menu">
+        <a href="{% url 'admin_dashboard' %}" class="menu-item">
+            <i class="fas fa-chart-pie"></i>
+            <span>Dashboard</span>
+        </a>
+
+        <a href="{% url 'admin_rental_shops' %}" class="menu-item">
+            <i class="fas fa-store"></i>
+            <span>Rental Shops</span>
+        </a>
+
+        <a href="{% url 'admin_customers' %}" class="menu-item">
+            <i class="fas fa-users"></i>
+            <span>Customers</span>
+        </a>
+
+        <a href="{% url 'admin_rental_staff' %}" class="menu-item">
+            <i class="fas fa-user-tie"></i>
+            <span>Rental Staff</span>
+        </a>
+
+        <a href="{% url 'admin_bookings' %}" class="menu-item">
+            <i class="fas fa-calendar-check"></i>
+            <span>Bookings</span>
+        </a>
+
+        <a href="{% url 'admin_payments' %}" class="menu-item">
+            <i class="fas fa-credit-card"></i>
+            <span>Payments</span>
+        </a>
+
+        <a href="{% url 'admin_owner_management' %}" class="menu-item">
+            <i class="fas fa-user-shield"></i>
+            <span>Owner Management</span>
+        </a>
+
+        <a href="{% url 'admin_kyc_management' %}" class="menu-item">
+            <i class="fas fa-id-card"></i>
+            <span>KYC Management</span>
+        </a>
+    </nav>
+</aside>

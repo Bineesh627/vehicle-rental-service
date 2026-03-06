@@ -1,0 +1,117 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Vehicles{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div class="actions-group">
+        <div class="filters-bar">
+            <!-- Filters -->
+            <select class="filter-select" data-filter name="type">
+                <option value="">Any Type</option>
+                <option value="car">Car</option>
+                <option value="bike">Bike</option>
+            </select>
+            <select class="filter-select" data-filter name="is_available">
+                <option value="">Availability</option>
+                <option value="True">Available</option>
+                <option value="False">Unavailable</option>
+            </select>
+            <select class="filter-select" data-filter name="fuel_type">
+                <option value="">Fuel Type</option>
+                <option value="petrol">Petrol</option>
+                <option value="diesel">Diesel</option>
+                <option value="electric">Electric</option>
+                <option value="cng">CNG</option>
+            </select>
+            <select class="filter-select" data-filter name="transmission">
+                <option value="">Transmission</option>
+                <option value="manual">Manual</option>
+                <option value="automatic">Automatic</option>
+            </select>
+            <!-- Sort -->
+            <select class="filter-select" data-sort name="sort">
+                <option value="">Sort By</option>
+                <option value="price_per_hour">Price/Hr (Low-High)</option>
+                <option value="-price_per_hour">Price/Hr (High-Low)</option>
+                <option value="price_per_day">Price/Day (Low-High)</option>
+                <option value="-price_per_day">Price/Day (High-Low)</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="items-grid">
+    {% for vehicle in vehicles %}
+    <div class="item-card" data-href="{% url 'admin_vehicle_detail' vehicle.id %}">
+        <div class="item-img-container">
+            {% if vehicle.images and vehicle.images.0 %}
+            <img src="{{ vehicle.images.0 }}" alt="{{ vehicle.name }}" class="item-img">
+            {% else %}
+            <div class="item-img" style="display: flex; align-items: center; justify-content: center;">
+                <i class="fas {% if vehicle.type == 'bike' %}fa-motorcycle{% else %}fa-car{% endif %}"
+                    style="font-size: 3rem; color: #94A3B8;"></i>
+            </div>
+            {% endif %}
+
+            <div class="item-img-overlay">
+                <span class="status-badge status-{{ vehicle.is_available|yesno:'success,danger' }}">
+                    {{ vehicle.is_available|yesno:'Available,Unavailable' }}
+                </span>
+            </div>
+
+            <div
+                style="position: absolute; bottom: 1rem; left: 1rem; background: rgba(0,0,0,0.6); color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.8rem; font-weight: 600; text-transform: uppercase;">
+                {{ vehicle.type }}
+            </div>
+
+            <div
+                style="position: absolute; bottom: 1rem; right: 1rem; background: var(--primary); color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.875rem; font-weight: 600;">
+                ₹{{ vehicle.price_per_day }}/d
+            </div>
+        </div>
+
+        <div class="item-content">
+            <div class="item-title" style="margin-bottom: 0;">{{ vehicle.name }}</div>
+            <div class="item-subtitle" style="margin-bottom: 0.75rem;">
+                {{ vehicle.brand }} {{ vehicle.model }}
+            </div>
+
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; align-items: center;">
+                <span
+                    style="font-family: monospace; background: var(--background); padding: 0.2rem 0.5rem; border-radius: 0.25rem; border: 1px solid var(--border); font-size: 0.75rem; font-weight: 600;">
+                    <i class="fas fa-hashtag" style="color: var(--text-muted); margin-right: 0.25rem;"></i>{{ vehicle.number }}
+                </span>
+                <span style="font-size: 0.875rem; font-weight: 600; color: var(--primary);">₹{{ vehicle.price_per_hour }}/h</span>
+            </div>
+
+            <div class="item-details" style="grid-template-columns: repeat(3, 1fr); padding-top: 0.75rem;">
+                <div class="detail-block" style="text-align: center;">
+                    <i class="fas fa-gas-pump" style="color: var(--text-muted); margin-bottom: 0.25rem;"></i>
+                    <span class="detail-value" style="font-size: 0.8rem;">{{ vehicle.fuel_type|title }}</span>
+                </div>
+                <div class="detail-block"
+                    style="text-align: center; border-left: 1px solid var(--border); border-right: 1px solid var(--border);">
+                    <i class="fas fa-cogs" style="color: var(--text-muted); margin-bottom: 0.25rem;"></i>
+                    <span class="detail-value" style="font-size: 0.8rem;">{{ vehicle.transmission|title }}</span>
+                </div>
+                <div class="detail-block" style="text-align: center;">
+                    <i class="fas fa-users" style="color: var(--text-muted); margin-bottom: 0.25rem;"></i>
+                    <span class="detail-value" style="font-size: 0.8rem;">{{ vehicle.seating|default:"-" }} Seats</span>
+                </div>
+            </div>
+
+            <div
+                style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-muted);">
+                <i class="fas fa-store" style="margin-right: 0.25rem;"></i> {{ vehicle.shop.name }}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div
+        style="grid-column: 1 / -1; text-align: center; padding: 3rem; background: var(--surface); border-radius: var(--radius); border: 1px dashed var(--border);">
+        <p style="color: var(--text-muted);">No vehicles found matching the filters.</p>
+    </div>
+    {% endfor %}
+{% endblock %}

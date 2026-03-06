@@ -13,8 +13,7 @@ urlpatterns = [
     path('chat/', views.chat_view, name='owner_chat'),
     path('reviews/', views.reviews_view, name='owner_reviews'),
     path('complaints/', views.complaints_view, name='owner_complaints'),
-    path('kyc/', views.kyc_management_view, name='owner_kyc'),
-    path('kyc/<int:kyc_id>/', views.kyc_detail_view, name='owner_kyc_detail'),
+
     path('profile/', views.profile_view, name='owner_profile'),
     path('logout/', views.logout_view, name='owner_logout'),
     path('api/staff/', views.staff_api, name='owner_staff_api'),

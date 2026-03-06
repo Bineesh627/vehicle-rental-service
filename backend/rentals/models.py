@@ -28,17 +28,37 @@ class Vehicle(models.Model):
     brand = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     number = models.CharField(max_length=50) # Registration number
-    images = models.JSONField(default=list) # List of image URLs
     price_per_hour = models.DecimalField(max_digits=10, decimal_places=2)
     price_per_day = models.DecimalField(max_digits=10, decimal_places=2)
     fuel_type = models.CharField(max_length=50)
     transmission = models.CharField(max_length=50)
     seating = models.IntegerField(null=True, blank=True)
     is_available = models.BooleanField(default=True)
-    features = models.JSONField(default=list) # List of features
+
+    @property
+    def images(self):
+        return [img.image_url for img in self.image_set.all()]
+
+    @property
+    def features(self):
+        return [feat.feature_name for feat in self.feature_set.all()]
 
     def __str__(self):
         return f"{self.brand} {self.model} ({self.number})"
+
+class VehicleImage(models.Model):
+    vehicle = models.ForeignKey(Vehicle, related_name='image_set', on_delete=models.CASCADE)
+    image_url = models.URLField(max_length=500)
+
+    def __str__(self):
+        return f"Image for {self.vehicle.brand} {self.vehicle.model}"
+
+class VehicleFeature(models.Model):
+    vehicle = models.ForeignKey(Vehicle, related_name='feature_set', on_delete=models.CASCADE)
+    feature_name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.feature_name
 
 class Booking(models.Model):
     STATUS_CHOICES = [
@@ -170,11 +190,7 @@ class KYCDocument(models.Model):
     ]
     
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='kyc_document')
-    full_name = models.CharField(max_length=255)
     date_of_birth = models.DateField(null=True, blank=True)
-    address = models.TextField()
-    phone = models.CharField(max_length=20)
-    email = models.EmailField()
     driving_license_number = models.CharField(max_length=50, blank=True, null=True)
     driving_license_photo = models.ImageField(upload_to='kyc/driving_license/', blank=True, null=True)
     secondary_doc_type = models.CharField(max_length=20, choices=DOC_TYPES, blank=True, null=True)
@@ -187,6 +203,23 @@ class KYCDocument(models.Model):
     reviewed_by = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True, blank=True, related_name='kyc_reviews'
     )
+
+    @property
+    def full_name(self):
+        name = self.user.get_full_name()
+        return name if name else self.user.username
+
+    @property
+    def email(self):
+        return self.user.email
+
+    @property
+    def phone(self):
+        return self.user.user_profile.phone if hasattr(self.user, 'user_profile') else ''
+
+    @property
+    def address(self):
+        return self.user.user_profile.address if hasattr(self.user, 'user_profile') else ''
 
     def __str__(self):
         return f"KYC - {self.user.username}"

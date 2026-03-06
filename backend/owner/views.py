@@ -7,12 +7,24 @@ from django.contrib.auth.decorators import login_required
 def is_owner(user):
     return user.is_authenticated and hasattr(user, 'user_profile') and user.user_profile.role == 'owner'
 
+def is_admin(user):
+    if user.is_authenticated:
+        if user.is_staff:
+            return True
+        if hasattr(user, 'user_profile') and user.user_profile.role == 'admin':
+            return True
+    return False
+
 def index_view(request):
+    if is_admin(request.user):
+        return redirect('admin_dashboard')
     if is_owner(request.user):
         return redirect('owner_dashboard')
     return render(request, 'owner/index.html')
 
 def login_view(request):
+    if is_admin(request.user):
+        return redirect('admin_dashboard')
     if is_owner(request.user):
         return redirect('owner_dashboard')
 
@@ -27,17 +39,80 @@ def login_view(request):
             user = None
 
         if user is not None:
-            if is_owner(user):
+            if is_admin(user):
                 auth_login(request, user)
-                return redirect('owner_dashboard')
+                return redirect('admin_dashboard')
+            elif is_owner(user):
+                if not user.is_active:
+                    messages.error(request, "Your account is pending admin approval. Please wait to be approved.")
+                else:
+                    auth_login(request, user)
+                    return redirect('owner_dashboard')
             else:
-                messages.error(request, "Access denied. You do not have owner privileges.")
+                messages.error(request, "Access denied. You do not have owner or admin privileges.")
         else:
             messages.error(request, "Invalid email or password.")
             
     return render(request, 'owner/login.html')
 
+import json
+from django.http import JsonResponse
+
 def register_view(request):
+    if request.method == 'POST':
+        try:
+            # We are receiving data via a FormData POST request or JSON
+            import json
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+                email = data.get('email')
+                password = data.get('password')
+                shop_name = data.get('shopName')
+                owner_name = data.get('ownerName')
+                phone = data.get('phone')
+                # Ignoring files here if JSON, but the form likely posts using FormData or custom fetch
+            else:
+                email = request.POST.get('email')
+                password = request.POST.get('password')
+                shop_name = request.POST.get('shopName')
+                owner_name = request.POST.get('ownerName')
+                phone = request.POST.get('phone')
+                # files = request.FILES
+
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({"error": "Email already registered"}, status=400)
+
+            name_parts = owner_name.split(' ', 1) if owner_name else ["", ""]
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+            user = User.objects.create_user(
+                username=email,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            # Make the user inactive so they cannot log in immediately
+            user.is_active = False
+            user.save()
+
+            # The UserProfile might be created automatically by a signal.
+            # We will update it if it exists or create if missing.
+            from rentals.models import UserProfile, RentalShop
+            profile, created = UserProfile.objects.get_or_create(user=user)
+            profile.role = 'owner'
+            profile.phone = phone
+            profile.save()
+
+            # Also create a default shop tied to this owner if requested
+            RentalShop.objects.create(name=shop_name, address="Pending", latitude=0, longitude=0)
+
+            return JsonResponse({"success": "Registration successful. Please wait for admin approval."})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
     return render(request, 'owner/register.html')
 
 from django.db.models import Sum
@@ -225,7 +300,7 @@ def vehicle_management_view(request):
                 if not shop:
                     shop = RentalShop.objects.create(name=f"{request.user.username}'s Shop", address="123 Main St", latitude=0, longitude=0)
                 
-                Vehicle.objects.create(
+                vehicle = Vehicle.objects.create(
                     shop=shop,
                     type=request.POST.get('type'),
                     name=request.POST.get('name'),
@@ -237,10 +312,15 @@ def vehicle_management_view(request):
                     fuel_type=request.POST.get('fuel_type'),
                     transmission=request.POST.get('transmission'),
                     seating=request.POST.get('seating') or None,
-                    features=[f.strip() for f in request.POST.get('features', '').split(',') if f.strip()],
-                    images=[i.strip() for i in request.POST.get('images', '').split(',') if i.strip()],
                     is_available=request.POST.get('is_available', '') == 'on'
                 )
+                from rentals.models import VehicleFeature, VehicleImage
+                features = [f.strip() for f in request.POST.get('features', '').split(',') if f.strip()]
+                for f in features:
+                    VehicleFeature.objects.create(vehicle=vehicle, feature_name=f)
+                images = [i.strip() for i in request.POST.get('images', '').split(',') if i.strip()]
+                for i in images:
+                    VehicleImage.objects.create(vehicle=vehicle, image_url=i)
                 messages.success(request, f"Vehicle {request.POST.get('name')} added successfully!")
             except Exception as e:
                 messages.error(request, f"Error adding vehicle: {str(e)}")
@@ -259,10 +339,19 @@ def vehicle_management_view(request):
                 vehicle.fuel_type = request.POST.get('fuel_type')
                 vehicle.transmission = request.POST.get('transmission')
                 vehicle.seating = request.POST.get('seating') or None
-                vehicle.features = [f.strip() for f in request.POST.get('features', '').split(',') if f.strip()]
-                vehicle.images = [i.strip() for i in request.POST.get('images', '').split(',') if i.strip()]
                 vehicle.is_available = request.POST.get('is_available', '') == 'on'
                 vehicle.save()
+                
+                from rentals.models import VehicleFeature, VehicleImage
+                vehicle.feature_set.all().delete()
+                features = [f.strip() for f in request.POST.get('features', '').split(',') if f.strip()]
+                for f in features:
+                    VehicleFeature.objects.create(vehicle=vehicle, feature_name=f)
+                    
+                vehicle.image_set.all().delete()
+                images = [i.strip() for i in request.POST.get('images', '').split(',') if i.strip()]
+                for i in images:
+                    VehicleImage.objects.create(vehicle=vehicle, image_url=i)
                 messages.success(request, f"Vehicle {vehicle.name} updated successfully!")
             except Exception as e:
                 messages.error(request, f"Error updating vehicle: {str(e)}")
@@ -581,113 +670,3 @@ def complaints_view(request):
         'complaints': all_complaints,
         'staff_members': staff_members,
     })
-
-
-# ── KYC Management View ────────────────────────────────────────────────────────
-
-@login_required(login_url='owner_login')
-def kyc_management_view(request):
-    if not is_owner(request.user):
-        return redirect('owner_login')
-
-    from rentals.models import KYCDocument
-    from django.utils import timezone
-
-    if request.method == 'POST':
-        action = request.POST.get('action')
-        kyc_id = request.POST.get('kyc_id')
-
-        try:
-            kyc = KYCDocument.objects.get(id=kyc_id)
-
-            if action == 'approve':
-                kyc.status = 'verified'
-                kyc.verified_at = timezone.now()
-                kyc.rejection_reason = None
-                kyc.reviewed_by = request.user
-                kyc.save()
-                messages.success(request, f"KYC for {kyc.full_name} has been approved.")
-
-            elif action == 'reject':
-                reason = request.POST.get('rejection_reason', '').strip()
-                if not reason:
-                    messages.error(request, "Please provide a rejection reason.")
-                else:
-                    kyc.status = 'rejected'
-                    kyc.rejection_reason = reason
-                    kyc.verified_at = None
-                    kyc.reviewed_by = request.user
-                    kyc.save()
-                    messages.success(request, f"KYC for {kyc.full_name} has been rejected.")
-
-        except KYCDocument.DoesNotExist:
-            messages.error(request, "KYC record not found.")
-        except Exception as e:
-            messages.error(request, f"Error processing KYC action: {str(e)}")
-
-        return redirect('owner_kyc')
-
-    # GET – list KYC documents with optional status filter
-    status_filter = request.GET.get('status', '')
-    kyc_docs = KYCDocument.objects.select_related('user', 'reviewed_by').order_by('-submitted_at')
-
-    if status_filter in ('pending', 'verified', 'rejected', 'not_submitted'):
-        kyc_docs = kyc_docs.filter(status=status_filter)
-
-    counts = {
-        'total': KYCDocument.objects.count(),
-        'pending': KYCDocument.objects.filter(status='pending').count(),
-        'verified': KYCDocument.objects.filter(status='verified').count(),
-        'rejected': KYCDocument.objects.filter(status='rejected').count(),
-    }
-
-    return render(request, 'owner/kycManagement.html', {
-        'kyc_docs': kyc_docs,
-        'status_filter': status_filter,
-        'counts': counts,
-    })
-
-
-# ── KYC Detail View ────────────────────────────────────────────────────────────
-
-@login_required(login_url='owner_login')
-def kyc_detail_view(request, kyc_id):
-    if not is_owner(request.user):
-        return redirect('owner_login')
-
-    from rentals.models import KYCDocument
-    from django.utils import timezone
-
-    try:
-        kyc = KYCDocument.objects.select_related('user', 'reviewed_by').get(id=kyc_id)
-    except KYCDocument.DoesNotExist:
-        messages.error(request, "KYC record not found.")
-        return redirect('owner_kyc')
-
-    if request.method == 'POST':
-        action = request.POST.get('action')
-
-        if action == 'approve':
-            kyc.status = 'verified'
-            kyc.verified_at = timezone.now()
-            kyc.rejection_reason = None
-            kyc.reviewed_by = request.user
-            kyc.save()
-            messages.success(request, f"KYC for {kyc.full_name} has been approved successfully.")
-            return redirect('owner_kyc')
-
-        elif action == 'reject':
-            reason = request.POST.get('rejection_reason', '').strip()
-            if not reason:
-                messages.error(request, "Please provide a rejection reason.")
-            else:
-                kyc.status = 'rejected'
-                kyc.rejection_reason = reason
-                kyc.verified_at = None
-                kyc.reviewed_by = request.user
-                kyc.save()
-                messages.success(request, f"KYC for {kyc.full_name} has been rejected.")
-                return redirect('owner_kyc')
-
-    return render(request, 'owner/kycDetail.html', {'kyc': kyc})
-

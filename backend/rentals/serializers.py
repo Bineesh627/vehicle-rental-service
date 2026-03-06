@@ -73,6 +73,9 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 
 class VehicleSerializer(serializers.ModelSerializer):
+    images = serializers.ListField(child=serializers.CharField(), read_only=True)
+    features = serializers.ListField(child=serializers.CharField(), read_only=True)
+
     class Meta:
         model = Vehicle
         fields = '__all__'
@@ -410,6 +413,11 @@ class SavedLocationSerializer(serializers.ModelSerializer):
 
 class KYCDocumentSerializer(serializers.ModelSerializer):
     """Serializes KYC documents."""
+    full_name = serializers.CharField(read_only=True)
+    address = serializers.CharField(read_only=True)
+    phone = serializers.CharField(read_only=True)
+    email = serializers.EmailField(read_only=True)
+
     class Meta:
         model = KYCDocument
         fields = [
@@ -421,6 +429,11 @@ class KYCDocumentSerializer(serializers.ModelSerializer):
 
 class KYCDocumentCreateSerializer(serializers.ModelSerializer):
     """Serializer for submitting KYC documents."""
+    full_name = serializers.CharField(write_only=True)
+    address = serializers.CharField(write_only=True)
+    phone = serializers.CharField(write_only=True)
+    email = serializers.EmailField(write_only=True)
+
     class Meta:
         model = KYCDocument
         fields = [
@@ -428,6 +441,34 @@ class KYCDocumentCreateSerializer(serializers.ModelSerializer):
             'driving_license_number', 'driving_license_photo',
             'secondary_doc_type', 'secondary_doc_number', 'secondary_doc_photo'
         ]
+
+    def create(self, validated_data):
+        full_name = validated_data.pop('full_name', '')
+        address = validated_data.pop('address', '')
+        phone = validated_data.pop('phone', '')
+        email = validated_data.pop('email', '')
+        
+        kyc = super().create(validated_data)
+        
+        user = kyc.user
+        if full_name:
+            parts = full_name.split(' ', 1)
+            user.first_name = parts[0]
+            if len(parts) > 1:
+                user.last_name = parts[1]
+        if email:
+            user.email = email
+        user.save()
+        
+        profile = getattr(user, 'user_profile', None)
+        if profile:
+            if address:
+                profile.address = address
+            if phone:
+                profile.phone = phone
+            profile.save()
+            
+        return kyc
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):
     """Serializer for updating user profile information."""

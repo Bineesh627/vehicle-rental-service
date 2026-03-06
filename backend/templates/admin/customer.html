@@ -1,0 +1,71 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Customers</h1>
+    <div class="actions-group">
+        <div class="filters-bar">
+            <select class="filter-select" data-filter name="is_active">
+                <option value="">Status (All)</option>
+                <option value="True">Active</option>
+                <option value="False">Inactive</option>
+            </select>
+            <select class="filter-select" data-sort name="sort">
+                <option value="">Sort By</option>
+                <option value="-date_joined">Joined (Newest)</option>
+                <option value="date_joined">Joined (Oldest)</option>
+                <option value="username">Username (A-Z)</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<div class="data-table-container">
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>Status</th>
+                    <th>Joined At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in customers %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 600;">{{ customer.user.username }}</div>
+                    </td>
+                    <td>{{ customer.user.first_name }} {{ customer.user.last_name }}</td>
+                    <td>{{ customer.user.email }}</td>
+                    <td>{{ customer.phone|default:"-" }}</td>
+                    <td style="max-width: 250px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                        title="{{ customer.address }}">
+                        {{ customer.address|default:"-" }}
+                    </td>
+                    <td>
+                        <span class="status-badge status-{{ customer.user.is_active|yesno:'success,danger' }}">
+                            {{ customer.user.is_active|yesno:'Active,Inactive' }}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-muted); font-size: 0.8rem;">
+                        {{ customer.user.date_joined|date:"M d, Y" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No customers
+                        found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
