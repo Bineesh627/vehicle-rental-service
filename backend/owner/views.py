@@ -16,17 +16,17 @@ def is_admin(user):
     return False
 
 def index_view(request):
-    if is_admin(request.user):
-        return redirect('admin_dashboard')
     if is_owner(request.user):
         return redirect('owner_dashboard')
+    if is_admin(request.user):
+        return redirect('admin_dashboard')
     return render(request, 'owner/index.html')
 
 def login_view(request):
-    if is_admin(request.user):
-        return redirect('admin_dashboard')
     if is_owner(request.user):
         return redirect('owner_dashboard')
+    if is_admin(request.user):
+        return redirect('admin_dashboard')
 
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -39,15 +39,15 @@ def login_view(request):
             user = None
 
         if user is not None:
-            if is_admin(user):
-                auth_login(request, user)
-                return redirect('admin_dashboard')
-            elif is_owner(user):
+            if is_owner(user):
                 if not user.is_active:
                     messages.error(request, "Your account is pending admin approval. Please wait to be approved.")
                 else:
                     auth_login(request, user)
                     return redirect('owner_dashboard')
+            elif is_admin(user):
+                auth_login(request, user)
+                return redirect('admin_dashboard')
             else:
                 messages.error(request, "Access denied. You do not have owner or admin privileges.")
         else:
