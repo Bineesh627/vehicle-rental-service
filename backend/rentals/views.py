@@ -312,7 +312,7 @@ def favorites_view(request):
                 'shop_id': s.id,
                 'name': s.name,
                 'address': s.address,
-                'image': s.image,
+                'image': s.image.url if s.image else None,
                 'rating': float(s.rating) if s.rating else 0,
                 'is_open': s.is_open,
             })

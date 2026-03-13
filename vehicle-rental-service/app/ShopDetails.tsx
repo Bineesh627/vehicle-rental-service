@@ -28,6 +28,9 @@ import {
   TouchableOpacity,
   View,
   ActivityIndicator,
+  Linking,
+  Platform,
+  Share,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
@@ -120,15 +123,57 @@ export default function ShopDetails() {
   });
 
   const handleCall = () => {
-    // Implement phone call intent
+    if (!shop || !shop.phone) {
+      Toast.show({
+        type: "error",
+        text1: "Phone number unavailable",
+        text2: "This shop has not provided a contact number.",
+      });
+      return;
+    }
+    Linking.openURL(`tel:${shop.phone}`).catch(() => {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Could not open the phone dialer.",
+      });
+    });
   };
 
-  const handleShare = () => {
-    // Implement share intent
+  const handleShare = async () => {
+    if (!shop) return;
+    try {
+      await Share.share({
+        message: `Check out ${shop.name} on our Vehicle Rental App!\n📍 ${shop.address}\n📞 ${shop.phone || "No phone available"}`,
+        title: `Share ${shop.name}`,
+      });
+    } catch (error: any) {
+      Toast.show({
+        type: "error",
+        text1: "Error sharing",
+        text2: error.message,
+      });
+    }
   };
 
   const handleDirections = () => {
-    // Implement maps intent
+    if (!shop || !shop.latitude || !shop.longitude) {
+      Toast.show({
+        type: "error",
+        text1: "Location unavailable",
+        text2: "This shop has no location data.",
+      });
+      return;
+    }
+
+    router.push({
+      pathname: "/ShopNavigation" as any,
+      params: {
+        lat: shop.latitude.toString(),
+        lng: shop.longitude.toString(),
+        name: shop.name,
+      },
+    });
   };
 
   const handleToggleFavorite = async () => {
@@ -213,7 +258,7 @@ export default function ShopDetails() {
             >
               <View className="bg-[#0F1C23] px-3 py-1.5 rounded-full flex-row items-center gap-1.5 border border-slate-700">
                 <Star fill="#F59E0B" color="#F59E0B" size={14} />
-                <Text className="font-bold text-white">{shop.rating}</Text>
+                <Text className="font-bold text-white">{shop.rating?.toFixed(1) || "0.0"}</Text>
                 <Text className="text-xs text-slate-400">
                   ({shop.reviewCount})
                 </Text>

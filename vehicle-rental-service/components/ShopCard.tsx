@@ -24,7 +24,7 @@ export const ShopCard = ({ shop, onClick }: ShopCardProps) => {
         <View className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
         <View className="absolute top-3 right-3 flex-row items-center gap-1 rounded-full bg-black/60 px-2 py-1 backdrop-blur-md">
           <Star color="#eab308" fill="#eab308" size={12} />
-          <Text className="text-xs font-bold text-white">{shop.rating}</Text>
+          <Text className="text-xs font-bold text-white">{shop.rating?.toFixed(1) || "0.0"}</Text>
         </View>
       </View>
 

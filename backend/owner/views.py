@@ -410,6 +410,7 @@ def profile_view(request):
                 shop.name = request.POST.get('shop_name', shop.name)
                 shop.address = request.POST.get('address', shop.address)
                 shop.operating_hours = request.POST.get('operating_hours', shop.operating_hours)
+                shop.phone = request.POST.get('phone', shop.phone)
                 
                 # Handle potentially empty float fields
                 lat = request.POST.get('latitude')

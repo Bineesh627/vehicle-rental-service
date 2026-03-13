@@ -121,10 +121,15 @@
                             <small class="text-muted d-block mt-2">Current image: <a href="{{ shop.image.url }}" target="_blank">View image</a></small>
                             {% endif %}
                         </div>
-                        <div class="col-md-4 form-group mb-0">
+                        <div class="col-md-6 form-group mb-0">
                             <label for="operatingHours" class="form-label">Operating Hours</label>
                             <input type="text" class="form-control" name="operating_hours" id="operatingHours"
                                 value="{{ shop.operating_hours|default:'' }}" placeholder="e.g. 9:00 AM - 6:00 PM">
+                        </div>
+                        <div class="col-md-6 form-group mb-0">
+                            <label for="shopPhone" class="form-label">Shop Contact Number</label>
+                            <input type="tel" class="form-control" name="phone" id="shopPhone"
+                                value="{{ shop.phone|default:'' }}" placeholder="e.g. +1 234 567 8900">
                         </div>
                         <div class="col-md-4 form-group mb-0">
                             <label for="latitude" class="form-label">Latitude</label>
