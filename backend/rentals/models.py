@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class RentalShop(models.Model):
+    owner = models.ForeignKey('UserProfile', on_delete=models.CASCADE, related_name='shops', null=True, blank=True)
     name = models.CharField(max_length=255)
     address = models.TextField()
     latitude = models.FloatField()
@@ -24,6 +25,21 @@ class Vehicle(models.Model):
         ('car', 'Car'),
         ('bike', 'Bike'),
     ]
+
+    FUEL_CHOICES = [
+        ('petrol', 'Petrol'),
+        ('diesel', 'Diesel'),
+    ]
+
+    TRANSMISSION_CHOICES = [
+        ('auto', 'Automatic'),
+        ('manual', 'Manual'),
+    ]
+
+    SEATING_CHOICES = [
+        (5, '5 Seater'),
+        (7, '7 Seater'),
+    ]
     
     shop = models.ForeignKey(RentalShop, related_name='vehicles', on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=VEHICLE_TYPES)
@@ -33,9 +49,9 @@ class Vehicle(models.Model):
     number = models.CharField(max_length=50) # Registration number
     price_per_hour = models.DecimalField(max_digits=10, decimal_places=2)
     price_per_day = models.DecimalField(max_digits=10, decimal_places=2)
-    fuel_type = models.CharField(max_length=50)
-    transmission = models.CharField(max_length=50)
-    seating = models.IntegerField(null=True, blank=True)
+    fuel_type = models.CharField(max_length=10, choices=FUEL_CHOICES)
+    transmission = models.CharField(max_length=10, choices=TRANSMISSION_CHOICES)
+    seating = models.IntegerField(choices=SEATING_CHOICES, null=True, blank=True)
     is_available = models.BooleanField(default=True)
 
     class Meta:

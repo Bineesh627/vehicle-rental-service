@@ -297,6 +297,23 @@ def vehicle_management_view(request):
                 if not shop:
                     shop = RentalShop.objects.create(name=f"{request.user.username}'s Shop", address="123 Main St", latitude=0, longitude=0)
                 
+                VALID_FUEL = ['petrol', 'diesel']
+                VALID_TRANS = ['auto', 'manual']
+                VALID_SEATING = ['5', '7']
+
+                fuel_type = request.POST.get('fuel_type')
+                transmission = request.POST.get('transmission')
+                seating = request.POST.get('seating')
+
+                if fuel_type not in VALID_FUEL:
+                    raise ValueError("Invalid fuel type")
+
+                if transmission not in VALID_TRANS:
+                    raise ValueError("Invalid transmission")
+
+                if seating and str(seating) not in VALID_SEATING:
+                    raise ValueError("Invalid seating")
+
                 vehicle = Vehicle.objects.create(
                     shop=shop,
                     type=request.POST.get('type'),
@@ -306,9 +323,9 @@ def vehicle_management_view(request):
                     number=request.POST.get('number'),
                     price_per_hour=request.POST.get('price_per_hour'),
                     price_per_day=request.POST.get('price_per_day'),
-                    fuel_type=request.POST.get('fuel_type'),
-                    transmission=request.POST.get('transmission'),
-                    seating=request.POST.get('seating') or None,
+                    fuel_type=fuel_type,
+                    transmission=transmission,
+                    seating=int(seating) if seating else None,
                     is_available=request.POST.get('is_available', '') == 'on'
                 )
                 from rentals.models import VehicleFeature, VehicleImage
@@ -333,9 +350,27 @@ def vehicle_management_view(request):
                 vehicle.number = request.POST.get('number')
                 vehicle.price_per_hour = request.POST.get('price_per_hour')
                 vehicle.price_per_day = request.POST.get('price_per_day')
-                vehicle.fuel_type = request.POST.get('fuel_type')
-                vehicle.transmission = request.POST.get('transmission')
-                vehicle.seating = request.POST.get('seating') or None
+                
+                VALID_FUEL = ['petrol', 'diesel']
+                VALID_TRANS = ['auto', 'manual']
+                VALID_SEATING = ['5', '7']
+
+                fuel_type = request.POST.get('fuel_type')
+                transmission = request.POST.get('transmission')
+                seating = request.POST.get('seating')
+
+                if fuel_type not in VALID_FUEL:
+                    raise ValueError("Invalid fuel type")
+
+                if transmission not in VALID_TRANS:
+                    raise ValueError("Invalid transmission")
+
+                if seating and str(seating) not in VALID_SEATING:
+                    raise ValueError("Invalid seating")
+
+                vehicle.fuel_type = fuel_type
+                vehicle.transmission = transmission
+                vehicle.seating = int(seating) if seating else None
                 vehicle.is_available = request.POST.get('is_available', '') == 'on'
                 vehicle.save()
                 

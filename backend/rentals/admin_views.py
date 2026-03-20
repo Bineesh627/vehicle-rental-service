@@ -280,6 +280,7 @@ def admin_owner_action(request):
 
             # Create RentalShop
             RentalShop.objects.create(
+                owner=profile,
                 name=reg_request.shop_name, 
                 address="Pending Address", 
                 latitude=0, 
@@ -312,19 +313,19 @@ def admin_owner_action(request):
 @require_POST
 def approve_owner(request, owner_id):
     User.objects.filter(id=owner_id).update(is_active=True)
-    return redirect('admin_owners_list')
+    return redirect('admin_approved_owners')
 
 @admin_required
 @require_POST
 def reject_owner(request, owner_id):
     User.objects.filter(id=owner_id).update(is_active=False)
-    return redirect('admin_owners_list')
+    return redirect('admin_approved_owners')
 
 @admin_required
 @require_POST
 def delete_owner(request, owner_id):
     User.objects.filter(id=owner_id).delete()
-    return redirect('admin_owners_list')
+    return redirect('admin_approved_owners')
 
 @admin_required
 def admin_owner_detail(request, owner_id):

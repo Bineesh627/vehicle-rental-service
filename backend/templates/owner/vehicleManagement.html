@@ -108,8 +108,9 @@
                     <input type="hidden" name="action" value="add">
                     <div class="row g-3">
                         <div class="col-sm-6 form-group mb-3">
-                            <label for="vehicleType" class="form-label">Type</label>
+                            <label for="vehicleType" class="form-label">Vehicle Type</label>
                             <select class="form-select" name="type" id="vehicleType" required>
+                                <option value="" disabled selected>Select Vehicle Type</option>
                                 <option value="car">Car</option>
                                 <option value="bike">Bike</option>
                             </select>
@@ -146,17 +147,27 @@
                         </div>
                         <div class="col-sm-4 form-group mb-3">
                             <label for="fuelType" class="form-label">Fuel Type</label>
-                            <input type="text" name="fuel_type" class="form-control" id="fuelType"
-                                placeholder="Petrol / EV" required>
+                            <select name="fuel_type" class="form-select" id="fuelType" required>
+                                <option value="" disabled selected>Select Fuel Type</option>
+                                <option value="petrol">Petrol</option>
+                                <option value="diesel">Diesel</option>
+                            </select>
                         </div>
                         <div class="col-sm-4 form-group mb-3">
                             <label for="transmission" class="form-label">Transmission</label>
-                            <input type="text" name="transmission" class="form-control" id="transmission"
-                                placeholder="Auto / Manual" required>
+                            <select name="transmission" class="form-select" id="transmission" required>
+                                <option value="" disabled selected>Select Transmission</option>
+                                <option value="auto">Automatic</option>
+                                <option value="manual">Manual</option>
+                            </select>
                         </div>
                         <div class="col-sm-4 form-group mb-3" id="seatingField">
                             <label for="seating" class="form-label">Seating</label>
-                            <input type="number" name="seating" class="form-control" id="seating" placeholder="5">
+                            <select name="seating" class="form-select" id="seating">
+                                <option value="" disabled selected>Select Seating</option>
+                                <option value="5">5 Seater</option>
+                                <option value="7">7 Seater</option>
+                            </select>
                         </div>
                         <div class="col-12 form-group mb-3">
                             <label for="vehicleFeatures" class="form-label">Features (Comma-separated)</label>
@@ -232,15 +243,27 @@
                         </div>
                         <div class="col-sm-4 form-group mb-3">
                             <label for="editFuelType" class="form-label">Fuel Type</label>
-                            <input type="text" name="fuel_type" class="form-control" id="editFuelType" required>
+                            <select name="fuel_type" class="form-select" id="editFuelType" required>
+                                <option value="" disabled>Select Fuel Type</option>
+                                <option value="petrol" {% if vehicle.fuel_type == "petrol" %}selected{% endif %}>Petrol</option>
+                                <option value="diesel" {% if vehicle.fuel_type == "diesel" %}selected{% endif %}>Diesel</option>
+                            </select>
                         </div>
                         <div class="col-sm-4 form-group mb-3">
                             <label for="editTransmission" class="form-label">Transmission</label>
-                            <input type="text" name="transmission" class="form-control" id="editTransmission" required>
+                            <select name="transmission" class="form-select" id="editTransmission" required>
+                                <option value="" disabled>Select Transmission</option>
+                                <option value="auto" {% if vehicle.transmission == "auto" %}selected{% endif %}>Automatic</option>
+                                <option value="manual" {% if vehicle.transmission == "manual" %}selected{% endif %}>Manual</option>
+                            </select>
                         </div>
                         <div class="col-sm-4 form-group mb-3" id="editSeatingField">
                             <label for="editSeating" class="form-label">Seating</label>
-                            <input type="number" name="seating" class="form-control" id="editSeating">
+                            <select name="seating" class="form-select" id="editSeating">
+                                <option value="" disabled>Select Seating</option>
+                                <option value="5" {% if vehicle.seating == 5 %}selected{% endif %}>5 Seater</option>
+                                <option value="7" {% if vehicle.seating == 7 %}selected{% endif %}>7 Seater</option>
+                            </select>
                         </div>
                         <div class="col-12 form-group mb-3">
                             <label for="editVehicleFeatures" class="form-label">Features (Comma-separated)</label>

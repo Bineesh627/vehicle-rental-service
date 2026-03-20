@@ -29,20 +29,3 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-import sys
-if 'runserver' in sys.argv:
-    def print_urls(urllist, prefix=''):
-        for entry in urllist:
-            if hasattr(entry, 'url_patterns'):
-                print_urls(entry.url_patterns, prefix + str(entry.pattern))
-            else:
-                print(f"ROUTE: /{prefix}{entry.pattern}  ->  {entry.name}")
-    
-    print("\n" + "="*50)
-    print("VEHICLE RENTAL SERVICE - AVAILABLE ROUTES")
-    print("="*50)
-    try:
-        print_urls(urlpatterns)
-    except Exception:
-        pass
-    print("="*50 + "\n")

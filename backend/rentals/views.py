@@ -80,10 +80,10 @@ class RentalShopViewSet(viewsets.ModelViewSet):
         Matches against name and address (case-insensitive).
         Example: GET /api/shops/?search=speedwheels
         """
-        queryset = RentalShop.objects.all()
+        from django.db.models import Q
+        queryset = RentalShop.objects.filter(Q(owner__isnull=True) | Q(owner__user__is_active=True))
         search = self.request.query_params.get('search', '').strip()
         if search:
-            from django.db.models import Q
             queryset = queryset.filter(
                 Q(name__icontains=search) | Q(address__icontains=search)
             )
@@ -102,7 +102,8 @@ class VehicleViewSet(viewsets.ModelViewSet):
         Logic to filter vehicles if needed.
         Currently returns all vehicles for the details page.
         """
-        queryset = Vehicle.objects.all()
+        from django.db.models import Q
+        queryset = Vehicle.objects.filter(Q(shop__owner__isnull=True) | Q(shop__owner__user__is_active=True))
         shop_id = self.request.query_params.get('shop')
         if shop_id:
             queryset = queryset.filter(shop__id=shop_id)
@@ -798,10 +799,10 @@ class RentalShopViewSet(viewsets.ModelViewSet):
     serializer_class = RentalShopSerializer
 
     def get_queryset(self):
-        queryset = RentalShop.objects.all()
+        from django.db.models import Q
+        queryset = RentalShop.objects.filter(Q(owner__isnull=True) | Q(owner__user__is_active=True))
         search = self.request.query_params.get('search', '').strip()
         if search:
-            from django.db.models import Q
             queryset = queryset.filter(
                 Q(name__icontains=search) | Q(address__icontains=search)
             )
@@ -820,7 +821,8 @@ class VehicleViewSet(viewsets.ModelViewSet):
         Logic to filter vehicles if needed.
         Currently returns all vehicles for the details page.
         """
-        queryset = Vehicle.objects.all()
+        from django.db.models import Q
+        queryset = Vehicle.objects.filter(Q(shop__owner__isnull=True) | Q(shop__owner__user__is_active=True))
         shop_id = self.request.query_params.get('shop')
         if shop_id:
             queryset = queryset.filter(shop__id=shop_id)
