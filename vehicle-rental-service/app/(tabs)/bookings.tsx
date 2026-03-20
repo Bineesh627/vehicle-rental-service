@@ -17,6 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/services/api";
 import { Booking } from "@/types";
+import { formatCurrency } from '@/lib/utils';
 
 type BookingsNavigationProp = NativeStackNavigationProp<
   UserStackParamList,
@@ -150,7 +151,7 @@ export default function Bookings() {
                       <View>
                         <Text style={styles.totalLabel}>Total</Text>
                         <Text style={styles.totalPrice}>
-                          ${booking.totalPrice}
+                          {formatCurrency(booking.totalPrice)}
                         </Text>
                       </View>
                       <TouchableOpacity
@@ -303,7 +304,7 @@ export default function Bookings() {
                         </View>
                         <View style={styles.pastBookingFooter}>
                           <Text style={styles.pastPrice}>
-                            ${booking.totalPrice}
+                            {formatCurrency(booking.totalPrice)}
                           </Text>
                           <View style={styles.pastActions}>
                             <TouchableOpacity

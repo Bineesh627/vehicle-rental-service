@@ -33,6 +33,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, profileApi, SavedLocation } from "@/services/api";
 import { Booking } from "@/types";
 import { DeliveryLocationSelector } from "@/components/user/DeliveryLocationSelector";
+import { formatCurrency } from '@/lib/utils';
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
@@ -363,17 +364,17 @@ export default function BookingDetails() {
               <View style={styles.paymentRow}>
                 <Text style={styles.paymentLabel}>Rental charges</Text>
                 <Text style={styles.paymentValue}>
-                  ${booking.totalPrice - 5}
+                  {formatCurrency(booking.totalPrice - 5)}
                 </Text>
               </View>
               <View style={styles.paymentRow}>
                 <Text style={styles.paymentLabel}>Service fee</Text>
-                <Text style={styles.paymentValue}>$5</Text>
+                <Text style={styles.paymentValue}>{formatCurrency(5)}</Text>
               </View>
               <View style={[styles.divider, styles.paymentDivider]} />
               <View style={styles.paymentRow}>
                 <Text style={styles.totalLabel}>Total Paid</Text>
-                <Text style={styles.totalValue}>${booking.totalPrice}</Text>
+                <Text style={styles.totalValue}>{formatCurrency(booking.totalPrice)}</Text>
               </View>
             </View>
           </View>

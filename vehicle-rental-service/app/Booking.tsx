@@ -33,6 +33,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DeliveryLocationSelector } from "@/components/user/DeliveryLocationSelector";
 
 import { PaymentMethod, SavedLocation } from "@/services/api";
+import { formatCurrency } from '@/lib/utils';
 
 type DeliveryOption = "pickup" | "delivery";
 
@@ -547,7 +548,7 @@ export default function Booking() {
                     : styles.outlineTextInactive
                 }
               >
-                Home Delivery (+$10)
+                Home Delivery (+{formatCurrency(10)})
               </Text>
             </TouchableOpacity>
           </View>
@@ -570,7 +571,7 @@ export default function Booking() {
           <Text style={styles.sectionTitle}>Booking Summary</Text>
           <View style={styles.summaryRow}>
             <Text style={styles.mutedText}>
-              ${pricePerUnit} × {duration}{" "}
+              {formatCurrency(pricePerUnit)} × {duration}{" "}
               {bookingType === "day"
                 ? duration === 1
                   ? "day"
@@ -579,22 +580,22 @@ export default function Booking() {
                   ? "hour"
                   : "hours"}
             </Text>
-            <Text style={styles.summaryValue}>${pricePerUnit * duration}</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(pricePerUnit * duration)}</Text>
           </View>
           {deliveryFee > 0 && (
             <View style={styles.summaryRow}>
               <Text style={styles.mutedText}>Delivery fee</Text>
-              <Text style={styles.summaryValue}>${deliveryFee}</Text>
+              <Text style={styles.summaryValue}>{formatCurrency(deliveryFee)}</Text>
             </View>
           )}
           <View style={styles.summaryRow}>
             <Text style={styles.mutedText}>Service fee</Text>
-            <Text style={styles.summaryValue}>${serviceFee}</Text>
+            <Text style={styles.summaryValue}>{formatCurrency(serviceFee)}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text style={styles.totalLabel}>Total</Text>
-            <Text style={styles.totalValue}>${totalPrice}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(totalPrice)}</Text>
           </View>
         </View>
 
@@ -608,7 +609,7 @@ export default function Booking() {
           onPress={handleConfirmBooking}
         >
           <Text style={styles.confirmButtonText}>
-            Confirm Booking • ${totalPrice}
+            Confirm Booking • {formatCurrency(totalPrice)}
           </Text>
         </TouchableOpacity>
       </View>

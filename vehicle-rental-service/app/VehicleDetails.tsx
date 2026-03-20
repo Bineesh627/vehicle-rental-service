@@ -34,6 +34,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { formatCurrency } from '@/lib/utils';
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 
@@ -319,7 +320,7 @@ export default function VehicleDetails() {
                       : styles.textForeground,
                   ]}
                 >
-                  ${vehicle.pricePerHour}
+                  {formatCurrency(vehicle.pricePerHour)}
                 </Text>
                 <Text style={styles.pricingPeriod}>per hour</Text>
               </TouchableOpacity>
@@ -346,7 +347,7 @@ export default function VehicleDetails() {
                       : styles.textForeground,
                   ]}
                 >
-                  ${vehicle.pricePerDay}
+                  {formatCurrency(vehicle.pricePerDay)}
                 </Text>
                 <Text style={styles.pricingPeriod}>per day</Text>
               </TouchableOpacity>
@@ -363,7 +364,7 @@ export default function VehicleDetails() {
               {pricingType === "hour" ? "Per hour" : "Per day"}
             </Text>
             <View style={styles.footerPriceRow}>
-              <Text style={styles.footerPriceSymbol}>$</Text>
+              <Text style={styles.footerPriceSymbol}>₹</Text>
               <Text style={styles.footerPriceValue}>
                 {pricingType === "hour"
                   ? vehicle.pricePerHour

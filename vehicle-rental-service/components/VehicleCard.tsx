@@ -6,6 +6,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 // import { Vehicle } from "@/types";
 
 import { Vehicle } from "@/types";
+import { formatCurrency } from '@/lib/utils';
 
 interface VehicleCardProps {
   vehicle: Vehicle;
@@ -66,7 +67,7 @@ export const VehicleCard = ({ vehicle, onPress }: VehicleCardProps) => {
             )}
           </View>
           <View style={styles.priceContainer}>
-            <Text style={styles.price}>${vehicle.pricePerHour}</Text>
+            <Text style={styles.price}>{formatCurrency(vehicle.pricePerHour)}</Text>
             <Text style={styles.priceUnit}>/hour</Text>
           </View>
         </View>

@@ -30,6 +30,7 @@ import {
   UserProfile,
   UserStats,
 } from "@/services/api";
+import { formatCurrency } from '@/lib/utils';
 
 const menuItems = [
   { icon: User, label: "Edit Profile", path: "EditProfile" },
@@ -169,7 +170,7 @@ export default function Profile() {
               </View>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>
-                  ${userStats?.total_spent || 0}
+                  {formatCurrency(userStats?.total_spent || 0)}
                 </Text>
                 <Text style={styles.statLabel}>Total Spent</Text>
               </View>
