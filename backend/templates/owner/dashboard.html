@@ -1,0 +1,106 @@
+{% extends 'owner/base.html' %}
+{% load static %}
+
+{% block title %}Vehicle Rental - Admin Dashboard{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-xl-3 animate-fade" style="animation-delay: 0.1s">
+        <div class="stat-card">
+            <div class="stat-icon icon-primary">
+                <i class="bi bi-currency-dollar"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Total Revenue</div>
+                <div class="stat-value" id="totalRevenue">₹{{ total_revenue }}</div>
+                <div class="stat-trend trend-up"><i class="bi bi-arrow-up-short"></i> 12.5%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 animate-fade" style="animation-delay: 0.2s">
+        <div class="stat-card">
+            <div class="stat-icon icon-success">
+                <i class="bi bi-calendar-check"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Active Bookings</div>
+                <div class="stat-value" id="activeBookings">{{ active_bookings }}</div>
+                <div class="stat-trend trend-up"><i class="bi bi-arrow-up-short"></i> 5.2%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 animate-fade" style="animation-delay: 0.3s">
+        <div class="stat-card">
+            <div class="stat-icon icon-warning">
+                <i class="bi bi-truck"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Total Vehicles</div>
+                <div class="stat-value" id="totalVehicles">{{ total_vehicles }}</div>
+                <div class="stat-trend trend-up"><i class="bi bi-arrow-up-short"></i> 2 added</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 animate-fade" style="animation-delay: 0.4s">
+        <div class="stat-card">
+            <div class="stat-icon icon-info">
+                <i class="bi bi-people"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Total Staff</div>
+                <div class="stat-value" id="totalStaff">{{ total_staff }}</div>
+                <div class="stat-trend text-muted"><i class="bi bi-dash"></i> No change</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="card animate-fade" style="animation-delay: 0.5s">
+    <div class="card-header">
+        <h5 class="m-0 font-semibold text-dark">Recent Bookings</h5>
+        <button class="btn btn-sm btn-secondary text-primary bg-primary bg-opacity-10 border-0">View All</button>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-container border-0 rounded-0">
+            <table class="table mb-0 border-0">
+                <thead>
+                    <tr>
+                        <th>Booking ID</th>
+                        <th>Customer</th>
+                        <th>Vehicle</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody id="recentBookings">
+                    {% for booking in recent_bookings %}
+                    <tr>
+                        <td class="font-semibold text-dark">#BKG-{{ booking.id|stringformat:"04d" }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar bg-primary text-white d-flex align-items-center justify-content-center text-uppercase fw-bold"
+                                    style="width: 32px; height: 32px; font-size: 14px;">
+                                    {{ booking.user.first_name|first|default:booking.user.username|first|upper }}
+                                </div>
+                                <span class="font-medium">{{ booking.user.first_name }} {{ booking.user.last_name }}</span>
+                            </div>
+                        </td>
+                        <td>{{ booking.vehicle.brand }} {{ booking.vehicle.model }}</td>
+                        <td><span
+                                class="badge {% if booking.status == 'active' %}bg-success{% elif booking.status == 'upcoming' %}bg-warning{% elif booking.status == 'completed' %}bg-secondary{% else %}bg-danger{% endif %}">{{ booking.get_status_display }}</span></td>
+                        <td class="text-muted">{{ booking.created_at|date:"Y-m-d" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No recent bookings found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

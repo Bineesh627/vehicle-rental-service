@@ -1,0 +1,211 @@
+{% extends 'owner/base.html' %}
+{% load static %}
+
+{% block title %}Vehicle Rental - Staff Management{% endblock %}
+{% block page_title %}Staff Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2 class="mb-1 font-bold">Team Members</h2>
+        <p class="text-muted small">Manage your staff directory and roles.</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addStaffModal">
+        <i class="bi bi-plus-lg"></i> Add Staff Member
+    </button>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+    <div
+        class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} py-2 px-3 small rounded">
+        {{ message }}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-container border-0 rounded-0">
+            <table class="table mb-0 border-0">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Join Date</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff in staff_users %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                                <div
+                                    class="avatar bg-primary text-white d-flex align-items-center justify-content-center text-uppercase fw-bold">
+                                    {{ staff.first_name|first|default:staff.username|first }}
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-dark">{{ staff.first_name }} {{ staff.last_name }}
+                                    </div>
+                                    <div class="small text-muted">{{ staff.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ staff.user_profile.phone }}</td>
+                        <td><span
+                                class="badge {% if staff.is_active %}badge-success{% else %}badge-secondary{% endif %}">
+                                {% if staff.is_active %}Active{% else %}Inactive{% endif %}
+                            </span></td>
+                        <td class="text-muted">{{ staff.date_joined|date:"M d, Y" }}</td>
+                        <td>
+                            <div class="d-flex gap-2 justify-content-end">
+                                <button class="btn btn-icon btn-secondary" title="Edit Staff"
+                                    onclick="openEditStaffModal('{{ staff.id }}', '{{ staff.first_name|escapejs }}', '{{ staff.last_name|escapejs }}', '{{ staff.email|escapejs }}', '{{ staff.user_profile.phone|escapejs }}')">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form method="POST" action="{% url 'owner_staff' %}" id="deleteForm-{{ staff.id }}"
+                                    style="display:inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="user_id" value="{{ staff.id }}">
+                                    <button type="button" class="btn btn-icon btn-danger"
+                                        onclick="confirmDelete('{{ staff.id }}', '{{ staff.first_name|escapejs }} {{ staff.last_name|escapejs }}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">No staff members found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add Staff Modal -->
+<div class="modal fade" id="addStaffModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: var(--radius-xl); overflow: hidden;">
+            <div class="modal-header bg-light border-bottom-0 p-4">
+                <h5 class="modal-title font-bold text-dark">Staff Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'owner_staff' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add">
+                <div class="modal-body p-4">
+                    <div class="form-group mb-3">
+                        <label for="staffName" class="form-label">Full Name</label>
+                        <input type="text" name="name" class="form-control" id="staffName" placeholder="e.g. John Doe"
+                            required>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6 form-group mb-3">
+                            <label for="staffEmail" class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" id="staffEmail"
+                                placeholder="john@example.com" required>
+                        </div>
+                        <div class="col-sm-6 form-group mb-3">
+                            <label for="staffPhone" class="form-label">Phone Number</label>
+                            <input type="tel" name="phone" class="form-control" id="staffPhone"
+                                placeholder="+1 (555) 000-0000" required>
+                        </div>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="staffPassword" class="form-label">Initial Password</label>
+                        <input type="password" name="password" class="form-control" id="staffPassword"
+                            placeholder="Minimum 8 characters" required>
+                        <div class="form-text mt-1 text-muted small">The user will be required to change this upon first
+                            login.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 p-4 bg-light pt-0">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">Save Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Staff Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow" style="border-radius: var(--radius-xl); overflow: hidden;">
+            <div class="modal-header bg-light border-bottom-0 p-4">
+                <h5 class="modal-title font-bold text-dark">Edit Staff Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{% url 'owner_staff' %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="user_id" id="editStaffId">
+                <div class="modal-body p-4">
+                    <div class="form-group mb-3">
+                        <label for="editStaffName" class="form-label">Full Name</label>
+                        <input type="text" name="name" class="form-control" id="editStaffName" required>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-sm-6 form-group mb-3">
+                            <label for="editStaffEmail" class="form-label">Email Address</label>
+                            <input type="email" name="email" class="form-control" id="editStaffEmail" required>
+                        </div>
+                        <div class="col-sm-6 form-group mb-3">
+                            <label for="editStaffPhone" class="form-label">Phone Number</label>
+                            <input type="tel" name="phone" class="form-control" id="editStaffPhone" required>
+                        </div>
+                    </div>
+                    <div class="form-group mb-2">
+                        <label for="editStaffPassword" class="form-label">New Password (Optional)</label>
+                        <input type="password" name="password" class="form-control" id="editStaffPassword"
+                            placeholder="Leave blank to keep unchanged">
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 p-4 bg-light pt-0">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary px-4">Update Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openEditStaffModal(id, firstName, lastName, email, phone) {
+        document.getElementById('editStaffId').value = id;
+        document.getElementById('editStaffName').value = firstName.trim() + " " + lastName.trim();
+        document.getElementById('editStaffEmail').value = email;
+        document.getElementById('editStaffPhone').value = phone;
+        document.getElementById('editStaffPassword').value = '';
+        var editModal = new bootstrap.Modal(document.getElementById('editStaffModal'));
+        editModal.show();
+    }
+
+    function confirmDelete(userId, userName) {
+        Swal.fire({
+            title: 'Are you sure?',
+            text: `Do you want to delete ${userName}?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                document.getElementById(`deleteForm-${userId}`).submit();
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% extends 'admin/base_admin.html' %}
+
+{% block title %}KYC Detail - {{ kyc.full_name }}{% endblock %}
+
+{% block content %}
+<div class="page-header" style="border-bottom: 1px solid var(--border); padding-bottom: 1rem;">
+    <div>
+        <a href="{% url 'admin_kyc_management' %}" class="btn btn-outline"
+            style="margin-bottom: 1rem; padding: 0.35rem 0.75rem;">
+            <i class="fas fa-arrow-left"></i> Back
+        </a>
+        <h1 class="page-title">KYC Document Review</h1>
+        <p style="color: var(--text-muted); margin-top: 0.25rem;">Submitted by @{{ kyc.user.username }} on {{ kyc.submitted_at|date:"M d, Y H:i" }}</p>
+    </div>
+
+    <div class="actions-group">
+        <span
+            class="status-badge status-{% if kyc.status == 'verified' %}success{% elif kyc.status == 'rejected' %}danger{% elif kyc.status == 'pending' %}warning{% else %}secondary{% endif %}"
+            style="font-size: 1rem; padding: 0.5rem 1rem;">
+            {{ kyc.status|title }}
+        </span>
+    </div>
+</div>
+
+<div class="grid-2" style="margin-top: 2rem;">
+    <!-- Personal Information -->
+    <div class="detail-view" style="margin-bottom: 0;">
+        <div class="detail-body">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; color: var(--primary);"><i class="fas fa-user"></i>
+                Personal Information</h3>
+
+            <div class="info-grid" style="grid-template-columns: 1fr;">
+                <div class="info-col">
+                    <span class="info-label">Full Name</span>
+                    <span class="info-value">{{ kyc.full_name }}</span>
+                </div>
+                <div class="grid-2 form-group">
+                    <div class="info-col">
+                        <span class="info-label">Date of Birth</span>
+                        <span class="info-value">{{ kyc.date_of_birth|date:"M d, Y"|default:"N/A" }}</span>
+                    </div>
+                    <div class="info-col">
+                        <span class="info-label">Phone</span>
+                        <span class="info-value">{{ kyc.phone }}</span>
+                    </div>
+                </div>
+                <div class="info-col">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">{{ kyc.email }}</span>
+                </div>
+                <div class="info-col">
+                    <span class="info-label">Address</span>
+                    <span class="info-value">{{ kyc.address }}</span>
+                </div>
+
+                {% if kyc.status == 'rejected' %}
+                <div class="info-col"
+                    style="margin-top: 1rem; background: var(--danger-bg); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(239, 68, 68, 0.3);">
+                    <span class="info-label" style="color: var(--danger);">Rejection Reason</span>
+                    <span class="info-value" style="color: var(--danger); font-weight: 600;">{{ kyc.rejection_reason }}</span>
+                    <span style="font-size: 0.75rem; color: var(--danger); margin-top: 0.5rem;">Reviewed by {{ kyc.reviewed_by.username }}</span>
+                </div>
+                {% endif %}
+
+                {% if kyc.status == 'verified' %}
+                <div class="info-col"
+                    style="margin-top: 1rem; background: var(--success-bg); padding: 1rem; border-radius: 0.5rem; border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <span class="info-label" style="color: var(--success);">Verification Details</span>
+                    <span class="info-value" style="color: var(--success); font-size: 0.85rem;">
+                        Verified on {{ kyc.verified_at|date:"M d, Y H:i" }} by {{ kyc.reviewed_by.username|default:"Admin" }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if kyc.status == 'pending' %}
+            <div
+                style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; gap: 1rem;">
+                <form method="POST" action="{% url 'admin_kyc_action' %}" class="confirm-action"
+                    data-confirm-msg="Approve this KYC document?">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="approve">
+                    <input type="hidden" name="kyc_id" value="{{ kyc.id }}">
+                    <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Approve Request</button>
+                </form>
+
+                <button type="button" class="btn btn-danger btn-reject-kyc" data-kycid="{{ kyc.id }}">
+                    <i class="fas fa-times"></i> Reject Request
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Document Information -->
+    <div class="detail-view" style="margin-bottom: 0;">
+        <div class="detail-body">
+            <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem; color: var(--primary);"><i
+                    class="fas fa-folder-open"></i> Uploaded Documents</h3>
+
+            <!-- Driving License -->
+            <div style="margin-bottom: 2rem;">
+                <div class="info-col" style="margin-bottom: 1rem;">
+                    <span class="info-label">Driving License Number</span>
+                    <span class="info-value" style="font-family: monospace; font-size: 1.1rem;">{{ kyc.driving_license_number|default:"Not Provided" }}</span>
+                </div>
+
+                <div class="doc-box">
+                    <span
+                        style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Driving
+                        License Photo</span>
+                    {% if kyc.driving_license_photo %}
+                    <div style="margin-top: 0.5rem;">
+                        <a href="{{ kyc.driving_license_photo.url }}" target="_blank" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                            <i class="fas fa-file-download"></i> View Document
+                        </a>
+                    </div>
+                    {% else %}
+                    <div
+                        style="height: 150px; display: flex; align-items: center; justify-content: center; background: var(--background); border-radius: 0.5rem; color: var(--text-muted);">
+                        <i class="fas fa-image" style="font-size: 2rem; margin-right: 0.5rem;"></i> No Image
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Secondary Doc -->
+            {% if kyc.secondary_doc_type %}
+            <div>
+                <div class="info-col" style="margin-bottom: 1rem;">
+                    <span class="info-label">{{ kyc.secondary_doc_type|upper }} Number</span>
+                    <span class="info-value" style="font-family: monospace; font-size: 1.1rem;">{{ kyc.secondary_doc_number|default:"Not Provided" }}</span>
+                </div>
+
+                <div class="doc-box">
+                    <span
+                        style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">{{ kyc.secondary_doc_type|upper }} Photo</span>
+                    {% if kyc.secondary_doc_photo %}
+                    <div style="margin-top: 0.5rem;">
+                        <a href="{{ kyc.secondary_doc_photo.url }}" target="_blank" class="btn btn-outline" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">
+                            <i class="fas fa-file-download"></i> View Document
+                        </a>
+                    </div>
+                    {% else %}
+                    <div
+                        style="height: 150px; display: flex; align-items: center; justify-content: center; background: var(--background); border-radius: 0.5rem; color: var(--text-muted);">
+                        <i class="fas fa-image" style="font-size: 2rem; margin-right: 0.5rem;"></i> No Image
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+</div>
+
+<!-- Image Viewer Modal -->
+<div class="modal-overlay" id="imgModal">
+    <div class="modal-content">
+        <div style="position: absolute; right: -2rem; top: -2rem;">
+            <button type="button" class="modal-close"
+                style="color: white; font-size: 2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.5);"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        <img id="modalImageDisplay" src="" alt="Document Preview">
+    </div>
+</div>
+
+<!-- Reject Modal Layout (Same as Management) -->
+<div class="modal-overlay" id="rejectModal">
+    <div class="modal-content" style="max-width: 500px;">
+        <form method="POST" action="{% url 'admin_kyc_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reject">
+            <input type="hidden" name="kyc_id" id="rejectKycId">
+
+            <div class="modal-header" style="border-bottom-color: var(--danger-bg);">
+                <h2 style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Reject KYC</h2>
+                <button type="button" class="modal-close"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="modal-body">
+                <p style="margin-bottom: 1rem; color: var(--text-muted);">Please provide a reason for rejecting this KYC
+                    application. This will be shown to the user.</p>
+                <div class="form-group">
+                    <label class="form-label">Rejection Reason</label>
+                    <textarea name="rejection_reason" class="form-control" rows="4" required
+                        placeholder="e.g., Image is blurry, Document expired, Name mismatch..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline modal-close">Cancel</button>
+                <button type="submit" class="btn btn-danger">Confirm Rejection</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

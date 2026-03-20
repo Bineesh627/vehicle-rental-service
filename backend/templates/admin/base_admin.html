@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin Panel{% endblock %} - Vehicle Rental</title>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    {% include 'admin/sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Header -->
+        {% include 'admin/header.html' %}
+
+        <!-- Content Area -->
+        <main class="content-wrapper">
+            <!-- Messages Display -->
+            {% if messages %}
+            <div class="messages-container" style="margin-bottom: 1.5rem;">
+                {% for message in messages %}
+                <div class="status-badge status-{{ message.tags|default:'info' }}"
+                    style="padding: 1rem; width: 100%; border-radius: 0.5rem; justify-content: flex-start; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                    <i class="fas fa-info-circle"></i> {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>
+
+    <!-- SweetAlert2 for modern popups -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Custom JS -->
+    <script src="{% static 'js/admin.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>
