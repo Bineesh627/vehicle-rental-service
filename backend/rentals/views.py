@@ -109,41 +109,6 @@ class VehicleViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(shop__id=shop_id)
         return queryset
 
-class BookingViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint for managing bookings.
-    """
-    queryset = Booking.objects.all()
-    serializer_class = BookingSerializer
-    
-    def get_queryset(self):
-        """Filter bookings by current user"""
-        if self.request.user.is_authenticated:
-            return Booking.objects.filter(user=self.request.user)
-        return Booking.objects.none()
-    
-    def perform_create(self, serializer):
-        """Set user when creating booking"""
-        serializer.save(user=self.request.user)
-
-    @action(detail=True, methods=['POST'])
-    def request_pickup(self, request, pk=None):
-        booking = self.get_object()
-        
-        if booking.status != 'active':
-            return Response({'error': 'Only active bookings can request pickup.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        return_location = request.data.get('return_location')
-        if not return_location:
-            return Response({'error': 'Return location is required.'}, status=status.HTTP_400_BAD_REQUEST)
-            
-        booking.status = 'pickup_requested'
-        booking.return_location = return_location
-        booking.save()
-        
-        return Response({'success': True, 'status': booking.status})
-
-
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def create_booking(request):
@@ -849,8 +814,40 @@ class BookingViewSet(viewsets.ModelViewSet):
     """
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
+    permission_classes = [IsAuthenticated]
 
-    @action(detail=True, methods=['post'])
+    def get_queryset(self):
+        """Filter bookings by current user"""
+        return Booking.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        """Set user when creating booking"""
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['POST'])
+    def request_pickup(self, request, pk=None):
+        booking = self.get_object()
+
+        if booking.status not in ('active', 'upcoming'):
+            return Response(
+                {'error': 'Only active/upcoming bookings can request pickup.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return_location = request.data.get('return_location')
+        if not return_location:
+            return Response(
+                {'error': 'Return location is required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        booking.status = 'pickup_requested'
+        booking.return_location = return_location
+        booking.save()
+
+        return Response({'success': True, 'status': booking.status})
+
+    @action(detail=True, methods=['POST'])
     def cancel(self, request, pk=None):
         booking = self.get_object()
         if booking.status == 'cancelled':
