@@ -51,14 +51,13 @@
                                 </div>
                                 <div>
                                     <div style="font-weight: 700; color: #1e293b;">{{ staff.first_name }} {{ staff.last_name }}</div>
-                                    <div class="small text-muted" style="font-weight: 500;">{{ staff.email }}</div>
+                                    <div class="small text-muted fw-500">{{ staff.email }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td style="font-weight: 500; color: #475569;">{{ staff.user_profile.phone }}</td>
+                        <td class="fw-500" style="color: #475569;">{{ staff.user_profile.phone }}</td>
                         <td>
-                            <span class="badge" style="padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;
-                                {% if staff.is_active %} background: #dcfce7; color: #166534; {% else %} background: #f1f5f9; color: #475569; {% endif %}">
+                            <span class="badge {% if staff.is_active %}badge-active{% else %}badge-inactive{% endif %}" style="padding: 0.4rem 0.8rem; border-radius: 2rem; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">
                                 {% if staff.is_active %}Active{% else %}Inactive{% endif %}
                             </span>
                         </td>
@@ -185,6 +184,19 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.badge-active {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+}
+.badge-inactive {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+}
+</style>
 {% endblock %}
 
 {% block extra_js %}

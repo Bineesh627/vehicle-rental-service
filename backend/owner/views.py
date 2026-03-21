@@ -294,9 +294,8 @@ def staff_management_view(request):
 
     shop = get_owner_shop(request.user)
     staff_users = User.objects.filter(
-        user_profile__role='staff',
-        assigned_tasks__booking__shop=shop
-    ).distinct().select_related('user_profile')
+        user_profile__role='staff'
+    ).select_related('user_profile')
     return render(request, 'owner/staffManagement.html', {'staff_users': staff_users})
 
 @login_required(login_url='owner_login')
