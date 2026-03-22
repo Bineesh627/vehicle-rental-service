@@ -105,9 +105,13 @@
                     </span>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 1.75rem; font-weight: 800; color: #f59e0b;">
-                        <i class="fas fa-star"></i> {{ shop.rating|default:"0.0" }}
-                    </div>
+                    <a href="{% url 'admin_shop_reviews' shop.id %}" style="text-decoration: none; color: inherit; display: inline-block; transition: transform 0.2s;">
+                        <div style="font-size: 1.75rem; font-weight: 800; color: #f59e0b; cursor: pointer;" 
+                             onmouseover="this.style.transform='scale(1.05)'" 
+                             onmouseout="this.style.transform='scale(1)'">
+                            <i class="fas fa-star"></i> {{ shop.rating|default:"0.0" }}
+                        </div>
+                    </a>
                     <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
                         Based on {{ shop.review_count|default:"0" }} Reviews
                     </div>

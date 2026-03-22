@@ -10,6 +10,7 @@ urlpatterns = [
     # Rental Shops
     path('rental-shops/', admin_views.admin_rentalshops, name='admin_rental_shops'),
     path('rental-shops/<int:shop_id>/', admin_views.admin_shop_detail, name='admin_shop_detail'),
+    path('rental-shops/<int:shop_id>/reviews/', admin_views.admin_shop_reviews, name='admin_shop_reviews'),
     
     # Users
     path('customers/', admin_views.admin_customers, name='admin_customers'),

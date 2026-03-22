@@ -50,6 +50,17 @@
 </style>
 
 <div class="page-container">
+    {% if messages %}
+    <div style="margin-bottom: 2rem;">
+        {% for message in messages %}
+        <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} py-3 px-4" 
+             style="border-radius: 12px; font-weight: 600; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.05); animation: slideDown 0.3s ease-out;">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
     <div class="page-header">
         <h1 class="page-title">Customer Directory</h1>
         <div class="filters-bar">
@@ -76,6 +87,7 @@
                         <th>Location / Address</th>
                         <th>Account Status</th>
                         <th>Joined Date</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -88,7 +100,7 @@
                                 </div>
                                 <div>
                                     <div style="font-weight: 700; color: #1e293b;">{{ customer.user.get_full_name|default:customer.user.username }}</div>
-                                    <div style="font-size: 0.75rem; color: #94a3b8;">@{{ customer.user.username }}</div>
+                                    <div style="font-size: 0.75rem; color: #94a3b8;">{{ customer.user.username }}</div>
                                 </div>
                             </div>
                         </td>
@@ -110,10 +122,56 @@
                             <div style="font-size: 0.85rem; color: #1e293b; font-weight: 500;">{{ customer.user.date_joined|date:"M d, Y" }}</div>
                             <div style="font-size: 0.7rem; color: #94a3b8;">{{ customer.user.date_joined|timesince }} ago</div>
                         </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                {% if customer.user.is_active %}
+                                    <form method="POST" action="{% url 'admin_customers' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="deactivate">
+                                        <input type="hidden" name="customer_id" value="{{ customer.user.id }}">
+                                        <button type="button" 
+                                                onclick="confirmCustomerAction('deactivate', '{{ customer.user.id }}', '{{ customer.user.get_full_name|default:customer.user.username|escapejs }}')"
+                                                class="btn btn-sm"
+                                                style="background: #fef3c7; color: #d97706; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s;"
+                                                onmouseover="this.style.background='#fde68a'"
+                                                onmouseout="this.style.background='#fef3c7'">
+                                            <i class="fas fa-pause"></i> Deactivate
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <form method="POST" action="{% url 'admin_customers' %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="activate">
+                                        <input type="hidden" name="customer_id" value="{{ customer.user.id }}">
+                                        <button type="button" 
+                                                onclick="confirmCustomerAction('activate', '{{ customer.user.id }}', '{{ customer.user.get_full_name|default:customer.user.username|escapejs }}')"
+                                                class="btn btn-sm"
+                                                style="background: #d1fae5; color: #065f46; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s;"
+                                                onmouseover="this.style.background='#a7f3d0'"
+                                                onmouseout="this.style.background='#d1fae5'">
+                                            <i class="fas fa-play"></i> Activate
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <form method="POST" action="{% url 'admin_customers' %}" style="display: inline;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="customer_id" value="{{ customer.user.id }}">
+                                    <button type="button" 
+                                            onclick="confirmCustomerAction('delete', '{{ customer.user.id }}', '{{ customer.user.get_full_name|default:customer.user.username|escapejs }}')"
+                                            class="btn btn-sm"
+                                            style="background: #fee2e2; color: #dc2626; border: none; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s;"
+                                            onmouseover="this.style.background='#fecaca'"
+                                            onmouseout="this.style.background='#fee2e2'">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" style="text-align: center; color: #94a3b8; padding: 5rem;">
+                        <td colspan="6" style="text-align: center; color: #94a3b8; padding: 5rem;">
                             <i class="fas fa-user-friends" style="font-size: 3rem; display: block; margin-bottom: 1.5rem; opacity: 0.2;"></i>
                             <p style="font-weight: 500;">No customers registered yet.</p>
                         </td>
@@ -124,4 +182,151 @@
         </div>
     </div>
 </div>
+
+<!-- SweetAlert2 for modern popups -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    function confirmCustomerAction(action, customerId, customerName) {
+        let title, text, confirmButtonText, confirmButtonColor, icon;
+        
+        if (action === 'deactivate') {
+            title = 'Deactivate Customer?';
+            text = `Are you sure you want to deactivate ${customerName}? Their account will be disabled but data will be preserved.`;
+            confirmButtonText = 'Yes, deactivate';
+            confirmButtonColor = '#d97706';
+            icon = 'warning';
+        } else if (action === 'activate') {
+            title = 'Activate Customer?';
+            text = `Are you sure you want to activate ${customerName}? Their account will be re-enabled.`;
+            confirmButtonText = 'Yes, activate';
+            confirmButtonColor = '#16a34a';
+            icon = 'question';
+        } else if (action === 'delete') {
+            title = 'Delete Customer?';
+            text = `Are you sure you want to permanently delete ${customerName}? This action cannot be undone and all data will be lost.`;
+            confirmButtonText = 'Yes, delete permanently';
+            confirmButtonColor = '#dc2626';
+            icon = 'error';
+        }
+        
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonColor: confirmButtonColor,
+            cancelButtonColor: '#64748b',
+            confirmButtonText: confirmButtonText,
+            cancelButtonText: 'Cancel',
+            background: '#fff',
+            borderRadius: '16px',
+            padding: '2rem',
+            customClass: {
+                popup: 'modern-popup',
+                title: 'modern-title',
+                content: 'modern-content',
+                actions: 'modern-actions'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Create and submit form
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '{% url "admin_customers" %}';
+                
+                // Add CSRF token
+                const csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = 'csrfmiddlewaretoken';
+                csrfToken.value = getCookie('csrftoken');
+                form.appendChild(csrfToken);
+                
+                // Add action
+                const actionInput = document.createElement('input');
+                actionInput.type = 'hidden';
+                actionInput.name = 'action';
+                actionInput.value = action;
+                form.appendChild(actionInput);
+                
+                // Add customer ID
+                const customerInput = document.createElement('input');
+                customerInput.type = 'hidden';
+                customerInput.name = 'customer_id';
+                customerInput.value = customerId;
+                form.appendChild(customerInput);
+                
+                // Submit form
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+
+<style>
+/* Modern popup styles */
+.modern-popup {
+    border-radius: 16px !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.modern-title {
+    font-weight: 700 !important;
+    font-size: 1.25rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.modern-content {
+    font-weight: 500 !important;
+    font-size: 0.95rem !important;
+    color: #64748b !important;
+    line-height: 1.5 !important;
+}
+
+.modern-actions {
+    margin-top: 1.5rem !important;
+}
+
+/* Custom SweetAlert2 button styles */
+.swal2-confirm {
+    font-weight: 600 !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 0.5rem !important;
+    transition: all 0.2s ease !important;
+}
+
+.swal2-cancel {
+    font-weight: 600 !important;
+    padding: 0.75rem 1.5rem !important;
+    border-radius: 0.5rem !important;
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+    transition: all 0.2s ease !important;
+}
+
+.swal2-cancel:hover {
+    background: #e2e8f0 !important;
+}
+
+.swal2-confirm:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+</style>
 {% endblock %}

@@ -7,7 +7,7 @@ from django.contrib.auth import update_session_auth_hash
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from .models import (
-    UserProfile, RentalShop, Vehicle, Booking, KYCDocument, OwnerRegistrationRequest
+    UserProfile, RentalShop, Vehicle, Booking, KYCDocument, OwnerRegistrationRequest, Review
 )
 
 def is_admin(user):
@@ -133,7 +133,74 @@ def admin_shop_detail(request, shop_id):
     return render(request, 'admin/rentalshopdetails.html', context)
 
 @admin_required
+def admin_shop_reviews(request, shop_id):
+    shop = get_object_or_404(RentalShop, id=shop_id)
+    
+    if request.method == 'POST':
+        review_id = request.POST.get('review_id')
+        action = request.POST.get('action')
+        
+        if action == 'delete' and review_id:
+            try:
+                review = Review.objects.get(id=review_id, shop=shop)
+                review.delete()
+                from django.contrib import messages
+                messages.success(request, f"Review by {review.user.username} deleted successfully.")
+            except Review.DoesNotExist:
+                from django.contrib import messages
+                messages.error(request, "Review not found.")
+            except Exception as e:
+                from django.contrib import messages
+                messages.error(request, f"Error deleting review: {str(e)}")
+        
+        return redirect('admin_shop_reviews', shop_id=shop_id)
+    
+    # Get all reviews for this shop
+    reviews = Review.objects.filter(shop=shop).select_related('user').order_by('-created_at')
+    
+    context = {
+        'shop': shop,
+        'reviews': reviews,
+    }
+    return render(request, 'admin/shop_reviews.html', context)
+
+@admin_required
 def admin_customers(request):
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        customer_id = request.POST.get('customer_id')
+        
+        if customer_id and action:
+            try:
+                customer = User.objects.get(id=customer_id, user_profile__role='user')
+                
+                if action == 'activate':
+                    customer.is_active = True
+                    customer.save()
+                    from django.contrib import messages
+                    messages.success(request, f"Customer {customer.get_full_name() or customer.username} has been activated successfully.")
+                
+                elif action == 'deactivate':
+                    customer.is_active = False
+                    customer.save()
+                    from django.contrib import messages
+                    messages.success(request, f"Customer {customer.get_full_name() or customer.username} has been deactivated successfully.")
+                
+                elif action == 'delete':
+                    customer_name = customer.get_full_name() or customer.username
+                    customer.delete()
+                    from django.contrib import messages
+                    messages.success(request, f"Customer {customer_name} has been permanently deleted.")
+                    
+            except User.DoesNotExist:
+                from django.contrib import messages
+                messages.error(request, "Customer not found.")
+            except Exception as e:
+                from django.contrib import messages
+                messages.error(request, f"Error performing action: {str(e)}")
+        
+        return redirect('admin_customers')
+    
     customers = UserProfile.objects.filter(role="user").select_related("user")
     
     context = {
