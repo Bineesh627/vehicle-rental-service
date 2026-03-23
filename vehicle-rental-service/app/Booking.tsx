@@ -13,7 +13,6 @@ import {
   MapPin,
   Smartphone,
   Truck,
-  User,
   Wallet,
 } from "lucide-react-native";
 import React, { useState, useEffect } from "react";
@@ -249,10 +248,10 @@ export default function Booking() {
 
       const bookingData = {
         vehicle_id: parseInt(id, 10),
-        booking_type: bookingType,
+        booking_type: bookingType as "hour" | "day",
         start_date: startDateTime.toISOString(),
         duration,
-        delivery_option: deliveryOptionBackend,
+        delivery_option: deliveryOptionBackend as "self_pickup" | "home_delivery",
         delivery_address:
           deliveryOption === "delivery" ? deliveryAddress : undefined,
         payment_method:
@@ -268,9 +267,9 @@ export default function Booking() {
         [
           {
             text: "View Bookings",
-            onPress: () => router.push("/user/(tabs)/bookings"),
+            onPress: () => router.push("/user/(tabs)/bookings" as any),
           },
-          { text: "Continue Shopping", onPress: () => router.push("/(tabs)/") },
+          { text: "Continue Shopping", onPress: () => router.push("/(tabs)/" as any) },
         ]
       );
     } catch (error) {
@@ -531,7 +530,31 @@ export default function Booking() {
           </View>
           
           <View style={styles.deliveryOptionsRow}>
-            {/* Home Delivery Option */}
+            {/* Self Pickup Option - User goes to shop */}
+            <TouchableOpacity
+              onPress={() => {
+                setDeliveryOption("pickup");
+                setDeliveryAddress("");
+              }}
+              style={[
+                styles.outlineOption,
+                deliveryOption === "pickup" && styles.outlineActive
+              ]}
+              activeOpacity={0.7}
+            >
+              <View style={styles.deliveryOptionContent}>
+                <MapPin size={20} color={deliveryOption === "pickup" ? "#2dd4bf" : "#64748b"} />
+                <Text style={[
+                  styles.outlineText,
+                  deliveryOption === "pickup" && styles.outlineTextActive
+                ]}>
+                  Self Pickup (Free)
+                </Text>
+                <Text style={styles.deliveryOptionSubtext}>Pick up from shop</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Home Delivery Option - Vehicle delivered to user */}
             <TouchableOpacity
               onPress={() => {
                 setDeliveryOption("delivery");
@@ -541,6 +564,7 @@ export default function Booking() {
                 styles.outlineOption,
                 deliveryOption === "delivery" && styles.outlineActive
               ]}
+              activeOpacity={0.7}
             >
               <View style={styles.deliveryOptionContent}>
                 <Truck size={20} color={deliveryOption === "delivery" ? "#2dd4bf" : "#64748b"} />
@@ -550,27 +574,7 @@ export default function Booking() {
                 ]}>
                   Home Delivery (+{formatCurrency(10)})
                 </Text>
-              </View>
-            </TouchableOpacity>
-
-            {/* Self Pickup Option */}
-            <TouchableOpacity
-              onPress={() => {
-                setDeliveryOption("pickup");
-              }}
-              style={[
-                styles.outlineOption,
-                deliveryOption === "pickup" && styles.outlineActive
-              ]}
-            >
-              <View style={styles.deliveryOptionContent}>
-                <User size={20} color={deliveryOption === "pickup" ? "#2dd4bf" : "#64748b"} />
-                <Text style={[
-                  styles.outlineText,
-                  deliveryOption === "pickup" && styles.outlineTextActive
-                ]}>
-                  Self Pickup (Free)
-                </Text>
+                <Text style={styles.deliveryOptionSubtext}>We deliver to you</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -841,10 +845,20 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
+  outlineText: {
+    color: "#94a3b8",
+    fontWeight: "500",
+    fontSize: 14,
+  },
   outlineTextActive: {
     color: "#2dd4bf",
     fontWeight: "600",
     fontSize: 14,
+  },
+  deliveryOptionSubtext: {
+    fontSize: 11,
+    color: "#94a3b8",
+    marginTop: 4,
   },
   durationControl: { flexDirection: "row", alignItems: "center", gap: 16 },
   counterButton: {

@@ -193,7 +193,7 @@ def booking_management_view(request):
                 StaffTask.objects.filter(booking=booking).delete()
                 
                 # Create new Staff Task for the newly assigned staff member
-                task_type = 'pickup' if booking.status == 'pickup_requested' else ('delivery' if booking.delivery_option == 'delivery' else 'pickup')
+                task_type = 'pickup' if booking.status == 'pickup_requested' else ('delivery' if booking.delivery_option == 'home_delivery' else 'pickup')
                 task = StaffTask.objects.create(
                     booking=booking,
                     staff=staff_member,

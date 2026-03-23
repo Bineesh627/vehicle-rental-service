@@ -188,8 +188,8 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         booking_type = data.get('booking_type')
         delivery_option = data.get('delivery_option')
         
-        # Validate delivery address if delivery option is selected
-        if delivery_option == 'delivery' and not data.get('delivery_address'):
+        # Validate delivery address if home delivery option is selected
+        if delivery_option == 'home_delivery' and not data.get('delivery_address'):
             raise serializers.ValidationError("Delivery address is required for home delivery")
         
         # Calculate end date based on booking type and duration
@@ -531,14 +531,17 @@ class UserProfileUpdateSerializer(serializers.ModelSerializer):
         instance.first_name = validated_data.get('first_name', instance.first_name)
         instance.email = validated_data.get('email', instance.email)
         instance.save()
-        
-        # Handle address separately since it's in UserProfile
+
+        # Handle UserProfile fields (address, phone)
+        user_profile, created = UserProfile.objects.get_or_create(user=instance)
         address = self.context.get('address')
         if address is not None:
-            user_profile, created = UserProfile.objects.get_or_create(user=instance)
             user_profile.address = address
-            user_profile.save()
-        
+        phone = validated_data.pop('phone', None)
+        if phone is not None:
+            user_profile.phone = str(phone) if phone else ''
+        user_profile.save()
+
         return instance
 
 from rest_framework import serializers

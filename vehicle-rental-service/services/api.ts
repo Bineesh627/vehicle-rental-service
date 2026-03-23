@@ -237,6 +237,10 @@ export const reviewApi = {
 };
 
 const mapBackendBookingToFrontend = (data: any): Booking => {
+  // Map backend delivery_option (self_pickup, pickup_service, home_delivery) to frontend (pickup, delivery)
+  const deliveryOption =
+    data.delivery_option === "home_delivery" ? "delivery" : "pickup";
+
   return {
     id: data.id.toString(),
     vehicleId: data.vehicle.id
@@ -250,7 +254,7 @@ const mapBackendBookingToFrontend = (data: any): Booking => {
     endDate: data.end_date,
     totalPrice: parseFloat(data.total_price),
     status: data.status,
-    deliveryOption: data.delivery_option,
+    deliveryOption,
     deliveryAddress: data.delivery_address,
     returnLocation: data.return_location,
   } as Booking;
@@ -525,12 +529,13 @@ export const profileManagementApi = {
     if (!response.ok) throw new Error("Failed to fetch user profile");
     const data = await response.json();
     return {
-      id: data.id.toString(),
-      username: data.username,
-      email: data.email,
-      first_name: data.first_name,
-      role: data.role,
-      address: data.address || "", // Add address field
+      id: data.id != null ? String(data.id) : "",
+      username: data.username || "",
+      email: data.email || "",
+      first_name: data.first_name || "",
+      role: data.role || "user",
+      address: data.address || "",
+      phone: data.phone != null ? String(data.phone) : "",
       settings: data.settings,
     };
   },
@@ -550,11 +555,13 @@ export const profileManagementApi = {
     if (!response.ok) throw new Error("Failed to update user profile");
     const data = await response.json();
     return {
-      id: data.id?.toString() || "1", // Handle missing id safely
+      id: data.id != null ? String(data.id) : "",
       username: data.username || "",
-      email: data.email,
-      first_name: data.first_name,
+      email: data.email || "",
+      first_name: data.first_name || "",
       role: data.role || "user",
+      address: data.address || "",
+      phone: data.phone != null ? String(data.phone) : "",
     };
   },
 
@@ -852,7 +859,8 @@ export interface UserProfile {
   email: string;
   first_name: string;
   role: string;
-  address?: string; // Optional address field
+  address?: string;
+  phone?: string;
 }
 
 export interface UserStats {

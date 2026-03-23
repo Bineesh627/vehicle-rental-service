@@ -7,8 +7,10 @@ import {
   Wrench,
   Lock,
 } from "lucide-react-native";
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -19,6 +21,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
+import { profileManagementApi } from "@/services/api";
 
 // Theme Colors
 const COLORS = {
@@ -32,35 +35,93 @@ const COLORS = {
   inputBg: "#111318", // Darker input background
 };
 
+// Ensure value is a string for TextInput (database may return numbers)
+const toInputString = (v: unknown): string => {
+  if (v == null || v === "") return "";
+  return String(v);
+};
+
 export default function StaffProfile() {
   const { user, logout } = useAuth();
   const router = useRouter();
 
   const [formData, setFormData] = useState({
-    name: "Mike Staff", // Hardcoded based on screenshot
-    email: "staff@rental.com", // Hardcoded based on screenshot
-    phone: "+1 555-0300", // Hardcoded based on screenshot
+    name: "",
+    email: "",
+    phone: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const loadProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      const profile = await profileManagementApi.getUserProfileExtended();
+      setFormData((prev) => ({
+        ...prev,
+        name: toInputString(profile.first_name ?? user?.name),
+        email: toInputString(profile.email ?? user?.email),
+        phone: toInputString(profile.phone ?? user?.phone),
+      }));
+    } catch (err) {
+      console.error("Failed to load profile:", err);
+      setFormData((prev) => ({
+        ...prev,
+        name: toInputString(user?.name ?? ""),
+        email: toInputString(user?.email ?? ""),
+        phone: toInputString(user?.phone ?? ""),
+      }));
+      Toast.show({
+        type: "error",
+        text1: "Load Failed",
+        text2: "Could not load profile. Showing cached data.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.name, user?.email, user?.phone]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, [loadProfile]),
+  );
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSaveProfile = () => {
-    Toast.show({
-      type: "success",
-      text1: "Profile Updated",
-      text2: "Your profile has been updated successfully.",
-    });
-    setIsEditing(false);
+  const handleSaveProfile = async () => {
+    try {
+      setSaving(true);
+      await profileManagementApi.updateUserProfile({
+        first_name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+      });
+      Toast.show({
+        type: "success",
+        text1: "Profile Updated",
+        text2: "Your profile has been updated successfully.",
+      });
+      setIsEditing(false);
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Update Failed",
+        text2: err?.message ?? "Could not update profile.",
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (formData.newPassword !== formData.confirmPassword) {
       Toast.show({
         type: "error",
@@ -69,17 +130,29 @@ export default function StaffProfile() {
       });
       return;
     }
-    Toast.show({
-      type: "success",
-      text1: "Password Changed",
-      text2: "Your password has been updated successfully.",
-    });
-    setFormData((prev) => ({
-      ...prev,
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    }));
+    try {
+      await profileManagementApi.changePassword({
+        currentPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      });
+      Toast.show({
+        type: "success",
+        text1: "Password Changed",
+        text2: "Your password has been updated successfully.",
+      });
+      setFormData((prev) => ({
+        ...prev,
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      }));
+    } catch (err: any) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: err?.message ?? "Failed to change password.",
+      });
+    }
   };
 
   const handleLogout = () => {
@@ -117,7 +190,7 @@ export default function StaffProfile() {
         {Icon && <Icon size={18} color={COLORS.textMuted} style={{ marginRight: 10 }} />}
         <TextInput
           className="flex-1 text-white text-base"
-          value={value}
+          value={toInputString(value)}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}
           placeholder={placeholder}
@@ -127,6 +200,18 @@ export default function StaffProfile() {
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <SafeAreaView
+        className="flex-1 items-center justify-center"
+        style={{ backgroundColor: COLORS.background }}
+      >
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text className="text-gray-400 mt-3">Loading profile...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView
@@ -208,11 +293,12 @@ export default function StaffProfile() {
               {isEditing && (
                 <TouchableOpacity
                   className="w-full py-3 rounded-full items-center mt-2"
-                  style={{ backgroundColor: COLORS.primary }}
+                  style={{ backgroundColor: COLORS.primary, opacity: saving ? 0.7 : 1 }}
                   onPress={handleSaveProfile}
+                  disabled={saving}
                 >
                   <Text className="text-black font-bold text-base">
-                    Save Changes
+                    {saving ? "Saving..." : "Save Changes"}
                   </Text>
                 </TouchableOpacity>
               )}

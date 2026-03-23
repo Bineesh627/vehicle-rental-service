@@ -322,9 +322,13 @@ export default function BookingDetails() {
             </View>
           </View>
 
-          {/* Pickup Location */}
+          {/* Location - Show Delivery Address for delivery bookings, Pickup Location (shop) for pickup */}
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Pickup Location</Text>
+            <Text style={styles.sectionTitle}>
+              {booking.deliveryOption === "delivery"
+                ? "Delivery Address"
+                : "Pickup Location"}
+            </Text>
             <View style={styles.shopContainer}>
               <Image
                 source={getImageSource(booking.shop.image)}
@@ -335,7 +339,9 @@ export default function BookingDetails() {
                 <View style={styles.addressRow}>
                   <MapPin size={14} color="#94a3b8" />
                   <Text style={styles.addressText} numberOfLines={1}>
-                    {booking.shop.address}
+                    {booking.deliveryOption === "delivery" && booking.deliveryAddress
+                      ? booking.deliveryAddress
+                      : booking.shop.address}
                   </Text>
                 </View>
               </View>
@@ -480,8 +486,8 @@ export default function BookingDetails() {
       {booking && (
         <DeliveryLocationSelector
           visible={showPickupSelector}
-          type="delivery"
-          currentAddress={booking.deliveryAddress || booking.shop.address}
+          type="pickup"
+          currentAddress={booking.returnLocation || booking.deliveryAddress || booking.shop.address}
           locations={savedLocations}
           onSelect={async (address) => {
             setShowPickupSelector(false);
