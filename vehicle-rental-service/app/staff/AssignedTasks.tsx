@@ -197,12 +197,6 @@ export default function AssignedTasks() {
           <Text className="text-xl font-bold text-white flex-1">
             Assigned Tasks
           </Text>
-          <TouchableOpacity
-            onPress={() => router.push("/staff/StaffComplaint")}
-            className="px-3 py-1.5 bg-[#1E293B] rounded-full border border-gray-700"
-          >
-            <Text className="text-gray-300 text-xs font-medium">Report</Text>
-          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -236,11 +230,11 @@ export default function AssignedTasks() {
                   color="primary"
                 />
                 <StatBox
-                  label="Deliveries"
+                  label="Delivery"
                   value={tasks.filter((t) => t.type === "delivery").length}
                 />
                 <StatBox
-                  label="Pickups"
+                  label="Pickup"
                   value={tasks.filter((t) => t.type === "pickup").length}
                 />
               </View>

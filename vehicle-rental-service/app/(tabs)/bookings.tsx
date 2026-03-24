@@ -13,6 +13,7 @@ import {
   View,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "@/services/api";
@@ -49,7 +50,6 @@ export default function Bookings() {
 
   useFocusEffect(
     useCallback(() => {
-      setLoading(true);
       fetchBookings();
     }, []),
   );
@@ -110,32 +110,25 @@ export default function Bookings() {
                       <View style={styles.cardBody}>
                         <View style={styles.cardHeader}>
                           <View style={{ flex: 1 }}>
-                            <Text style={styles.vehicleName}>
+                            <Text style={styles.vehicleName} numberOfLines={1}>
                               {booking.vehicle.name}
                             </Text>
                             <View style={styles.locationContainer}>
                               <MapPin color="#94a3b8" size={14} />
-                              <Text style={styles.locationText}>
+                              <Text style={styles.locationText} numberOfLines={1}>
                                 {booking.shop.name}
                               </Text>
                             </View>
                           </View>
-                          <View
-                            style={[styles.statusBadge, styles.badgeUpcoming]}
-                          >
-                            <Text style={styles.textUpcoming}>
-                              {booking.status}
-                            </Text>
+                          <View style={[styles.statusBadge, styles.badgeUpcoming]}>
+                            <Text style={styles.textUpcoming}>{booking.status}</Text>
                           </View>
                         </View>
                         <View style={styles.dateRow}>
                           <View style={styles.dateItem}>
                             <Calendar color="#94a3b8" size={14} />
                             <Text style={styles.dateText}>
-                              {format(
-                                new Date(booking.startDate),
-                                "MMM d, yyyy",
-                              )}
+                              {format(new Date(booking.startDate), "MMM d, yyyy")}
                             </Text>
                           </View>
                           <View style={styles.dateItem}>
@@ -155,16 +148,10 @@ export default function Bookings() {
                         </Text>
                       </View>
                       <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate("BookingDetails", {
-                            id: booking.id,
-                          })
-                        }
+                        onPress={() => navigation.navigate("BookingDetails", { id: booking.id })}
                         style={styles.detailsButton}
                       >
-                        <Text style={styles.detailsButtonText}>
-                          View Details
-                        </Text>
+                        <Text style={styles.detailsButtonText}>View Details</Text>
                         <ChevronRight color="#2dd4bf" size={16} />
                       </TouchableOpacity>
                     </View>
@@ -173,11 +160,7 @@ export default function Bookings() {
               </View>
             ) : (
               <View style={styles.emptyState}>
-                <Calendar
-                  color="#64748b"
-                  size={48}
-                  style={{ opacity: 0.5, marginBottom: 12 }}
-                />
+                <Calendar color="#64748b" size={48} style={{ opacity: 0.5, marginBottom: 12 }} />
                 <Text style={styles.emptyStateText}>No upcoming bookings</Text>
               </View>
             )}
@@ -187,76 +170,58 @@ export default function Bookings() {
           {activeBookings.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Active Bookings</Text>
-              <View>
-                {activeBookings.map((booking) => (
-                  <View
-                    key={booking.id}
-                    style={[styles.card, styles.activeCard]}
-                  >
-                    <View style={styles.cardContent}>
-                      <Image
-                        source={getImageSource(booking.vehicle.images[0])}
-                        style={styles.vehicleImage}
-                        resizeMode="cover"
-                      />
-                      <View style={styles.cardBody}>
-                        <View style={styles.cardHeader}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={styles.vehicleName}>
-                              {booking.vehicle.name}
+              {activeBookings.map((booking) => (
+                <View key={booking.id} style={[styles.card, styles.activeCard]}>
+                  <View style={styles.cardContent}>
+                    <Image
+                      source={getImageSource(booking.vehicle.images[0])}
+                      style={styles.vehicleImage}
+                      resizeMode="cover"
+                    />
+                    <View style={styles.cardBody}>
+                      <View style={styles.cardHeader}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.vehicleName} numberOfLines={1}>
+                            {booking.vehicle.name}
+                          </Text>
+                          <View style={styles.locationContainer}>
+                            <MapPin color="#94a3b8" size={14} />
+                            <Text style={styles.locationText} numberOfLines={1}>
+                              {booking.shop.name}
                             </Text>
-                            <View style={styles.locationContainer}>
-                              <MapPin color="#94a3b8" size={14} />
-                              <Text style={styles.locationText}>
-                                {booking.shop.name}
-                              </Text>
-                            </View>
-                          </View>
-                          <View
-                            style={[styles.statusBadge, styles.badgeActive]}
-                          >
-                            <Text style={styles.textActive}>Active</Text>
                           </View>
                         </View>
-                        <View style={styles.dateRow}>
-                          <View style={styles.dateItem}>
-                            <Calendar color="#94a3b8" size={14} />
-                            <Text style={styles.dateText}>
-                              Ends: {format(new Date(booking.endDate), "MMM d")}
-                            </Text>
-                          </View>
-                          <View style={styles.dateItem}>
-                            <Clock color="#94a3b8" size={14} />
-                            <Text style={styles.dateText}>
-                              {format(new Date(booking.endDate), "h:mm a")}
-                            </Text>
-                          </View>
+                        <View style={[styles.statusBadge, styles.badgeActive]}>
+                          <Text style={styles.textActive}>Active</Text>
+                        </View>
+                      </View>
+                      <View style={styles.dateRow}>
+                        <View style={styles.dateItem}>
+                          <Calendar color="#94a3b8" size={14} />
+                          <Text style={styles.dateText}>Ends: {format(new Date(booking.endDate), "MMM d")}</Text>
+                        </View>
+                        <View style={styles.dateItem}>
+                          <Clock color="#94a3b8" size={14} />
+                          <Text style={styles.dateText}>{format(new Date(booking.endDate), "h:mm a")}</Text>
                         </View>
                       </View>
                     </View>
-
-                    <View style={styles.activeFooter}>
-                      <TouchableOpacity
-                        onPress={() =>
-                          navigation.navigate("BookingDetails", {
-                            id: booking.id,
-                          })
-                        }
-                        style={styles.detailsButton}
-                      >
-                        <Text style={styles.detailsButtonText}>
-                          View Details
-                        </Text>
-                        <ChevronRight color="#2dd4bf" size={16} />
-                      </TouchableOpacity>
-                    </View>
                   </View>
-                ))}
-              </View>
+                  <View style={styles.activeFooter}>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate("BookingDetails", { id: booking.id })}
+                      style={styles.detailsButton}
+                    >
+                      <Text style={styles.detailsButtonText}>View Details</Text>
+                      <ChevronRight color="#2dd4bf" size={16} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
             </View>
           )}
 
-          {/* Past bookings */}
+          {/* Past Bookings */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Past Bookings</Text>
             {pastBookings.length > 0 ? (
@@ -271,31 +236,24 @@ export default function Bookings() {
                       />
                       <View style={styles.cardBody}>
                         <View style={styles.cardHeader}>
-                          <View>
-                            <Text style={styles.vehicleName}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.vehicleName} numberOfLines={1}>
                               {booking.vehicle.name}
                             </Text>
                             <Text style={styles.dateText}>
-                              {format(
-                                new Date(booking.startDate),
-                                "MMM d, yyyy",
-                              )}
+                              {format(new Date(booking.startDate), "MMM d, yyyy")}
                             </Text>
                           </View>
                           <View
                             style={[
                               styles.statusBadge,
-                              booking.status === "completed"
-                                ? styles.badgeCompleted
-                                : styles.badgeCancelled,
+                              booking.status === "completed" ? styles.badgeCompleted : styles.badgeCancelled,
                             ]}
                           >
                             <Text
                               style={[
                                 styles.statusText,
-                                booking.status === "completed"
-                                  ? styles.textCompleted
-                                  : styles.textCancelled,
+                                booking.status === "completed" ? styles.textCompleted : styles.textCancelled,
                               ]}
                             >
                               {booking.status}
@@ -308,26 +266,14 @@ export default function Bookings() {
                           </Text>
                           <View style={styles.pastActions}>
                             <TouchableOpacity
-                              onPress={() =>
-                                navigation.navigate("BookingDetails", {
-                                  id: booking.id,
-                                })
-                              }
+                              onPress={() => navigation.navigate("BookingDetails", { id: booking.id })}
                             >
-                              <Text style={styles.pastDetailsText}>
-                                Details
-                              </Text>
+                              <Text style={styles.pastDetailsText}>Details</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                              onPress={() =>
-                                navigation.navigate("VehicleDetails", {
-                                  id: booking.vehicleId,
-                                })
-                              }
+                              onPress={() => navigation.navigate("VehicleDetails", { id: booking.vehicleId })}
                             >
-                              <Text style={styles.bookAgainText}>
-                                Book Again
-                              </Text>
+                              <Text style={styles.bookAgainText}>Book Again</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -351,7 +297,7 @@ export default function Bookings() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f172a", // Dark background
+    backgroundColor: "#0f172a",
   },
   header: {
     paddingHorizontal: 16,
@@ -399,7 +345,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   card: {
-    backgroundColor: "#1e293b", // Slate-800
+    backgroundColor: "#1e293b",
     borderRadius: 16,
     padding: 16,
     marginBottom: 16,
@@ -408,19 +354,20 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flexDirection: "row",
-    gap: 16,
+    gap: 12,
   },
   vehicleImage: {
-    height: 96,
-    width: 112,
+    height: 80,
+    width: 100,
     borderRadius: 12,
     backgroundColor: "#334155",
   },
   grayscale: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   cardBody: {
     flex: 1,
+    justifyContent: 'space-between',
   },
   cardHeader: {
     flexDirection: "row",
@@ -431,17 +378,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     color: "#ffffff",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   locationContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    marginBottom: 4,
   },
   locationText: {
     fontSize: 12,
-    color: "#94a3b8", // Slate-400
+    color: "#94a3b8",
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -449,25 +395,25 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
   },
   badgeUpcoming: {
-    backgroundColor: "rgba(45, 212, 191, 0.1)", // Teal tint
+    backgroundColor: "rgba(45, 212, 191, 0.1)",
   },
   textUpcoming: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#2dd4bf", // Teal-400
+    color: "#2dd4bf",
     textTransform: "capitalize",
   },
   badgeCompleted: {
-    backgroundColor: "rgba(74, 222, 128, 0.1)", // Green tint
+    backgroundColor: "rgba(74, 222, 128, 0.1)",
   },
   textCompleted: {
-    color: "#4ade80", // Green-400
+    color: "#4ade80",
   },
   badgeCancelled: {
-    backgroundColor: "rgba(248, 113, 113, 0.1)", // Red tint
+    backgroundColor: "rgba(248, 113, 113, 0.1)",
   },
   textCancelled: {
-    color: "#f87171", // Red-400
+    color: "#f87171",
   },
   statusText: {
     fontSize: 12,
@@ -478,7 +424,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
+    gap: 12,
   },
   dateItem: {
     flexDirection: "row",
@@ -496,7 +442,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderTopWidth: 1,
     borderTopColor: "#334155",
-    paddingTop: 16,
+    paddingTop: 12,
   },
   totalLabel: {
     fontSize: 12,
@@ -505,7 +451,7 @@ const styles = StyleSheet.create({
   totalPrice: {
     fontSize: 18,
     fontWeight: "bold",
-    color: "#2dd4bf", // Teal-400
+    color: "#2dd4bf",
   },
   detailsButton: {
     flexDirection: "row",
@@ -541,7 +487,7 @@ const styles = StyleSheet.create({
   },
   pastActions: {
     flexDirection: "row",
-    gap: 12,
+    gap: 16,
   },
   pastDetailsText: {
     fontSize: 14,

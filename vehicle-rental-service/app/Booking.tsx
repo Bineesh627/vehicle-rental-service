@@ -267,7 +267,7 @@ export default function Booking() {
         [
           {
             text: "View Bookings",
-            onPress: () => router.push("/user/(tabs)/bookings" as any),
+            onPress: () => router.push("/bookings" as any),
           },
           { text: "Continue Shopping", onPress: () => router.push("/(tabs)/" as any) },
         ]

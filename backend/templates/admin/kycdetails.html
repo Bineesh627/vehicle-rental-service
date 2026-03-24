@@ -149,7 +149,7 @@
                         {% if kyc.driving_license_photo %}
                         <img src="{{ kyc.driving_license_photo.url }}" class="doc-img" onclick="openLightbox(this.src)">
                         <div class="doc-overlay">
-                            <span>Front View</span>
+                            <span>Document 1</span>
                             <a href="{{ kyc.driving_license_photo.url }}" download style="color:white;"><i class="fas fa-download"></i></a>
                         </div>
                         {% else %}
@@ -166,7 +166,7 @@
                         {% if kyc.secondary_doc_photo %}
                         <img src="{{ kyc.secondary_doc_photo.url }}" class="doc-img" onclick="openLightbox(this.src)">
                         <div class="doc-overlay">
-                            <span>Document Copy</span>
+                            <span>Document 2</span>
                             <a href="{{ kyc.secondary_doc_photo.url }}" download style="color:white;"><i class="fas fa-download"></i></a>
                         </div>
                         {% else %}
