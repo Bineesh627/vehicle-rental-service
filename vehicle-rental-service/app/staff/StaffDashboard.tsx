@@ -12,6 +12,7 @@ import {
   Truck,
   User,
   AlertCircle,
+  CarFront,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
@@ -38,28 +39,8 @@ const COLORS = {
   text: "#FFFFFF",
   textMuted: "#9CA3AF",
   border: "#2C3340",
+  danger: "#EF4444", // Red for logout
 };
-
-const stats = [
-  {
-    label: "Assigned Today",
-    value: "5",
-    icon: Package,
-    color: COLORS.primary,
-  },
-  {
-    label: "Completed",
-    value: "3",
-    icon: CheckCircle,
-    color: "#22C55E", // Green
-  },
-  {
-    label: "Pending",
-    value: "2",
-    icon: Clock,
-    color: COLORS.secondary,
-  },
-];
 
 export default function StaffDashboard() {
   const { user, logout } = useAuth();
@@ -110,11 +91,7 @@ export default function StaffDashboard() {
   const currentStats = [
     {
       label: "Assigned Today",
-      value: (
-        deliveryTasks.length +
-        pickupTasks.length +
-        completedCount
-      ).toString(),
+      value: (deliveryTasks.length + pickupTasks.length + completedCount).toString(),
       icon: Package,
       color: COLORS.primary,
     },
@@ -202,27 +179,17 @@ export default function StaffDashboard() {
       className="p-5 rounded-2xl mb-4"
       style={{ backgroundColor: COLORS.card }}
     >
-      {/* Header: Icon/Badge + Time */}
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center gap-2">
-          {/* Badge */}
           <View
             className={`flex-row items-center px-3 py-1 rounded-full ${
               isDelivery ? "bg-[#2DD4BF]/10" : "bg-orange-500/10"
             }`}
           >
             {isDelivery ? (
-              <Truck
-                size={14}
-                color={COLORS.primary}
-                style={{ marginRight: 6 }}
-              />
+              <Truck size={14} color={COLORS.primary} style={{ marginRight: 6 }} />
             ) : (
-              <Package
-                size={14}
-                color={COLORS.secondary}
-                style={{ marginRight: 6 }}
-              />
+              <Package size={14} color={COLORS.secondary} style={{ marginRight: 6 }} />
             )}
             <Text
               className={`text-xs font-semibold ${
@@ -236,7 +203,6 @@ export default function StaffDashboard() {
         <Text className="text-xs text-gray-400">{task.scheduledTime}</Text>
       </View>
 
-      {/* Main Content */}
       <View className="mb-4">
         <Text className="text-xl font-bold text-white mb-1">
           {task.vehicleName}
@@ -246,7 +212,6 @@ export default function StaffDashboard() {
         </Text>
       </View>
 
-      {/* Address */}
       <View className="flex-row items-start gap-2 mb-5">
         <MapPin size={16} color="#6B7280" style={{ marginTop: 2 }} />
         <Text className="text-sm text-gray-400 flex-1">
@@ -254,7 +219,6 @@ export default function StaffDashboard() {
         </Text>
       </View>
 
-      {/* Chat Button */}
       <TouchableOpacity
         className="flex-row items-center justify-center py-3 mb-4 rounded-full border"
         style={{ borderColor: COLORS.primary }}
@@ -276,119 +240,70 @@ export default function StaffDashboard() {
               },
             });
           } catch (e) {
-            Toast.show({
-              type: "error",
-              text1: "Chat Error",
-              text2: "Could not open conversation",
-            });
+            Toast.show({ type: "error", text1: "Chat Error", text2: "Could not open conversation" });
           }
         }}
       >
-        <MessageSquare
-          size={16}
-          color={COLORS.primary}
-          style={{ marginRight: 6 }}
-        />
-        <Text style={{ color: COLORS.primary, fontWeight: "600" }}>
-          Chat with Customer
-        </Text>
+        <MessageSquare size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+        <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Chat with Customer</Text>
       </TouchableOpacity>
 
-      {/* Action Buttons - Styled exactly like the screenshot */}
       <View className="flex-row gap-3">
-        {/* Call Button (Outlined) */}
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
           style={{ borderColor: COLORS.primary }}
-          onPress={() =>
-            handleCall(
-              task.customerPhone || "0000000000",
-              task.customerName || "Customer",
-            )
-          }
+          onPress={() => handleCall(task.customerPhone || "0000000000", task.customerName || "Customer")}
         >
           <Phone size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
           <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Call</Text>
         </TouchableOpacity>
 
-        {/* Navigate Button (Outlined) */}
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
           style={{ borderColor: COLORS.primary }}
           onPress={() => handleNavigate(task.address || "")}
         >
-          <Navigation
-            size={16}
-            color={COLORS.primary}
-            style={{ marginRight: 6 }}
-          />
-          <Text style={{ color: COLORS.primary, fontWeight: "600" }}>
-            Navigate
-          </Text>
+          <Navigation size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
+          <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Navigate</Text>
         </TouchableOpacity>
 
-        {/* Complete Button (Solid) */}
         <TouchableOpacity
           className="flex-1 items-center justify-center py-3 rounded-full"
           style={{ backgroundColor: COLORS.primary }}
-          onPress={() =>
-            isDelivery ? markAsDelivered(task.id) : markAsPickedUp(task.id)
-          }
+          onPress={() => (isDelivery ? markAsDelivered(task.id) : markAsPickedUp(task.id))}
         >
-          <Text className="text-black font-bold">
-            {isDelivery ? "Delivered" : "Picked Up"}
-          </Text>
+          <Text className="text-black font-bold">{isDelivery ? "Delivered" : "Picked Up"}</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  const complaintStatusColor = (s: string) => {
-    if (s === "assigned") return "#F59E0B";
-    if (s === "resolved") return "#22C55E";
-    return COLORS.primary;
-  };
-
   const ComplaintCard = ({ complaint }: { complaint: StaffComplaint }) => (
-    <View
-      className="p-5 rounded-2xl mb-4"
-      style={{ backgroundColor: COLORS.card }}
-    >
-      {/* Header */}
+    <View className="p-5 rounded-2xl mb-4" style={{ backgroundColor: COLORS.card }}>
       <View className="flex-row items-center justify-between mb-3">
         <View
           className="flex-row items-center gap-2 px-3 py-1 rounded-full"
           style={{ backgroundColor: "rgba(239,68,68,0.1)" }}
         >
           <AlertCircle size={13} color="#EF4444" style={{ marginRight: 4 }} />
-          <Text className="text-xs font-semibold" style={{ color: "#EF4444" }}>
-            Complaint
-          </Text>
+          <Text className="text-xs font-semibold" style={{ color: "#EF4444" }}>Complaint</Text>
         </View>
         <View
           className="px-2 py-0.5 rounded-full"
-          style={{
-            backgroundColor: `${complaintStatusColor(complaint.status)}20`,
-          }}
+          style={{ backgroundColor: `${complaint.status === "assigned" ? "#F59E0B" : "#22C55E"}20` }}
         >
           <Text
             className="text-xs font-semibold capitalize"
-            style={{ color: complaintStatusColor(complaint.status) }}
+            style={{ color: complaint.status === "assigned" ? "#F59E0B" : "#22C55E" }}
           >
             {complaint.status}
           </Text>
         </View>
       </View>
 
-      {/* Subject */}
-      <Text className="text-lg font-bold text-white mb-1">
-        {complaint.subject}
-      </Text>
-      <Text className="text-sm text-gray-400 mb-3" numberOfLines={2}>
-        {complaint.description}
-      </Text>
+      <Text className="text-lg font-bold text-white mb-1">{complaint.subject}</Text>
+      <Text className="text-sm text-gray-400 mb-3" numberOfLines={2}>{complaint.description}</Text>
 
-      {/* Meta */}
       <View className="flex-row items-center gap-2 mb-1">
         <User size={13} color="#6B7280" />
         <Text className="text-xs text-gray-400">{complaint.customer_name}</Text>
@@ -398,7 +313,6 @@ export default function StaffDashboard() {
         <Text className="text-xs text-gray-400">{complaint.shop_name}</Text>
       </View>
 
-      {/* View Details Button */}
       <TouchableOpacity
         className="flex-row items-center justify-center py-3 rounded-full"
         style={{ backgroundColor: COLORS.primary }}
@@ -423,32 +337,61 @@ export default function StaffDashboard() {
     </View>
   );
 
+  if (loading && !refreshing) {
+    return (
+      <View className="flex-1 justify-center items-center" style={{ backgroundColor: COLORS.background }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
   return (
-    <SafeAreaView
-      className="flex-1"
-      style={{ backgroundColor: COLORS.background }}
-    >
+    <SafeAreaView className="flex-1" style={{ backgroundColor: COLORS.background }}>
       <View className="flex-1">
-        {/* Header */}
         <View className="flex-row items-center justify-between px-5 pt-2 pb-6">
           <View className="flex-row items-center gap-3">
+            <View
+              className="h-12 w-12 rounded-xl items-center justify-center shadow-lg shadow-cyan-500/50"
+              style={{ backgroundColor: "#22D3EE" }}
+            >
+              <CarFront color="#0F1C23" size={28} strokeWidth={2.5} />
+            </View>
             <View>
-              <Text className="text-xl font-bold text-white">
-                Staff Dashboard
+              <Text className="text-2xl font-bold mb-0.5" style={{ color: "#22D3EE" }}>
+                Rent<Text className="text-white">X</Text>plore
               </Text>
-              <Text className="text-sm text-gray-400">
-                {user?.name || "Mike Staff"}
+              <Text className="text-sm text-gray-400 font-medium">
+                {user?.name || "Staff Member"} (Staff)
               </Text>
             </View>
           </View>
-          <View className="flex-row items-center gap-1">
-            <TouchableOpacity
+          <View className="flex-row items-center gap-2">
+            {/* Profile Button with Rounded Rectangle Border */}
+            <TouchableOpacity 
               onPress={() => router.push("/staff/StaffProfile")}
+              style={{ 
+                borderWidth: 1.5, 
+                borderColor: COLORS.border, 
+                borderRadius: 12, 
+                padding: 6 
+              }}
             >
               <User size={24} color="white" />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleLogout} className="ml-4">
-              <Text className="text-white font-semibold">Logout</Text>
+
+            {/* Logout Button - Red with Border */}
+            <TouchableOpacity 
+              onPress={handleLogout}
+              style={{ 
+                borderWidth: 1.5, 
+                borderColor: COLORS.danger, 
+                borderRadius: 12, 
+                paddingHorizontal: 12, 
+                paddingVertical: 6,
+                marginLeft: 4
+              }}
+            >
+              <Text style={{ color: COLORS.danger, fontWeight: "bold" }}>Logout</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -456,6 +399,7 @@ export default function StaffDashboard() {
         <ScrollView
           className="flex-1 px-5"
           contentContainerStyle={{ paddingBottom: 40 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
         >
           {/* Stats Row */}
           <View className="flex-row gap-3 mb-8">
@@ -463,21 +407,16 @@ export default function StaffDashboard() {
               <View
                 key={index}
                 className="flex-1 pt-6 pb-4 items-center justify-between rounded-2xl border"
-                style={{
-                  backgroundColor: COLORS.card,
-                  borderColor: COLORS.border,
-                }}
+                style={{ backgroundColor: COLORS.card, borderColor: COLORS.border }}
               >
-                <stat.icon
-                  size={24}
-                  color={stat.color}
-                  style={{ marginBottom: 8 }}
-                />
-                <View className="items-center">
-                  <Text className="text-2xl font-bold text-white">
-                    {stat.value}
-                  </Text>
-                  <Text className="text-xs text-gray-400 mt-1">
+                <stat.icon size={24} color={stat.color} style={{ marginBottom: 8 }} />
+                <View className="items-center px-1">
+                  <Text className="text-2xl font-bold text-white">{stat.value}</Text>
+                  <Text
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    className="text-xs text-gray-400 mt-1"
+                  >
                     {stat.label}
                   </Text>
                 </View>
@@ -485,119 +424,51 @@ export default function StaffDashboard() {
             ))}
           </View>
 
-          {/* Delivery Tasks Section */}
+          {/* Delivery Tasks */}
           <View className="mb-6">
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-row items-center gap-2">
                 <Truck size={18} color={COLORS.primary} />
-                <Text className="text-lg font-bold text-white">
-                  Delivery Tasks
-                </Text>
+                <Text className="text-lg font-bold text-white">Delivery Tasks</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => router.push("/staff/AssignedTasks")}
-                className="flex-row items-center"
-              >
-                <Text style={{ color: COLORS.primary }} className="mr-1">
-                  View All
-                </Text>
+              <TouchableOpacity onPress={() => router.push("/staff/AssignedTasks")} className="flex-row items-center">
+                <Text style={{ color: COLORS.primary }} className="mr-1">View All</Text>
                 <ChevronRight size={16} color={COLORS.primary} />
               </TouchableOpacity>
             </View>
-
-            {deliveryTasks.length === 0 ? (
-              <Text className="text-gray-500 text-center py-4">
-                No pending deliveries
-              </Text>
-            ) : (
-              deliveryTasks.map((task) => (
-                <TaskCard key={task.id} task={task} isDelivery={true} />
-              ))
-            )}
+            {deliveryTasks.length === 0 ? <Text className="text-gray-500 text-center py-4">No pending deliveries</Text> : deliveryTasks.map((t) => <TaskCard key={t.id} task={t} isDelivery={true} />)}
           </View>
 
-          {/* Pickup Tasks Section */}
+          {/* Pickup Tasks */}
           <View className="mb-6">
             <View className="flex-row items-center justify-between mb-4">
               <View className="flex-row items-center gap-2">
                 <Package size={18} color={COLORS.secondary} />
-                <Text className="text-lg font-bold text-white">
-                  Pickup Tasks
-                </Text>
+                <Text className="text-lg font-bold text-white">Pickup Tasks</Text>
               </View>
-              <TouchableOpacity
-                onPress={() => router.push("/staff/AssignedTasks")}
-                className="flex-row items-center"
-              >
-                <Text style={{ color: COLORS.primary }} className="mr-1">
-                  View All
-                </Text>
+              <TouchableOpacity onPress={() => router.push("/staff/AssignedTasks")} className="flex-row items-center">
+                <Text style={{ color: COLORS.primary }} className="mr-1">View All</Text>
                 <ChevronRight size={16} color={COLORS.primary} />
               </TouchableOpacity>
             </View>
-
-            {pickupTasks.length === 0 ? (
-              <Text className="text-gray-500 text-center py-4">
-                No pending pickups
-              </Text>
-            ) : (
-              pickupTasks.map((task) => (
-                <TaskCard key={task.id} task={task} isDelivery={false} />
-              ))
-            )}
+            {pickupTasks.length === 0 ? <Text className="text-gray-500 text-center py-4">No pending pickups</Text> : pickupTasks.map((t) => <TaskCard key={t.id} task={t} isDelivery={false} />)}
           </View>
 
-          {/* Complaints Section */}
+          {/* Complaints */}
           {complaints.length > 0 && (
             <View className="mb-6">
               <View className="flex-row items-center justify-between mb-4">
                 <View className="flex-row items-center gap-2">
                   <AlertCircle size={18} color="#EF4444" />
-                  <Text className="text-lg font-bold text-white">
-                    Assigned Complaints
-                  </Text>
+                  <Text className="text-lg font-bold text-white">Assigned Complaints</Text>
                 </View>
-                <View
-                  className="px-2 py-0.5 rounded-full"
-                  style={{ backgroundColor: "rgba(239,68,68,0.15)" }}
-                >
-                  <Text
-                    className="text-xs font-bold"
-                    style={{ color: "#EF4444" }}
-                  >
-                    {complaints.length}
-                  </Text>
+                <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: "rgba(239,68,68,0.15)" }}>
+                  <Text className="text-xs font-bold" style={{ color: "#EF4444" }}>{complaints.length}</Text>
                 </View>
               </View>
-              {complaints.map((complaint) => (
-                <ComplaintCard key={complaint.id} complaint={complaint} />
-              ))}
+              {complaints.map((c) => <ComplaintCard key={c.id} complaint={c} />)}
             </View>
           )}
-
-          {/* Map Section */}
-          <View
-            className="rounded-3xl overflow-hidden"
-            style={{ backgroundColor: "#153d38" }} // Dark greenish map bg from screenshot
-          >
-            <TouchableOpacity
-              activeOpacity={0.9}
-              className="h-48 items-center justify-center"
-              onPress={() => router.push("/staff/AssignedTasks")}
-            >
-              <MapPin
-                size={32}
-                color={COLORS.primary}
-                style={{ marginBottom: 10 }}
-              />
-              <Text className="text-base font-bold text-white">
-                Task Locations Map
-              </Text>
-              <Text className="text-xs text-gray-400 mt-1">
-                Tap to view full map
-              </Text>
-            </TouchableOpacity>
-          </View>
         </ScrollView>
       </View>
     </SafeAreaView>

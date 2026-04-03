@@ -42,7 +42,6 @@ const accountItems = [
 ];
 
 const activityItems = [
-  { icon: Clock, label: "Booking History", path: "BookingHistory" },
   { icon: MapPin, label: "Saved Locations", path: "SavedLocations" },
   { icon: Heart, label: "Favorites", path: "Favorites" },
   { icon: CreditCard, label: "Payment Methods", path: "PaymentMethods" },
