@@ -90,7 +90,7 @@ export default function StaffDashboard() {
 
   const currentStats = [
     {
-      label: "Assigned Today",
+      label: "Assigned Tasks",
       value: (deliveryTasks.length + pickupTasks.length + completedCount).toString(),
       icon: Package,
       color: COLORS.primary,
