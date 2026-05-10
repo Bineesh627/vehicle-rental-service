@@ -120,6 +120,51 @@ export const api = {
     return await response.json();
   },
 
+  async updateBooking(
+    bookingId: string,
+    bookingData: {
+      vehicle_id: string | number;
+      booking_type: "hour" | "day";
+      start_date: string;
+      duration: number;
+      delivery_option: "self_pickup" | "pickup_service" | "home_delivery";
+      delivery_address?: string;
+      payment_method: "card" | "upi" | "wallet";
+    },
+  ): Promise<any> {
+    const token = await getAuthToken();
+    if (!token) throw new Error("No authentication token found");
+
+    const response = await fetch(
+      `${API_BASE_URL}/bookings/${bookingId}/modify/`,
+      {
+        method: "PATCH",
+        headers: authHeaders(token),
+        body: JSON.stringify(bookingData),
+      },
+    );
+
+    if (!response.ok) {
+      const errorData = (await response.json().catch(() => ({}))) as Record<
+        string,
+        unknown
+      >;
+      const message =
+        typeof errorData.error === "string"
+          ? errorData.error
+          : Array.isArray(errorData.delivery_option)
+            ? errorData.delivery_option[0]
+            : typeof errorData === "object" && errorData !== null
+              ? (Object.values(errorData).flat().filter(Boolean)[0] as string)
+              : null;
+      throw new Error(
+        typeof message === "string" ? message : "Failed to update booking",
+      );
+    }
+
+    return await response.json();
+  },
+
   async getBookings(): Promise<Booking[]> {
     const token = await getAuthToken();
     if (!token) throw new Error("No authentication token found");
@@ -241,6 +286,13 @@ const mapBackendBookingToFrontend = (data: any): Booking => {
   const deliveryOption =
     data.delivery_option === "home_delivery" ? "delivery" : "pickup";
 
+  const bookingType =
+    data.booking_type === "day"
+      ? "day"
+      : data.booking_type === "hour"
+        ? "hour"
+        : undefined;
+
   return {
     id: data.id.toString(),
     vehicleId: data.vehicle.id
@@ -257,6 +309,10 @@ const mapBackendBookingToFrontend = (data: any): Booking => {
     deliveryOption,
     deliveryAddress: data.delivery_address,
     returnLocation: data.return_location,
+    bookingType,
+    duration:
+      typeof data.duration === "number" ? data.duration : undefined,
+    paymentMethod: data.payment_method,
   } as Booking;
 };
 

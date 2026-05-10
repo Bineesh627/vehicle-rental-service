@@ -9,6 +9,7 @@ from django.shortcuts import get_object_or_404
 from .models import RentalShop, Vehicle, Booking, Conversation, Message, UserSettings, PaymentMethod, SavedLocation, KYCDocument, UserProfile, Notification, Review
 from .serializers import (
     RentalShopSerializer, VehicleSerializer, BookingSerializer, BookingCreateSerializer,
+    BookingUpdateSerializer,
     UserSerializer, ConversationSerializer, MessageSerializer,
     UserProfileSerializer, UserStatsSerializer,
     UserSettingsSerializer, PaymentMethodSerializer, PaymentMethodCreateSerializer,
@@ -868,6 +869,21 @@ class BookingViewSet(viewsets.ModelViewSet):
         booking.status = 'cancelled'
         booking.save()
         return Response({'status': 'cancelled', 'booking_id': booking.id})
+
+    @action(detail=True, methods=['patch'], url_path='modify')
+    def modify(self, request, pk=None):
+        """Update schedule, duration, delivery, and payment for an upcoming booking."""
+        booking = self.get_object()
+        if booking.status != 'upcoming':
+            return Response(
+                {'error': 'Only upcoming bookings can be modified.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        serializer = BookingUpdateSerializer(booking, data=request.data)
+        if serializer.is_valid():
+            updated = serializer.save()
+            return Response(BookingSerializer(updated).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 # ── Profile Views ───────────────────────────────────────────────────────────

@@ -113,11 +113,21 @@ export default function BookingDetails() {
   };
 
   const handleModifyBooking = () => {
-    Alert.alert(
-      "Modify Booking",
-      "To modify your dates or duration, please cancel this booking and create a new one.",
-      [{ text: "OK" }],
-    );
+    if (!booking) return;
+    const bookingType =
+      booking.bookingType ??
+      (() => {
+        const ms =
+          new Date(booking.endDate).getTime() -
+          new Date(booking.startDate).getTime();
+        const hours = ms / 3600000;
+        return hours >= 24 && hours % 24 === 0 ? ("day" as const) : ("hour" as const);
+      })();
+    navigation.navigate("Booking", {
+      id: booking.vehicleId,
+      type: bookingType,
+      editBookingId: booking.id,
+    });
   };
 
   if (loading) {

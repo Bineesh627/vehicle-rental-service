@@ -47,4 +47,8 @@ export interface Booking {
   deliveryOption?: "pickup" | "delivery";
   deliveryAddress?: string;
   returnLocation?: string;
+  /** From API `booking_type` when present */
+  bookingType?: "hour" | "day";
+  duration?: number;
+  paymentMethod?: "card" | "upi" | "wallet";
 }

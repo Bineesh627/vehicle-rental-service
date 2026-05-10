@@ -1,7 +1,12 @@
 import { api, profileApi } from "@/services/api";
-import { Vehicle, RentalShop } from "@/types";
+import { Vehicle, RentalShop, type Booking as BookingRecord } from "@/types";
 import { UserStackParamList } from "@/navigation/types";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
+import {
+  NavigationProp,
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
@@ -37,12 +42,70 @@ import { formatCurrency, getImageSource } from '@/lib/utils';
 
 type DeliveryOption = "pickup" | "delivery";
 
+const BOOKING_TIME_SLOTS = [
+  "9:00 AM",
+  "10:00 AM",
+  "11:00 AM",
+  "12:00 PM",
+  "2:00 PM",
+  "4:00 PM",
+] as const;
+
+function slotToMinutes(slot: string): number {
+  const [hours, rest] = slot.split(":");
+  const minutePart = parseInt(rest?.split(" ")[0] ?? "0", 10);
+  const period = slot.toUpperCase().includes("PM") ? "PM" : "AM";
+  let h24 = parseInt(hours ?? "10", 10);
+  if (period === "PM" && h24 !== 12) h24 += 12;
+  else if (period === "AM" && h24 === 12) h24 = 0;
+  return h24 * 60 + minutePart;
+}
+
+function nearestBookingTimeSlot(date: Date): string {
+  const target = date.getHours() * 60 + date.getMinutes();
+  let best: string = BOOKING_TIME_SLOTS[0];
+  let bestDiff = Infinity;
+  for (const s of BOOKING_TIME_SLOTS) {
+    const diff = Math.abs(slotToMinutes(s) - target);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = s;
+    }
+  }
+  return best;
+}
+
+function startOfDayLocal(d: Date): Date {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+}
+
+/** True when this calendar day is strictly before today (local). Today is allowed. */
+function isPastCalendarDay(date: Date): boolean {
+  return startOfDayLocal(date).getTime() < startOfDayLocal(new Date()).getTime();
+}
+
+function durationFromBookingDates(
+  b: BookingRecord,
+  kind: "hour" | "day",
+): number {
+  if (b.duration != null && b.duration >= 1) return b.duration;
+  const ms = new Date(b.endDate).getTime() - new Date(b.startDate).getTime();
+  if (kind === "day") {
+    const days = Math.round(ms / 86400000);
+    return Math.max(1, days);
+  }
+  const hours = Math.round(ms / 3600000);
+  return Math.max(1, hours);
+}
+
 export default function Booking() {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<UserStackParamList>>();
   const router = useRouter();
   const route = useRoute<RouteProp<UserStackParamList, "Booking">>();
 
-  const { id, type } = route.params;
+  const { id, type, editBookingId } = route.params;
   const bookingType = type === "day" ? "day" : "hour";
 
   // Data state
@@ -71,10 +134,24 @@ export default function Booking() {
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [showDeliverySelector, setShowDeliverySelector] = useState(false);
 
+  const today = new Date();
+  const canGoToPreviousMonth =
+    currentMonth.getFullYear() > today.getFullYear() ||
+    (currentMonth.getFullYear() === today.getFullYear() &&
+      currentMonth.getMonth() > today.getMonth());
+
+  useEffect(() => {
+    if (isPastCalendarDay(selectedDate)) {
+      setSelectedDate(startOfDayLocal(new Date()));
+    }
+  }, [selectedDate]);
+
   useFocusEffect(
     React.useCallback(() => {
       const fetchData = async () => {
         try {
+          setLoading(true);
+          setFetchError(null);
           if (!id) throw new Error("No vehicle ID provided");
 
           // Check KYC status first
@@ -95,7 +172,27 @@ export default function Booking() {
           }
           setKycVerified(true);
 
-          const vehicleData = await api.getVehicle(id);
+          const [vehicleData, existingBooking] = await Promise.all([
+            api.getVehicle(id),
+            editBookingId
+              ? api.getBookingDetails(editBookingId)
+              : Promise.resolve(null),
+          ]);
+
+          if (editBookingId && existingBooking) {
+            if (
+              existingBooking.vehicleId !== id ||
+              existingBooking.status !== "upcoming"
+            ) {
+              Alert.alert(
+                "Cannot modify",
+                "Only upcoming bookings for this vehicle can be edited.",
+                [{ text: "OK", onPress: () => navigation.goBack() }],
+              );
+              return;
+            }
+          }
+
           setVehicle(vehicleData);
           if (vehicleData.shopId) {
             const shopData = await api.getRentalShop(vehicleData.shopId);
@@ -116,8 +213,36 @@ export default function Booking() {
           if (defaultPm) setPaymentMethodId(defaultPm.id);
           else if (pmData.length > 0) setPaymentMethodId(pmData[0].id);
 
-          const defaultLoc = locData.find((loc) => loc.type === "home");
-          if (defaultLoc) setDeliveryAddress(defaultLoc.address);
+          if (existingBooking) {
+            const start = new Date(existingBooking.startDate);
+            setSelectedDate(start);
+            setCurrentMonth(
+              new Date(start.getFullYear(), start.getMonth(), 1),
+            );
+            setSelectedTime(nearestBookingTimeSlot(start));
+            setDuration(
+              durationFromBookingDates(existingBooking, bookingType),
+            );
+            const del =
+              existingBooking.deliveryOption === "delivery"
+                ? "delivery"
+                : "pickup";
+            setDeliveryOption(del);
+            if (del === "delivery" && existingBooking.deliveryAddress) {
+              setDeliveryAddress(existingBooking.deliveryAddress);
+            } else {
+              setDeliveryAddress("");
+            }
+            if (existingBooking.paymentMethod) {
+              const match = pmData.find(
+                (pm) => pm.type === existingBooking.paymentMethod,
+              );
+              if (match) setPaymentMethodId(match.id);
+            }
+          } else {
+            const defaultLoc = locData.find((loc) => loc.type === "home");
+            if (defaultLoc) setDeliveryAddress(defaultLoc.address);
+          }
         } catch (err) {
           console.error("Failed to fetch booking data:", err);
           setFetchError("Failed to load vehicle details");
@@ -126,7 +251,7 @@ export default function Booking() {
         }
       };
       fetchData();
-    }, [id]),
+    }, [id, editBookingId, bookingType, navigation, router]),
   );
 
   if (loading) {
@@ -158,15 +283,6 @@ export default function Booking() {
   const deliveryFee = deliveryOption === "delivery" ? 10 : 0;
   const serviceFee = 5;
   const totalPrice = pricePerUnit * duration + deliveryFee + serviceFee;
-
-  const times = [
-    "9:00 AM",
-    "10:00 AM",
-    "11:00 AM",
-    "12:00 PM",
-    "2:00 PM",
-    "4:00 PM",
-  ];
 
   // Calendar Logic
   const months = [
@@ -209,6 +325,16 @@ export default function Booking() {
   const changeMonth = (direction: -1 | 1) => {
     const newDate = new Date(currentMonth);
     newDate.setMonth(newDate.getMonth() + direction);
+    if (direction === -1) {
+      const t = new Date();
+      if (
+        newDate.getFullYear() < t.getFullYear() ||
+        (newDate.getFullYear() === t.getFullYear() &&
+          newDate.getMonth() < t.getMonth())
+      ) {
+        return;
+      }
+    }
     setCurrentMonth(newDate);
   };
 
@@ -243,6 +369,14 @@ export default function Booking() {
       startDateTime.setHours(hour24, parseInt(minutePart, 10));
       startDateTime.setSeconds(0, 0);
 
+      if (startDateTime.getTime() < Date.now()) {
+        Alert.alert(
+          "Invalid date or time",
+          "Please choose today or a future date and time.",
+        );
+        return;
+      }
+
       const deliveryOptionBackend =
         deliveryOption === "pickup" ? "self_pickup" : "home_delivery";
 
@@ -259,19 +393,37 @@ export default function Booking() {
             ?.type as "card" | "upi" | "wallet") || "card",
       };
 
-      await api.createBooking(bookingData);
-
-      Alert.alert(
-        "Booking Confirmed!",
-        `Your ${vehicle?.name} has been booked successfully.`,
-        [
-          {
-            text: "View Bookings",
-            onPress: () => router.push("/bookings" as any),
-          },
-          { text: "Continue Shopping", onPress: () => router.push("/(tabs)/" as any) },
-        ]
-      );
+      if (editBookingId) {
+        await api.updateBooking(editBookingId, bookingData);
+        Alert.alert(
+          "Booking updated",
+          `Your changes to the ${vehicle?.name} booking have been saved.`,
+          [
+            {
+              text: "View booking",
+              onPress: () =>
+                navigation.navigate("BookingDetails", { id: editBookingId }),
+            },
+            { text: "OK", onPress: () => navigation.goBack() },
+          ],
+        );
+      } else {
+        await api.createBooking(bookingData);
+        Alert.alert(
+          "Booking Confirmed!",
+          `Your ${vehicle?.name} has been booked successfully.`,
+          [
+            {
+              text: "View Bookings",
+              onPress: () => router.push("/bookings" as any),
+            },
+            {
+              text: "Continue Shopping",
+              onPress: () => router.push("/(tabs)/" as any),
+            },
+          ],
+        );
+      }
     } catch (error) {
       console.error("Booking failed:", error);
       const message =
@@ -290,7 +442,9 @@ export default function Booking() {
         >
           <ArrowLeft size={20} color="#ffffff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Book Vehicle</Text>
+        <Text style={styles.headerTitle}>
+          {editBookingId ? "Modify Booking" : "Book Vehicle"}
+        </Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -323,9 +477,16 @@ export default function Booking() {
             <View style={styles.calendarHeader}>
               <TouchableOpacity
                 onPress={() => changeMonth(-1)}
-                style={styles.monthNavButton}
+                disabled={!canGoToPreviousMonth}
+                style={[
+                  styles.monthNavButton,
+                  !canGoToPreviousMonth && styles.monthNavButtonDisabled,
+                ]}
               >
-                <ChevronLeft size={20} color="#ffffff" />
+                <ChevronLeft
+                  size={20}
+                  color={canGoToPreviousMonth ? "#ffffff" : "#64748b"}
+                />
               </TouchableOpacity>
               <Text style={styles.monthTitle}>
                 {months[currentMonth.getMonth()]} {currentMonth.getFullYear()}
@@ -353,8 +514,19 @@ export default function Booking() {
                 if (!date) {
                   return <View key={`empty-${index}`} style={styles.dayCell} />;
                 }
+                const isPast = isPastCalendarDay(date);
                 const isSelected = isSameDay(date, selectedDate);
                 const isToday = isSameDay(date, new Date());
+
+                if (isPast) {
+                  return (
+                    <View key={index} style={styles.dayCell}>
+                      <Text style={[styles.dayText, styles.dayTextDisabled]}>
+                        {date.getDate()}
+                      </Text>
+                    </View>
+                  );
+                }
 
                 return (
                   <TouchableOpacity
@@ -389,7 +561,7 @@ export default function Booking() {
             <Text style={styles.sectionTitle}>Select Time</Text>
           </View>
           <View style={styles.grid}>
-            {times.map((time) => (
+            {BOOKING_TIME_SLOTS.map((time) => (
               <TouchableOpacity
                 key={time}
                 onPress={() => setSelectedTime(time)}
@@ -636,7 +808,8 @@ export default function Booking() {
           onPress={handleConfirmBooking}
         >
           <Text style={styles.confirmButtonText}>
-            Confirm Booking • {formatCurrency(totalPrice)}
+            {editBookingId ? "Save changes" : "Confirm Booking"} •{" "}
+            {formatCurrency(totalPrice)}
           </Text>
         </TouchableOpacity>
       </View>
@@ -747,6 +920,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#0f172a",
   },
+  monthNavButtonDisabled: {
+    opacity: 0.45,
+  },
   weekDaysRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -770,6 +946,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 4,
+  },
+  dayTextDisabled: {
+    color: "#475569",
   },
   selectedDayCell: {
     backgroundColor: "#2dd4bf", // Teal

@@ -248,6 +248,82 @@ class BookingCreateSerializer(serializers.ModelSerializer):
         return booking
 
 
+class BookingUpdateSerializer(BookingCreateSerializer):
+    """
+    Same payload as BookingCreateSerializer for PATCH modify.
+    Overlap checks exclude this booking; vehicle must stay the same (may be marked unavailable).
+    """
+
+    def validate_vehicle_id(self, value):
+        booking = self.instance
+        try:
+            vehicle = Vehicle.objects.get(id=value)
+        except Vehicle.DoesNotExist:
+            raise serializers.ValidationError("Vehicle not found")
+        if booking is not None and vehicle.id != booking.vehicle_id:
+            raise serializers.ValidationError(
+                "You cannot change the vehicle when modifying a booking."
+            )
+        return vehicle
+
+    def validate(self, data):
+        booking = self.instance
+        vehicle = data.get('vehicle_id')
+        start_date = data.get('start_date')
+        duration = data.get('duration')
+        booking_type = data.get('booking_type')
+        delivery_option = data.get('delivery_option')
+
+        if delivery_option == 'home_delivery' and not data.get('delivery_address'):
+            raise serializers.ValidationError(
+                "Delivery address is required for home delivery"
+            )
+
+        from datetime import timedelta
+        if booking_type == 'hour':
+            end_date = start_date + timedelta(hours=duration)
+            base_price = vehicle.price_per_hour * duration
+        else:
+            end_date = start_date + timedelta(days=duration)
+            base_price = vehicle.price_per_day * duration
+
+        overlapping_bookings = Booking.objects.filter(
+            vehicle=vehicle,
+            status__in=['active', 'upcoming'],
+            start_date__lt=end_date,
+            end_date__gt=start_date,
+        ).exclude(pk=booking.pk)
+
+        if overlapping_bookings.exists():
+            raise serializers.ValidationError(
+                "Vehicle is already booked for this time period"
+            )
+
+        delivery_fee = 10 if delivery_option == 'home_delivery' else 0
+        service_fee = 5
+        return {
+            'vehicle': vehicle,
+            'shop': vehicle.shop,
+            'booking_type': booking_type,
+            'start_date': start_date,
+            'end_date': end_date,
+            'duration': duration,
+            'base_price': base_price,
+            'delivery_fee': delivery_fee,
+            'service_fee': service_fee,
+            'total_price': float(base_price) + delivery_fee + service_fee,
+            'delivery_option': delivery_option,
+            'delivery_address': data.get('delivery_address'),
+            'payment_method': data.get('payment_method'),
+        }
+
+    def update(self, instance, validated_data):
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        return instance
+
+
 # ── Chat Serializers ───────────────────────────────────────────────────────────
 
 class MessageSerializer(serializers.ModelSerializer):
