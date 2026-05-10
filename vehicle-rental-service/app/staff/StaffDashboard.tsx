@@ -13,11 +13,13 @@ import {
   User,
   AlertCircle,
   CarFront,
+  Calendar,
 } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
+  Linking,
   RefreshControl,
   ScrollView,
   Text,
@@ -114,12 +116,17 @@ export default function StaffDashboard() {
     router.replace("/Login");
   };
 
-  const handleCall = (phone: string, customer: string) => {
-    Toast.show({
-      type: "info",
-      text1: "Calling Customer",
-      text2: `Dialing ${customer} at ${phone}...`,
-    });
+  const handleCall = (phone: string | undefined, customer: string) => {
+    const n = (phone || "").replace(/\s/g, "");
+    if (!n) {
+      Toast.show({
+        type: "error",
+        text1: "No phone number",
+        text2: "This customer has no phone on file.",
+      });
+      return;
+    }
+    Linking.openURL(`tel:${n}`);
   };
 
   const handleNavigate = (address: string) => {
@@ -200,7 +207,17 @@ export default function StaffDashboard() {
             </Text>
           </View>
         </View>
-        <Text className="text-xs text-gray-400">{task.scheduledTime}</Text>
+        <View className="items-end">
+          <Text className="text-xs text-gray-400">{task.scheduledTime || "—"}</Text>
+          {task.scheduledDateDisplay ? (
+            <Text
+              className="text-[10px] text-gray-500 mt-0.5 max-w-[130px] text-right"
+              numberOfLines={2}
+            >
+              Task: {task.scheduledDateDisplay}
+            </Text>
+          ) : null}
+        </View>
       </View>
 
       <View className="mb-4">
@@ -212,10 +229,59 @@ export default function StaffDashboard() {
         </Text>
       </View>
 
+      <View
+        className="mb-4 p-3 rounded-xl gap-3"
+        style={{
+          backgroundColor: COLORS.background,
+          borderWidth: 1,
+          borderColor: COLORS.border,
+        }}
+      >
+        <View className="flex-row items-start gap-2">
+          <Package size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
+          <View className="flex-1">
+            <Text className="text-[10px] uppercase text-gray-500 font-bold mb-0.5">
+              Self pickup or home delivery
+            </Text>
+            <Text className="text-sm text-gray-200 font-semibold">
+              {task.deliveryOptionLabel || "—"}
+            </Text>
+          </View>
+        </View>
+        <View className="flex-row items-start gap-2">
+          <Calendar size={16} color={COLORS.primary} style={{ marginTop: 2 }} />
+          <View className="flex-1 gap-2">
+            <View>
+              <Text className="text-[10px] uppercase text-gray-500 font-bold mb-0.5">
+                Rental pickup (start)
+              </Text>
+              <Text className="text-sm text-gray-300">
+                {task.bookingStartDisplay || "—"}
+              </Text>
+            </View>
+            <View>
+              <Text className="text-[10px] uppercase text-gray-500 font-bold mb-0.5">
+                Rental return (end)
+              </Text>
+              <Text className="text-sm text-gray-300">
+                {task.bookingEndDisplay || "—"}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View className="flex-row items-start gap-2 mb-3">
+        <Phone size={16} color="#6B7280" style={{ marginTop: 2 }} />
+        <Text className="text-sm text-gray-300 flex-1">
+          {(task.customerPhone || "").trim() || "No phone number on file"}
+        </Text>
+      </View>
+
       <View className="flex-row items-start gap-2 mb-5">
         <MapPin size={16} color="#6B7280" style={{ marginTop: 2 }} />
         <Text className="text-sm text-gray-400 flex-1">
-          {task.address || "No address provided (Self Pickup)"}
+          {task.address?.trim() ? task.address : "No address on file"}
         </Text>
       </View>
 
@@ -252,7 +318,9 @@ export default function StaffDashboard() {
         <TouchableOpacity
           className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
           style={{ borderColor: COLORS.primary }}
-          onPress={() => handleCall(task.customerPhone || "0000000000", task.customerName || "Customer")}
+          onPress={() =>
+            handleCall(task.customerPhone, task.customerName || "Customer")
+          }
         >
           <Phone size={16} color={COLORS.primary} style={{ marginRight: 6 }} />
           <Text style={{ color: COLORS.primary, fontWeight: "600" }}>Call</Text>

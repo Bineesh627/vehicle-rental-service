@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 import {
   ArrowLeft,
+  Calendar,
   CheckCircle,
   Clock,
   MapPin,
@@ -140,8 +141,17 @@ export default function AssignedTasks() {
     }
   };
 
-  const handleCall = (phone: string) => {
-    Linking.openURL(`tel:${phone}`);
+  const handleCall = (phone: string | undefined) => {
+    const n = (phone || "").replace(/\s/g, "");
+    if (!n) {
+      Toast.show({
+        type: "error",
+        text1: "No phone number",
+        text2: "This customer has no phone on file.",
+      });
+      return;
+    }
+    Linking.openURL(`tel:${n}`);
   };
 
   const handleNavigate = (address: string) => {
@@ -338,11 +348,72 @@ export default function AssignedTasks() {
                               {task.status.replace("_", " ")}
                             </Text>
                           </View>
-                          <View className="flex-row items-center gap-1">
-                            <Clock size={12} color={COLORS.textMuted} />
-                            <Text className="text-xs text-gray-400">
-                              {task.scheduledTime}
+                          <View className="items-end">
+                            <View className="flex-row items-center gap-1">
+                              <Clock size={12} color={COLORS.textMuted} />
+                              <Text className="text-xs text-gray-400">
+                                {task.scheduledTime || "—"}
+                              </Text>
+                            </View>
+                            {task.scheduledDateDisplay ? (
+                              <Text
+                                className="text-[10px] text-gray-500 mt-0.5 max-w-[140px] text-right"
+                                numberOfLines={2}
+                              >
+                                Task: {task.scheduledDateDisplay}
+                              </Text>
+                            ) : null}
+                          </View>
+                        </View>
+                      </View>
+
+                      {/* Booking option & rental window */}
+                      <View
+                        className="mb-4 p-3 rounded-2xl gap-3"
+                        style={{
+                          backgroundColor: COLORS.background,
+                          borderWidth: 1,
+                          borderColor: COLORS.border,
+                        }}
+                      >
+                        <View className="flex-row items-start gap-2">
+                          <Package
+                            size={16}
+                            color={COLORS.primary}
+                            style={{ marginTop: 2 }}
+                          />
+                          <View className="flex-1">
+                            <Text className="text-[10px] uppercase text-gray-500 font-bold mb-0.5">
+                              Self pickup or home delivery
                             </Text>
+                            <Text className="text-sm text-gray-200 font-semibold">
+                              {task.deliveryOptionLabel || "—"}
+                            </Text>
+                          </View>
+                        </View>
+                        <View className="flex-row items-start gap-2">
+                          <Calendar
+                            size={16}
+                            color={COLORS.primary}
+                            style={{ marginTop: 2 }}
+                          />
+                          <View className="flex-1 gap-2">
+                            <View>
+                              <Text className="text-[10px] uppercase text-gray-500 font-bold mb-0.5">
+                                Rental pickup (start)
+                              </Text>
+                              <Text className="text-sm text-gray-300">
+                                {task.bookingStartDisplay || "—"}
+                              </Text>
+                            </View>
+                            <View>
+                              <Text className="text-[10px] uppercase text-gray-500 font-bold mb-0.5">
+                                Rental return (end)
+                              </Text>
+                              <Text className="text-sm text-gray-300">
+                                {task.bookingEndDisplay || "—"}
+                              </Text>
+                            </View>
                           </View>
                         </View>
                       </View>
@@ -355,15 +426,27 @@ export default function AssignedTasks() {
                             {task.customerName || "Unknown Customer"}
                           </Text>
                         </View>
+                        <View className="flex-row items-start gap-3">
+                          <Phone
+                            size={18}
+                            color={COLORS.textMuted}
+                            style={{ marginTop: 2 }}
+                          />
+                          <Text className="text-sm text-gray-300 flex-1">
+                            {(task.customerPhone || "").trim() ||
+                              "No phone number on file"}
+                          </Text>
+                        </View>
                         <View className="flex-row items-start gap-3 pr-4">
                           <MapPin
                             size={18}
                             color={COLORS.textMuted}
                             style={{ marginTop: 2 }}
                           />
-                          <Text className="text-sm text-gray-400 leading-5">
-                            {task.address ||
-                              "No address provided (Self Pickup)"}
+                          <Text className="text-sm text-gray-400 leading-5 flex-1">
+                            {task.address?.trim()
+                              ? task.address
+                              : "No address on file"}
                           </Text>
                         </View>
                       </View>
@@ -416,9 +499,7 @@ export default function AssignedTasks() {
                           <TouchableOpacity
                             className="flex-1 flex-row items-center justify-center py-3 rounded-full border"
                             style={{ borderColor: COLORS.primary }}
-                            onPress={() =>
-                              handleCall(task.customerPhone || "0000000000")
-                            }
+                            onPress={() => handleCall(task.customerPhone)}
                           >
                             <Phone
                               size={16}

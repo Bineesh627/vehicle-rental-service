@@ -1130,8 +1130,15 @@ export interface StaffTask {
   customerPhone?: string;
   address: string;
   scheduledTime: string;
+  /** Full datetime for this task’s scheduled_time (from API) */
+  scheduledDateDisplay?: string;
   status: "pending" | "in_progress" | "completed";
   bookingId: string;
+  /** Backend: self_pickup | home_delivery | pickup_service */
+  deliveryOption?: string;
+  deliveryOptionLabel?: string;
+  bookingStartDisplay?: string;
+  bookingEndDisplay?: string;
 }
 
 export interface StaffComplaint {
@@ -1157,7 +1164,8 @@ export const staffApi = {
     const tasks = await response.json();
     return tasks.map((task: any) => ({
       ...task,
-      bookingId: task.booking_id ? task.booking_id.toString() : "",
+      id: task.id != null ? String(task.id) : "",
+      bookingId: task.booking_id != null ? String(task.booking_id) : "",
     }));
   },
 

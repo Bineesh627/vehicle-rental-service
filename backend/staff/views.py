@@ -10,7 +10,17 @@ class StaffTaskViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         # Return tasks assigned to the currently logged in staff member
-        return StaffTask.objects.filter(staff=self.request.user).order_by('-created_at')
+        return (
+            StaffTask.objects.filter(staff=self.request.user)
+            .select_related(
+                'booking',
+                'booking__vehicle',
+                'booking__shop',
+                'booking__user',
+                'booking__user__user_profile',
+            )
+            .order_by('-created_at')
+        )
         
     def update(self, request, *args, **kwargs):
         task = self.get_object()
